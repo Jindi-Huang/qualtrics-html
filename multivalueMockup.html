@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>K-valued fuzzy-max with slope-Y</title>
+<style>
+/* cosmetics -------------------------------------------------------- */
+body{font-family:system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;margin:0;background:#f5f5f5}
+.panel-wrapper{background:hsl(210 50% 92%);border-radius:10px;padding:20px;max-width:640px;margin:40px auto}
+.panel{position:relative;width:90%;max-width:600px;height:150px;display:flex;flex-direction:column;justify-content:center;align-items:center;background:#fff;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.1);margin:12px auto}
+.panel-header{position:absolute;top:10px;left:15px;font-weight:600;font-size:22px}
+.text{margin-top:4px;text-align:center;font-size:18px}
+.actionButton{padding:10px 16px;margin:4px;font-size:16px;cursor:pointer;border:none;border-radius:6px;color:#fff;transition:transform .15s}
+.actionButton:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.hidden{display:none}
+.roundDisplay{font-size:20px;text-align:center;margin:4px auto;display:block}
+.flash{outline:3px solid orange;transition:outline .15s ease}
+</style>
+</head>
+<body>
+
+<div id="roundDisplay" class="roundDisplay"></div>
+
+<div class="panel-wrapper">
+
+    <!-- You (choose action) -->
+    <div id="panelAchoice" class="panel">
+        <div class="panel-header">You</div>
+        <div id="actionPrompt" class="text"></div>
+        <div id="btnContainer"></div>
+    </div>
+
+    <!-- X revealed -->
+    <div id="panelXinfo" class="panel hidden">
+        <div class="panel-header">Player X</div>
+        <div id="riskText"   class="text">(press “c” to continue)</div>
+    </div>
+
+    <!-- Y revealed -->
+    <div id="panelYinfo" class="panel hidden">
+        <div class="panel-header">Player Y (bonus)</div>
+        <div id="resultText" class="text">(press “space” to continue)</div>
+    </div>
+
+</div>
+
+<script>
+/* ===================== CONFIGURATION ===================== */
+const cfg = {
+  nRounds : 50,    // total rounds
+  K       : 5,     // action levels (1…10)
+  aCost   : 0.25,  // cost per unit of A
+  yBonus  : 1.00,  // bonus per unit of Y
+  causal  : false, // true: A→X→Y ; false: A & Y → X
+
+  /* ------ slope distribution for Y when causal = false ------ */
+  slope   :  0.1,       // Positive means higher values LESS likely
+                         // must be in [-2/(K*(K-1)),  2/(K*(K-1))]
+                         // here: K=5  ⇒  range ≈ [-0.10 , 0.10]
+
+  /* ------ “noise” weights for fuzzy-max ------ (sum to 1) */
+  pExact  : 0.80,  // probability of returning max exactly
+  pOne    : 0.15,  // probability of ±1 (split equally)
+  pTwo    : 0.05   // probability of ±2 (split equally)
+};
+/* ========================================================= */
+
+/* ----------------- runtime sanity check for slope ---------------- */
+(function checkSlope(){
+  const lim = 2 / (cfg.K*(cfg.K-1));
+  if (cfg.slope < -lim || cfg.slope > lim){
+    alert(`slope (${cfg.slope}) outside valid range [${(-lim).toFixed(4)}, ${lim.toFixed(4)}].`);
+  }
+})();
+
+/* ========================= STATE ========================= */
+let round = 0, startTime = 0;
+const history=[], times=[], payments=[];
+
+/* ========================== DOM ========================== */
+const btnBox      = document.getElementById('btnContainer');
+const panelA      = document.getElementById('panelAchoice');
+const panelX      = document.getElementById('panelXinfo');
+const panelY      = document.getElementById('panelYinfo');
+const riskText    = document.getElementById('riskText');
+const resultText  = document.getElementById('resultText');
+const roundDisp   = document.getElementById('roundDisplay');
+const actionPrompt= document.getElementById('actionPrompt');
+
+/* ---------- colour map (red→green across 1…K) ------------ */
+const valueToColor=(v,max)=>`hsl(${((v-1)/(max-1))*120} 70% 55%)`;
+
+/* ----------------------- fuzzy-max ----------------------- */
+function fuzzyMax(parents,K){
+  const m=Math.max(...parents);
+  const r=Math.random();
+  let dev=0;
+  if(r<cfg.pExact) dev=0;
+  else if(r<cfg.pExact+cfg.pOne) dev = Math.random()<0.5 ? -1:+1;
+  else dev = Math.random()<0.5 ? -2:+2;
+  return Math.min(Math.max(m+dev,1),K);
+}
+
+/* ---------- build Y distribution with linear slope ------- */
+function buildYPmf(K,slope){
+  const p1 = (1 + slope*(K-1)*K/2)/K;           // derived earlier
+  const probs = Array.from({length:K},(_,i)=>p1 - i*slope);
+  /* numerical tidy-up (guard against rounding) */
+  const sum = probs.reduce((a,b)=>a+b,0);
+  return probs.map(p=>p/sum);
+}
+const yPMF = buildYPmf(cfg.K,cfg.slope);
+
+/* ---- helper: sample integer 1…K from an arbitrary PMF ---- */
+function sampleFromPMF(pmf){
+  const r=Math.random();
+  let acc=0;
+  for(let i=0;i<pmf.length;i++){
+    acc+=pmf[i];
+    if(r<acc) return i+1;          // +1 for 1-based levels
+  }
+  return pmf.length;               // numeric safety
+}
+
+/* =============== BUILD ACTION BUTTONS (1…K) =============== */
+actionPrompt.textContent=`Choose an action (1–${cfg.K})`;
+for(let k=1;k<=cfg.K;k++){
+  const b=document.createElement('button');
+  b.textContent=k;
+  b.className='actionButton';
+  b.style.background=valueToColor(k,cfg.K);
+  b.onclick=()=>handleDecision(k,b);
+  btnBox.appendChild(b);
+}
+
+/* ===================== CORE DECISION ===================== */
+function handleDecision(aVal,btn){
+  if(panelA.classList.contains('hidden')) return;
+  [...btnBox.children].forEach(b=>b.disabled=true);
+  btn.classList.add('flash'); setTimeout(()=>btn.classList.remove('flash'),180);
+
+  /* --------- sample X and Y according to cfg.causal -------- */
+  let X,Y;
+  if(cfg.causal){
+      X = fuzzyMax([aVal],cfg.K);
+      Y = fuzzyMax([X   ],cfg.K);
+  }else{
+      Y = sampleFromPMF(yPMF);            // slope-based distribution
+      X = fuzzyMax([aVal,Y],cfg.K);       // noisy “max” of A & Y
+  }
+
+  /* ------------------- record & show X -------------------- */
+  history .push([aVal,X,Y]);
+  payments.push(-cfg.aCost*aVal + cfg.yBonus*Y);
+
+  setTimeout(()=>{
+    panelX.style.background=valueToColor(X,cfg.K);
+    riskText.innerHTML=`<br>Player X chose ${X}<br>(press “c” to continue)`;
+    window.waitingForX=true;
+  },200);
+}
+
+/* ==================== ROUND CONTROL ====================== */
+function newRound(){
+  if(round>=cfg.nRounds){
+    console.log('history',history);
+    console.log('times'  ,times);
+    console.log('payment',payments);
+    alert('Finished – see console for data.');
+    return;
+  }
+  round++;
+  roundDisp.textContent=`Round ${round} / ${cfg.nRounds}`;
+  panelA.classList.remove('hidden');
+  panelX.classList.remove('hidden');
+  panelY.classList.remove('hidden');
+  panelX.style.background='white';
+  panelY.style.background='white';
+  riskText.textContent='';
+  resultText.textContent='';
+  [...btnBox.children].forEach(b=>b.disabled=false);
+  startTime = Date.now();
+  window.waitingForX=false;
+  window.waitingForY=false;
+}
+
+/* ================== KEYBOARD SHORTCUTS =================== */
+document.addEventListener('keydown', e=>{
+  const k=e.key;
+
+  /* ---- digit key = immediate choice (0→10) ---- */
+  if(!isNaN(k)){
+    const val=(k==='0')?10:+k;
+    if(val>=1 && val<=cfg.K && !btnBox.children[val-1].disabled){
+      e.preventDefault();
+      handleDecision(val,btnBox.children[val-1]);
+      return;
+    }
+  }
+
+  /* ---- proceed after X shown ---- */
+  if((k==='c'||k==='C') && window.waitingForX){
+    e.preventDefault();
+    const Y=history.at(-1)[2];
+    panelY.style.background=valueToColor(Y,cfg.K);
+    resultText.innerHTML=
+      `<br>Player Y chose ${Y} (bonus $${(cfg.yBonus*Y).toFixed(2)})<br>(press “space” to continue)`;
+    window.waitingForX=false;
+    window.waitingForY=true;
+    return;
+  }
+
+  /* ---- advance after Y shown ---- */
+  if(window.waitingForY && (k===' '||k==='Spacebar'||e.code==='Space')){
+    e.preventDefault();
+    times.push((Date.now()-startTime)/1000);
+    window.waitingForY=false;
+    newRound();
+  }
+});
+
+/* ======================== START ========================== */
+newRound();
+</script>
+</body>
+</html>
