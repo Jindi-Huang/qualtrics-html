@@ -33,13 +33,13 @@ body{font-family:system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue"
     <!-- X revealed -->
     <div id="panelXinfo" class="panel hidden">
         <div class="panel-header">Player X</div>
-        <div id="riskText"   class="text">(press “c” to continue)</div>
+        <div id="riskText"   class="text">(press "c" to continue)</div>
     </div>
 
     <!-- Y revealed -->
     <div id="panelYinfo" class="panel hidden">
         <div class="panel-header">Player Y (bonus)</div>
-        <div id="resultText" class="text">(press “space” to continue)</div>
+        <div id="resultText" class="text">(press "space" to continue)</div>
     </div>
 
 </div>
@@ -58,7 +58,7 @@ const cfg = {
                          // must be in [-2/(K*(K-1)),  2/(K*(K-1))]
                          // here: K=5  ⇒  range ≈ [-0.10 , 0.10]
 
-  /* ------ “noise” weights for fuzzy-max ------ (sum to 1) */
+  /* ------ "noise" weights for fuzzy-max ------ (sum to 1) */
   pExact  : 0.80,  // probability of returning max exactly
   pOne    : 0.15,  // probability of ±1 (split equally)
   pTwo    : 0.05   // probability of ±2 (split equally)
@@ -76,6 +76,7 @@ const cfg = {
 /* ========================= STATE ========================= */
 let round = 0, startTime = 0;
 const history=[], times=[], payments=[];
+let participantId = null;
 
 /* ========================== DOM ========================== */
 const btnBox      = document.getElementById('btnContainer');
@@ -89,6 +90,27 @@ const actionPrompt= document.getElementById('actionPrompt');
 
 /* ---------- colour map (red→green across 1…K) ------------ */
 const valueToColor=(v,max)=>`hsl(${((v-1)/(max-1))*120} 70% 55%)`;
+
+/* =============== QUALTRICS COMMUNICATION =============== */
+function sendDataToQualtrics(dataType, data) {
+  if (window.parent !== window) {
+    window.parent.postMessage({
+      type: 'GAME_DATA',
+      dataType: dataType,
+      data: data,
+      participantId: participantId,
+      timestamp: new Date().toISOString()
+    }, '*');
+  }
+}
+
+// Listen for initialization from Qualtrics
+window.addEventListener('message', function(event) {
+  if (event.data.type === 'INIT') {
+    participantId = event.data.participantId;
+    console.log('Initialized with participant ID:', participantId);
+  }
+});
 
 /* ----------------------- fuzzy-max ----------------------- */
 function fuzzyMax(parents,K){
@@ -146,16 +168,27 @@ function handleDecision(aVal,btn){
       Y = fuzzyMax([X   ],cfg.K);
   }else{
       Y = sampleFromPMF(yPMF);            // slope-based distribution
-      X = fuzzyMax([aVal,Y],cfg.K);       // noisy “max” of A & Y
+      X = fuzzyMax([aVal,Y],cfg.K);       // noisy "max" of A & Y
   }
 
   /* ------------------- record & show X -------------------- */
-  history .push([aVal,X,Y]);
-  payments.push(-cfg.aCost*aVal + cfg.yBonus*Y);
+  const payment = -cfg.aCost*aVal + cfg.yBonus*Y;
+  history.push([aVal,X,Y]);
+  payments.push(payment);
+
+  // Send round data to Qualtrics immediately
+  sendDataToQualtrics('ROUND_DATA', {
+    round: round,
+    playerA: aVal,
+    playerX: X,
+    playerY: Y,
+    payment: payment,
+    decisionTime: (Date.now() - startTime) / 1000
+  });
 
   setTimeout(()=>{
     panelX.style.background=valueToColor(X,cfg.K);
-    riskText.innerHTML=`<br>Player X chose ${X}<br>(press “c” to continue)`;
+    riskText.innerHTML=`<br>Player X chose ${X}<br>(press "c" to continue)`;
     window.waitingForX=true;
   },200);
 }
@@ -163,10 +196,29 @@ function handleDecision(aVal,btn){
 /* ==================== ROUND CONTROL ====================== */
 function newRound(){
   if(round>=cfg.nRounds){
-    console.log('history',history);
-    console.log('times'  ,times);
-    console.log('payment',payments);
-    alert('Finished – see console for data.');
+    // Send final summary data to Qualtrics
+    const totalPayment = payments.reduce((sum, p) => sum + p, 0);
+    const avgDecisionTime = times.reduce((sum, t) => sum + t, 0) / times.length;
+    
+    const finalData = {
+      history: history,
+      times: times,
+      payments: payments,
+      totalPayment: totalPayment,
+      avgDecisionTime: avgDecisionTime,
+      config: cfg
+    };
+    
+    sendDataToQualtrics('FINAL_DATA', finalData);
+    
+    console.log('Game completed - data sent to Qualtrics');
+    console.log('history', history);
+    console.log('times', times);
+    console.log('payments', payments);
+    
+    // Notify Qualtrics that the game is complete
+    sendDataToQualtrics('GAME_COMPLETE', { completed: true });
+    
     return;
   }
   round++;
@@ -204,7 +256,7 @@ document.addEventListener('keydown', e=>{
     const Y=history.at(-1)[2];
     panelY.style.background=valueToColor(Y,cfg.K);
     resultText.innerHTML=
-      `<br>Player Y chose ${Y} (bonus $${(cfg.yBonus*Y).toFixed(2)})<br>(press “space” to continue)`;
+      `<br>Player Y chose ${Y} (bonus $${(cfg.yBonus*Y).toFixed(2)})<br>(press "space" to continue)`;
     window.waitingForX=false;
     window.waitingForY=true;
     return;
@@ -220,7 +272,12 @@ document.addEventListener('keydown', e=>{
 });
 
 /* ======================== START ========================== */
-newRound();
+// Send game start notification
+setTimeout(() => {
+  sendDataToQualtrics('GAME_START', { started: true });
+  newRound();
+}, 100);
+
 </script>
 </body>
 </html>
