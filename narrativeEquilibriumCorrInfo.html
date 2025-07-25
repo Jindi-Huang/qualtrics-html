@@ -4,6 +4,118 @@
 <meta charset="utf-8"/>
 <title>Button Game</title>
 <style>
+body {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    margin: 0;
+    padding: 10px;
+    display: flex;
+    gap: 15px;
+    min-height: 100vh;
+}
+
+.main-game {
+    flex: 1;
+    max-width: 650px;
+}
+
+.stats-sidebar {
+    width: 280px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    height: fit-content;
+    position: sticky;
+    top: 10px;
+}
+
+.stats-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 12px;
+    text-align: center;
+    border-bottom: 2px solid #dee2e6;
+    padding-bottom: 8px;
+}
+
+.stats-content {
+    font-size: 13px;
+    color: #6c757d;
+}
+
+.influence-stat {
+    background: white;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.influence-text {
+    margin-bottom: 8px;
+    line-height: 1.3;
+    font-weight: 500;
+}
+
+.bar-container {
+    background: #e9ecef;
+    height: 24px;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+}
+
+.bar-center {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 1px;
+    height: 100%;
+    background: #495057;
+    z-index: 2;
+}
+
+.bar-fill {
+    height: 100%;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
+}
+
+.bar-positive {
+    background: linear-gradient(90deg, #28a745, #20c997);
+    transform-origin: left;
+}
+
+.bar-negative {
+    background: linear-gradient(90deg, #dc3545, #fd7e14);
+    transform-origin: right;
+}
+
+.bar-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: #6c757d;
+    margin-top: 4px;
+}
+
+.insufficient-data {
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+    padding: 20px 0;
+}
+
+.data-counts {
+    font-size: 11px;
+    color: #868e96;
+    margin-top: 8px;
+    text-align: center;
+}
+
 .panel-wrapper {
     background: hsl(200 70% 85%);
     border-radius: 10px;
@@ -12,6 +124,7 @@
     justify-content: center;
     margin: auto;
 }
+
 .panel {
     position: relative;
     width: 90%;
@@ -27,6 +140,7 @@
     transition: background-color 0.3s;
     margin: 0px auto;
 }
+
 .panel-header {
     position: absolute;
     top: 10px;
@@ -35,6 +149,7 @@
     align-items: center;
     gap: 8px;
 }
+
 .panel-icon {
     width: 50px;
     height: 50px;
@@ -43,11 +158,13 @@
     border: 2px solid #fff;
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
+
 .panel-name {
     font-weight: bold;
     font-size: 23px;
     color: #333;
 }
+
 .text {
     text-align: center;
     font-size: 18px;
@@ -56,6 +173,7 @@
     transition: color 0.3s;
     margin-top: 0;
 }
+
 .actionButton {
     padding: 10px 20px;
     margin: 5px;
@@ -66,60 +184,106 @@
     border-radius: 5px;
     transition: background-color 0.3s, transform 0.2s;
 }
+
 .actionButton:hover {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(0,0,0,0.2);
 }
+
 .green {
     background-color: #4CAF50;
 }
+
 .red {
     background-color: #f44336;
 }
+
 .hidden {
     display: none;
 }
+
 .roundDisplay {
     padding: 10px;
     font-size: 20px;
     text-align: center;
     display: block;            
 }
+
 .flash {
     outline: 3px solid orange;
     transition: outline 0.2s ease;
 }
+
+/* Mobile responsiveness */
+@media (max-width: 1024px) {
+    body {
+        flex-direction: column;
+    }
+    
+    .stats-sidebar {
+        width: 100%;
+        order: -1;
+        position: static;
+    }
+    
+    .main-game {
+        max-width: 100%;
+    }
+}
 </style>
 </head>
 <body>
-    <div style="height:500px;">
-        <div id="roundDisplay" class="roundDisplay"></div>
-        
-        <div class="panel-wrapper">
+    <div class="main-game">
+        <div style="height:500px;">
+            <div id="roundDisplay" class="roundDisplay"></div>
             
-            <div id="panelAchoice" class="panel">
-                <div class="panel-header">
-                    <div class="panel-name"> You </div>
+            <div class="panel-wrapper">
+                
+                <div id="panelAchoice" class="panel">
+                    <div class="panel-header">
+                        <div class="panel-name"> You </div>
+                    </div>
+                    <div id="actionPrompt" class="text">Press your button?</div>
+                    <button id="btnNo" class="actionButton red">No (free)</button>
+                    <button id="btnYes" class="actionButton green">Yes (cost $0.25)</button>
                 </div>
-                <div id="actionPrompt" class="text">Press your button?</div>
-                <button id="btnNo" class="actionButton red">No (free)</button>
-                <button id="btnYes" class="actionButton green">Yes (cost $0.25)</button>
+                
+                <div id="panelXinfo" class="panel hidden">
+                    <div class="panel-header">
+                        <img src="https://via.placeholder.com/50/4CAF50/FFFFFF?text=P1" class="panel-icon" alt="Player">
+                        <div class="panel-name">Player Alpha</div>
+                    </div>
+                    <div id="riskText" class="text">(press "c" to continue)</div>
+                </div>
+                
+                <div id="panelYinfo" class="panel hidden">
+                    <div class="panel-header">
+                        <img src="https://via.placeholder.com/50/2196F3/FFFFFF?text=P2" class="panel-icon" alt="Player">
+                        <div class="panel-name">Player Beta (determines your bonus)</div>
+                    </div>
+                    <div id="resultText" class="text">(press "space" to continue)</div>
+                </div>
             </div>
-            
-            <div id="panelXinfo" class="panel hidden">
-                <div class="panel-header">
-                    <img src="https://via.placeholder.com/50/4CAF50/FFFFFF?text=P1" class="panel-icon" alt="Player">
-                    <div class="panel-name">Player Alpha</div>
+        </div>
+    </div>
+
+    <div class="stats-sidebar">
+        <div class="stats-title">Player Influence Analysis</div>
+        <div class="stats-content">
+            <div class="influence-stat">
+                <div id="influenceText" class="influence-text">
+                    <div class="insufficient-data">Collecting data...</div>
                 </div>
-                <div id="riskText" class="text">(press "c" to continue)</div>
-            </div>
-            
-            <div id="panelYinfo" class="panel hidden">
-                <div class="panel-header">
-                    <img src="https://via.placeholder.com/50/2196F3/FFFFFF?text=P2" class="panel-icon" alt="Player">
-                    <div class="panel-name">Player Beta (determines your bonus)</div>
+                <div id="barContainer" class="bar-container" style="display: none;">
+                    <div class="bar-center"></div>
+                    <div id="barFill" class="bar-fill"></div>
                 </div>
-                <div id="resultText" class="text">(press "space" to continue)</div>
+                <div id="barLabels" class="bar-labels" style="display: none;">
+                    <span>-100%</span>
+                    <span>0%</span>
+                    <span>+100%</span>
+                </div>
+                <div id="dataCounts" class="data-counts"></div>
             </div>
         </div>
     </div>
@@ -127,7 +291,7 @@
 <script>
 /* ===================== DEFAULT CONFIGURATION ===================== */
 let gameConfig = {
-    nRounds: 10,
+    nRounds: 20,
     id: 1,
     yBonus: 1.0,
     aCost: 0.25,
@@ -164,6 +328,94 @@ const panelAchoice = document.getElementById("panelAchoice");
 const resultText = document.getElementById("resultText");
 const riskText = document.getElementById("riskText");
 const roundDisplay = document.getElementById("roundDisplay");
+
+/* ===================== STATISTICS FUNCTIONS ===================== */
+function updateStatistics() {
+    const influenceText = document.getElementById('influenceText');
+    const barContainer = document.getElementById('barContainer');
+    const barFill = document.getElementById('barFill');
+    const barLabels = document.getElementById('barLabels');
+    const dataCounts = document.getElementById('dataCounts');
+    
+    if (history.length === 0) {
+        influenceText.innerHTML = '<div class="insufficient-data">Collecting data...</div>';
+        barContainer.style.display = 'none';
+        barLabels.style.display = 'none';
+        dataCounts.textContent = '';
+        return;
+    }
+    
+    // Calculate statistics
+    const player1Pressed = history.filter(round => round[0] === 1); // A = 1 (Player Alpha pressed)
+    const player1NotPressed = history.filter(round => round[0] === 0); // A = 0 (Player Alpha didn't press)
+    
+    const player1PressedCount = player1Pressed.length;
+    const player1NotPressedCount = player1NotPressed.length;
+    
+    // Check if we have enough data (at least 5 cases for each scenario)
+    if (player1PressedCount < 5 || player1NotPressedCount < 5) {
+        const neededPressed = Math.max(0, 5 - player1PressedCount);
+        const neededNotPressed = Math.max(0, 5 - player1NotPressedCount);
+        
+        influenceText.innerHTML = '<div class="insufficient-data">[Insufficient data]</div>';
+        barContainer.style.display = 'none';
+        barLabels.style.display = 'none';
+        
+        let countText = `Player Alpha: pressed ${player1PressedCount}, not pressed ${player1NotPressedCount}`;
+        if (neededPressed > 0 || neededNotPressed > 0) {
+            countText += `<br>Need ${neededPressed} more pressed, ${neededNotPressed} more not pressed`;
+        }
+        dataCounts.innerHTML = countText;
+        return;
+    }
+    
+    // Calculate Player Beta's response rates
+    const player2PressedWhenPlayer1Pressed = player1Pressed.filter(round => round[2] === 1).length; // Y = 1
+    const player2PressedWhenPlayer1NotPressed = player1NotPressed.filter(round => round[2] === 1).length; // Y = 1
+    
+    const rateWhenPressed = player2PressedWhenPlayer1Pressed / player1PressedCount;
+    const rateWhenNotPressed = player2PressedWhenPlayer1NotPressed / player1NotPressedCount;
+    
+    // Calculate percentage difference
+    const percentageDifference = ((rateWhenPressed - rateWhenNotPressed) / rateWhenNotPressed) * 100;
+    
+    // Update text
+    const absPercentage = Math.abs(percentageDifference).toFixed(1);
+    const direction = percentageDifference > 0 ? 'more' : 'less';
+    const player1Name = gameConfig.playerName1 || 'Player Alpha';
+    const player2Name = gameConfig.playerName2 || 'Player Beta';
+    const player1Pronoun = gameConfig.playerPronoun1 || 'their';
+    const player2Pronoun = gameConfig.playerPronoun2 || 'their';
+    
+    influenceText.innerHTML = `If ${player1Name} pressed ${player1Pronoun} button, ${player2Name} pressed ${player2Pronoun} button ${absPercentage}% ${direction} often.`;
+    
+    // Update bar chart
+    barContainer.style.display = 'block';
+    barLabels.style.display = 'flex';
+    
+    // Calculate bar position and width
+    const clampedPercentage = Math.max(-100, Math.min(100, percentageDifference));
+    const barWidth = Math.abs(clampedPercentage) / 2; // 0-50% width (since bar goes from center)
+    
+    if (clampedPercentage >= 0) {
+        // Positive influence - green bar extending right from center
+        barFill.className = 'bar-fill bar-positive';
+        barFill.style.left = '50%';
+        barFill.style.width = `${barWidth}%`;
+    } else {
+        // Negative influence - red bar extending left from center
+        barFill.className = 'bar-fill bar-negative';
+        barFill.style.right = '50%';
+        barFill.style.width = `${barWidth}%`;
+        barFill.style.left = 'auto';
+    }
+    
+    // Update data counts
+    dataCounts.innerHTML = `
+        When pressed: ${player2PressedWhenPlayer1Pressed}/${player1PressedCount} (${(rateWhenPressed * 100).toFixed(1)}%)<br>
+        When not pressed: ${player2PressedWhenPlayer1NotPressed}/${player1NotPressedCount} (${(rateWhenNotPressed * 100).toFixed(1)}%)
+    `;
+}
 
 /* =============== QUALTRICS COMMUNICATION =============== */
 function sendDataToQualtrics(dataType, data) {
@@ -241,6 +493,9 @@ function handleDecision(decision) {
 
     history.push([A, X, Y]);
     payment.push(-gameConfig.aCost*A + gameConfig.yBonus*Y);
+    
+    // Update statistics after each round
+    updateStatistics();
     
     // Send round data to Qualtrics
     sendDataToQualtrics('ROUND_DATA', {
