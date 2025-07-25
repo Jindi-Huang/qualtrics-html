@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Button Game</title>
+<style>
+.panel-wrapper {
+    background: hsl(200 70% 85%);
+    border-radius: 10px;
+    padding: 10px;
+    max-width: 610px;
+    justify-content: center;
+    margin: auto;
+}
+.panel {
+    position: relative;
+    width: 90%;
+    max-width: 600px; 
+    height: 150px; 
+    display: flex;
+    flex-direction: column; 
+    justify-content: center;
+    align-items: center;
+    background-color: white;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    transition: background-color 0.3s;
+    margin: 0px auto;
+}
+.panel-header {
+    position: absolute;
+    top: 10px;
+    left: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.panel-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.panel-name {
+    font-weight: bold;
+    font-size: 23px;
+    color: #333;
+}
+.text {
+    text-align: center;
+    font-size: 18px;
+    padding: 10px;
+    color: #333;
+    transition: color 0.3s;
+    margin-top: 0;
+}
+.actionButton {
+    padding: 10px 20px;
+    margin: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    border: none;
+    color: white;
+    border-radius: 5px;
+    transition: background-color 0.3s, transform 0.2s;
+}
+.actionButton:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+.green {
+    background-color: #4CAF50;
+}
+.red {
+    background-color: #f44336;
+}
+.hidden {
+    display: none;
+}
+.roundDisplay {
+    padding: 10px;
+    font-size: 20px;
+    text-align: center;
+    display: block;            
+}
+.flash {
+    outline: 3px solid orange;
+    transition: outline 0.2s ease;
+}
+</style>
+</head>
+<body>
+    <div style="height:500px;">
+        <div id="roundDisplay" class="roundDisplay"></div>
+        
+        <div class="panel-wrapper">
+            
+            <div id="panelAchoice" class="panel">
+                <div class="panel-header">
+                    <div class="panel-name"> You </div>
+                </div>
+                <div id="actionPrompt" class="text">Press your button?</div>
+                <button id="btnNo" class="actionButton red">No (free)</button>
+                <button id="btnYes" class="actionButton green">Yes (cost $0.25)</button>
+            </div>
+            
+            <div id="panelXinfo" class="panel hidden">
+                <div class="panel-header">
+                    <img src="https://via.placeholder.com/50/4CAF50/FFFFFF?text=P1" class="panel-icon" alt="Player">
+                    <div class="panel-name">Player Alpha</div>
+                </div>
+                <div id="riskText" class="text">(press "c" to continue)</div>
+            </div>
+            
+            <div id="panelYinfo" class="panel hidden">
+                <div class="panel-header">
+                    <img src="https://via.placeholder.com/50/2196F3/FFFFFF?text=P2" class="panel-icon" alt="Player">
+                    <div class="panel-name">Player Beta (determines your bonus)</div>
+                </div>
+                <div id="resultText" class="text">(press "space" to continue)</div>
+            </div>
+        </div>
+    </div>
+
+<script>
+/* ===================== DEFAULT CONFIGURATION ===================== */
+let gameConfig = {
+    nRounds: 10,
+    id: 1,
+    yBonus: 1.0,
+    aCost: 0.25,
+    pY: 0.5,
+    playerName1: "Player Alpha",
+    playerName2: "Player Beta", 
+    playerPronoun1: "their",
+    playerPronoun2: "their",
+    noise: 0.1,
+    causal: 0,
+    playerIcon1: "https://via.placeholder.com/50/4CAF50/FFFFFF?text=P1",
+    playerIcon2: "https://via.placeholder.com/50/2196F3/FFFFFF?text=P2",
+    currentHue: 200
+};
+
+let participantId = null;
+
+/* ========================= GAME STATE ========================= */
+let roundCounter = 0;
+let X, A, Y;
+let history = [];
+let payment = [];
+let roundTimes = [];
+let roundStartTime = 0;
+let xReady = false;
+let colorDisplayed = false;
+
+/* ========================== DOM ELEMENTS ========================== */
+const btnNo = document.getElementById("btnNo");
+const btnYes = document.getElementById("btnYes");
+const panelXinfo = document.getElementById("panelXinfo");
+const panelYinfo = document.getElementById("panelYinfo");
+const panelAchoice = document.getElementById("panelAchoice");
+const resultText = document.getElementById("resultText");
+const riskText = document.getElementById("riskText");
+const roundDisplay = document.getElementById("roundDisplay");
+
+/* =============== QUALTRICS COMMUNICATION =============== */
+function sendDataToQualtrics(dataType, data) {
+    if (window.parent !== window) {
+        window.parent.postMessage({
+            type: 'GAME_DATA',
+            dataType: dataType,
+            data: data,
+            participantId: participantId,
+            timestamp: new Date().toISOString()
+        }, '*');
+    }
+}
+
+// Listen for initialization from Qualtrics
+window.addEventListener('message', function(event) {
+    if (event.data.type === 'INIT') {
+        participantId = event.data.participantId;
+        console.log('Initialized with participant ID:', participantId);
+        
+        // Apply game configuration from Qualtrics
+        if (event.data.gameConfig) {
+            const config = event.data.gameConfig;
+            console.log('Received game config from Qualtrics:', config);
+            
+            // Update configuration
+            gameConfig = { ...gameConfig, ...config };
+            
+            // Apply visual updates
+            applyGameConfiguration();
+        }
+    }
+});
+
+function applyGameConfiguration() {
+    // Update button text
+    btnYes.textContent = `Yes (cost $${gameConfig.aCost})`;
+    
+    // Update player names and icons
+    const playerName1El = document.querySelector('#panelXinfo .panel-name');
+    const playerName2El = document.querySelector('#panelYinfo .panel-name');
+    const playerIcon1El = document.querySelector('#panelXinfo .panel-icon');
+    const playerIcon2El = document.querySelector('#panelYinfo .panel-icon');
+    
+    if (playerName1El) playerName1El.textContent = gameConfig.playerName1;
+    if (playerName2El) playerName2El.textContent = `${gameConfig.playerName2} (determines your bonus)`;
+    if (playerIcon1El) playerIcon1El.src = gameConfig.playerIcon1;
+    if (playerIcon2El) playerIcon2El.src = gameConfig.playerIcon2;
+    
+    // Update panel wrapper background
+    const panelWrapper = document.querySelector('.panel-wrapper');
+    if (panelWrapper) {
+        panelWrapper.style.background = `hsl(${gameConfig.currentHue} 70% 85%)`;
+    }
+}
+
+/* ===================== GAME LOGIC ===================== */
+function handleDecision(decision) {
+    if (!panelAchoice || panelAchoice.style.display !== 'flex') return;
+    btnYes.disabled = btnNo.disabled = true;
+    (decision === 'y' ? btnYes : btnNo).classList.add("flash");
+    setTimeout(() => (decision === 'y' ? btnYes : btnNo).classList.remove("flash"), 200);
+
+    A = decision === 'y' ? 1 : 0;
+    if (gameConfig.causal === 0) {
+        const pX = [gameConfig.noise, 1-gameConfig.noise, 1-gameConfig.noise, 1-gameConfig.noise];
+        Y = Math.random() < gameConfig.pY ? 1 : 0;
+        X = Math.random() < pX[A*2 + Y] ? 1 : 0;
+    } else {
+        const pX = [gameConfig.noise, 1-gameConfig.noise];
+        const pY = [gameConfig.noise, 1-gameConfig.noise];
+        X = Math.random() < pX[A] ? 1 : 0;
+        Y = Math.random() < pY[X] ? 1 : 0;
+    }
+
+    history.push([A, X, Y]);
+    payment.push(-gameConfig.aCost*A + gameConfig.yBonus*Y);
+    
+    // Send round data to Qualtrics
+    sendDataToQualtrics('ROUND_DATA', {
+        round: roundCounter,
+        playerA: A,
+        playerX: X,
+        playerY: Y,
+        payment: payment[payment.length - 1],
+        decisionTime: (Date.now() - roundStartTime) / 1000
+    });
+    
+    xReady = false;
+    colorDisplayed = false;
+
+    setTimeout(() => {
+        panelXinfo.style.backgroundColor = X ? "green" : "red";
+        riskText.innerHTML = X
+            ? `<br>${gameConfig.playerName1} pressed ${gameConfig.playerPronoun1} button <br>(press "c" to continue)`
+            : `<br>${gameConfig.playerName1} did <u>not</u> press ${gameConfig.playerPronoun1} button <br>(press "c" to continue)`;
+        panelYinfo.style.backgroundColor = "white";
+        xReady = true;
+    }, 200);
+}
+
+function handleKeyPress(e) {
+    if (['y','n'].includes(e.key) && !btnYes.disabled) handleDecision(e.key);
+    else if (e.key === 'c' && xReady) {
+        panelYinfo.style.backgroundColor = Y ? "green" : "red";
+        resultText.innerHTML = Y
+            ? `<br>${gameConfig.playerName2} pressed ${gameConfig.playerPronoun2} button (bonus $${gameConfig.yBonus})<br> press 'space' to continue)`
+            : `<br>${gameConfig.playerName2} did <u>not</u> press ${gameConfig.playerPronoun2} button (no bonus)<br>(press 'space' to continue)`;
+        xReady = false;
+        colorDisplayed = true;
+    }
+    else if (e.key === ' ' && colorDisplayed) {
+        let roundEnd = Date.now();
+        roundTimes.push((roundEnd - roundStartTime) / 1000);
+        if (roundCounter <= gameConfig.nRounds) {
+            nextRound();
+            colorDisplayed = false;
+        }
+    }
+}
+
+function initiateRound() {
+    panelAchoice.style.display =
+    panelXinfo.style.display =
+    panelYinfo.style.display = "none";
+    setTimeout(() => {
+        showActionPanels();
+    }, 500);
+}
+
+function nextRound() {
+    // Send data to Qualtrics after each round
+    sendDataToQualtrics('PROGRESS_DATA', {
+        currentRound: roundCounter,
+        history: history,
+        roundTimes: roundTimes,
+        payment: payment
+    });
+    
+    if (roundCounter < gameConfig.nRounds) {
+        roundCounter++;
+        roundDisplay.textContent = `Round ${roundCounter} of ${gameConfig.nRounds}`;
+        initiateRound();
+    } else if (roundCounter === gameConfig.nRounds) {
+        // Send final data
+        const totalPayment = payment.reduce((sum, p) => sum + p, 0);
+        const avgDecisionTime = roundTimes.reduce((sum, t) => sum + t, 0) / roundTimes.length;
+        
+        sendDataToQualtrics('FINAL_DATA', {
+            history: history,
+            roundTimes: roundTimes,
+            payment: payment,
+            totalPayment: totalPayment,
+            avgDecisionTime: avgDecisionTime,
+            config: gameConfig
+        });
+        
+        console.log("Game completed!");
+        console.log("History:", history);
+        console.log("Times:", roundTimes);
+        console.log("Payments:", payment);
+        
+        // Notify Qualtrics that game is complete
+        sendDataToQualtrics('GAME_COMPLETE', { completed: true });
+    }
+}
+
+function showActionPanels() {
+    panelAchoice.style.display = "flex";
+    panelXinfo.style.display = "flex";
+    panelYinfo.style.display = "flex";
+    panelXinfo.style.backgroundColor =
+    panelYinfo.style.backgroundColor = "white";
+    riskText.textContent = resultText.textContent = "";
+    btnYes.disabled = btnNo.disabled = false;
+    roundStartTime = Date.now();
+}
+
+/* ===================== EVENT LISTENERS ===================== */
+btnYes.addEventListener("click", () => handleDecision('y'));
+btnNo.addEventListener("click", () => handleDecision('n'));
+document.addEventListener("keydown", handleKeyPress);
+
+// Add borders for panels
+[panelAchoice, panelXinfo, panelYinfo].forEach(p => p.style.border = "1px solid black");
+
+/* ===================== INITIALIZE GAME ===================== */
+// Apply initial configuration
+applyGameConfiguration();
+
+// Send game start notification
+setTimeout(() => {
+    sendDataToQualtrics('GAME_START', { started: true });
+    nextRound();
+}, 100);
+
+</script>
+</body>
+</html>
