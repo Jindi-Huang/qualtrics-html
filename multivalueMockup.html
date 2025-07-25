@@ -109,6 +109,32 @@ window.addEventListener('message', function(event) {
   if (event.data.type === 'INIT') {
     participantId = event.data.participantId;
     console.log('Initialized with participant ID:', participantId);
+    
+    // Apply game configuration from Qualtrics
+    if (event.data.gameConfig) {
+      const config = event.data.gameConfig;
+      console.log('Received game config from Qualtrics:', config);
+      
+      // Update configuration based on Qualtrics data
+      if (config.nRounds !== undefined) {
+        cfg.nRounds = config.nRounds;
+        console.log('Updated nRounds to:', cfg.nRounds);
+      }
+      if (config.K !== undefined) {
+        cfg.K = config.K;
+      }
+      if (config.aCost !== undefined) {
+        cfg.aCost = config.aCost;
+      }
+      if (config.yBonus !== undefined) {
+        cfg.yBonus = config.yBonus;
+      }
+      
+      // Rebuild action buttons if K changed
+      if (config.K !== undefined) {
+        rebuildActionButtons();
+      }
+    }
   }
 });
 
@@ -145,15 +171,25 @@ function sampleFromPMF(pmf){
 }
 
 /* =============== BUILD ACTION BUTTONS (1…K) =============== */
-actionPrompt.textContent=`Choose an action (1–${cfg.K})`;
-for(let k=1;k<=cfg.K;k++){
-  const b=document.createElement('button');
-  b.textContent=k;
-  b.className='actionButton';
-  b.style.background=valueToColor(k,cfg.K);
-  b.onclick=()=>handleDecision(k,b);
-  btnBox.appendChild(b);
+function buildActionButtons() {
+  btnBox.innerHTML = ''; // Clear existing buttons
+  actionPrompt.textContent=`Choose an action (1–${cfg.K})`;
+  for(let k=1;k<=cfg.K;k++){
+    const b=document.createElement('button');
+    b.textContent=k;
+    b.className='actionButton';
+    b.style.background=valueToColor(k,cfg.K);
+    b.onclick=()=>handleDecision(k,b);
+    btnBox.appendChild(b);
+  }
 }
+
+function rebuildActionButtons() {
+  buildActionButtons();
+}
+
+// Initial button setup
+buildActionButtons();
 
 /* ===================== CORE DECISION ===================== */
 function handleDecision(aVal,btn){
