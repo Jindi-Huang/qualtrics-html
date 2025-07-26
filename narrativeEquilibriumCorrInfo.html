@@ -28,6 +28,7 @@ body {
 .stats-section {
     width: 200px;
     flex-shrink: 0;
+    margin-top: 50px;
 }
 
 .roundDisplay {
@@ -111,13 +112,25 @@ body {
 }
 
 /* Statistics */
+.stats-container {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
 .stat-box {
     background: white;
     border-radius: 6px;
     padding: 12px;
     margin-bottom: 15px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
     font-size: 11px;
+}
+
+.stat-box:last-child {
+    margin-bottom: 30px;
 }
 
 .stat-text {
@@ -133,7 +146,7 @@ body {
     border-radius: 8px;
     position: relative;
     overflow: hidden;
-    margin: 6px 0;
+    margin: 6px 0px;
 }
 
 .bar-center {
@@ -186,7 +199,7 @@ body {
 }
 
 /* Position stats relative to panels */
-.stat-1 { margin-top: 0; }
+.stat-1 { margin-top: 50px; }
 .stat-2 { margin-top: 20px; }
 </style>
 </head>
@@ -222,36 +235,38 @@ body {
         </div>
         
         <div class="stats-section">
-            <div class="stat-box stat-1">
-                <div id="influenceText1" class="stat-text">
-                    <div class="insufficient-data">Collecting data...</div>
+            <div class="stats-container">
+                <div class="stat-box stat-1">
+                    <div id="influenceText1" class="stat-text">
+                        <div class="insufficient-data">Collecting data... <br><br><br><br><br><br><br></div>
+                    </div>
+                    <div id="barContainer1" class="bar-container" style="display: none;">
+                        <div class="bar-center"></div>
+                        <div id="barFill1" class="bar-fill"></div>
+                    </div>
+                    <div id="barLabels1" class="bar-labels" style="display: none;">
+                        <span>-100%</span>
+                        <span>0%</span>
+                        <span>+100%</span>
+                    </div>
+                    <div id="dataCounts1" class="data-counts"></div>
                 </div>
-                <div id="barContainer1" class="bar-container" style="display: none;">
-                    <div class="bar-center"></div>
-                    <div id="barFill1" class="bar-fill"></div>
+                
+                <div class="stat-box stat-2">
+                    <div id="influenceText2" class="stat-text">
+                        <div class="insufficient-data">Collecting data...<br><br><br><br><br><br><br></div>
+                    </div>
+                    <div id="barContainer2" class="bar-container" style="display: none;">
+                        <div class="bar-center"></div>
+                        <div id="barFill2" class="bar-fill"></div>
+                    </div>
+                    <div id="barLabels2" class="bar-labels" style="display: none;">
+                        <span>-100%</span>
+                        <span>0%</span>
+                        <span>+100%</span>
+                    </div>
+                    <div id="dataCounts2" class="data-counts"></div>
                 </div>
-                <div id="barLabels1" class="bar-labels" style="display: none;">
-                    <span>-100%</span>
-                    <span>0%</span>
-                    <span>+100%</span>
-                </div>
-                <div id="dataCounts1" class="data-counts"></div>
-            </div>
-            
-            <div class="stat-box stat-2">
-                <div id="influenceText2" class="stat-text">
-                    <div class="insufficient-data">Collecting data...</div>
-                </div>
-                <div id="barContainer2" class="bar-container" style="display: none;">
-                    <div class="bar-center"></div>
-                    <div id="barFill2" class="bar-fill"></div>
-                </div>
-                <div id="barLabels2" class="bar-labels" style="display: none;">
-                    <span>-100%</span>
-                    <span>0%</span>
-                    <span>+100%</span>
-                </div>
-                <div id="dataCounts2" class="data-counts"></div>
             </div>
         </div>
     </div>
@@ -310,13 +325,6 @@ function updateSingleStat(statNum, player1Name, player2Name) {
     const barLabels = document.getElementById(`barLabels${statNum}`);
     const dataCounts = document.getElementById(`dataCounts${statNum}`);
     
-    if (history.length === 0) {
-        influenceText.innerHTML = '<div class="insufficient-data">Collecting data...</div>';
-        barContainer.style.display = 'none';
-        barLabels.style.display = 'none';
-        dataCounts.textContent = '';
-        return;
-    }
     
     // For stat 1: A->X relationship, for stat 2: X->Y relationship
     let condition1Data, condition0Data;
@@ -334,12 +342,8 @@ function updateSingleStat(statNum, player1Name, player2Name) {
     
     // Check if we have enough data (at least 3 cases for each scenario)
     if (condition1Count < 3 || condition0Count < 3) {
-        influenceText.innerHTML = '<div class="insufficient-data">[Insufficient data]</div>';
         barContainer.style.display = 'none';
         barLabels.style.display = 'none';
-        
-        let countText = `Pressed: ${condition1Count}, Not pressed: ${condition0Count}`;
-        dataCounts.innerHTML = countText;
         return;
     }
     
@@ -364,7 +368,7 @@ function updateSingleStat(statNum, player1Name, player2Name) {
     const absPercentage = Math.abs(percentageDifference).toFixed(1);
     const direction = percentageDifference > 0 ? 'more' : 'less';
     
-    influenceText.innerHTML = `If ${player1Name} pressed, ${player2Name} pressed ${absPercentage}% ${direction} often.`;
+    influenceText.innerHTML = `If ${player1Name} pressed, ${player2Name} pressed ${absPercentage} percentage points ${direction} often.`;
     
     // Update bar chart
     barContainer.style.display = 'block';
