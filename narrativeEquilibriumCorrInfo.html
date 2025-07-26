@@ -22,11 +22,11 @@ body {
 
 .panels-section {
     flex: 1;
-    min-width: 400px;
+    min-width: 500px;
 }
 
 .stats-section {
-    width: 200px;
+    width: 300px;
     flex-shrink: 0;
     margin-top: 50px;
 }
@@ -180,12 +180,12 @@ body {
 .bar-labels {
     display: flex;
     justify-content: space-between;
-    font-size: 8px;
+    font-size: 10px;
     color: #666;
 }
 
 .data-counts {
-    font-size: 9px;
+    font-size: 10px;
     color: #666;
     text-align: center;
     margin-top: 4px;
@@ -195,7 +195,7 @@ body {
     text-align: center;
     color: #999;
     font-style: italic;
-    font-size: 10px;
+    font-size: 12px;
 }
 
 /* Position stats relative to panels */
@@ -557,11 +557,11 @@ function handleKeyPress(e) {
         if (gameConfig.treatment === "exo" && isPlayerChoice) {
             // Exogenous treatment, player choice round: hide outcomes, show generic message
             panelYinfo.style.backgroundColor = "lightgray";
-            resultText.innerHTML = `${gameConfig.playerName2} has made ${gameConfig.playerPronoun2} decision<br>(press 'space' to continue)`;
+            resultText.innerHTML = `<br>${gameConfig.playerName2} has made ${gameConfig.playerPronoun2} decision.<br>(press 'space' to continue)`;
         } else if (gameConfig.treatment === "endog" && !isPlayerChoice) {
             // Endogenous treatment, forced round: show generic message
             panelYinfo.style.backgroundColor = "lightgray";
-            resultText.innerHTML = `${gameConfig.playerName2} has made ${gameConfig.playerPronoun2} decision<br>(press 'space' to continue)`;
+            resultText.innerHTML = `<br>${gameConfig.playerName2} has made ${gameConfig.playerPronoun2} decision.<br>(press 'space' to continue)`;
         } else {
             // Show actual outcome (endogenous player choice OR exogenous forced rounds)
             panelYinfo.style.backgroundColor = Y ? "green" : "red";
