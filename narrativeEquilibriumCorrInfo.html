@@ -19,25 +19,28 @@ body {
 }
 
 .game-container {
-    display: flex;
+    display: flex !important;
     align-items: flex-start;
     gap: 0px;
+    flex-direction: row !important; /* Force horizontal layout */
 }
 
 .panels-section {
-   width: 420px;
+    width: 420px !important;
+    flex-shrink: 0; /* Prevent shrinking */
 }
 
 .stats-sidebar {
-    width: 100px;
+    width: 210px !important;
+    flex-shrink: 0; /* Prevent shrinking */
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     border-radius: 0px;
     padding: 0px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     height: 400px;
     margin-top: 40px; 
-
 }
+
 
 .stats-content {
     font-size: 11px;
@@ -218,21 +221,7 @@ body {
     transition: outline 0.2s ease;
 }
 
-/* Mobile responsiveness */
-@media (max-width: 1024px) {
-    .game-container {
-        flex-direction: column;
-    }
-    
-    .stats-sidebar {
-        width: 100%;
-        position: static;
-    }
-    
-    .panels-section {
-        max-width: 100%;
-    }
-}
+
 </style>
 </head>
 <body>
