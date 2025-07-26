@@ -7,145 +7,51 @@
 body {
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     margin: 0;
-    padding: 10px;
-    min-height: 100vh;
-}
-
-.main-game {
-    width: 650px;
-    margin: 0 auto;
+    padding: 0;
     background: hsl(200 70% 85%);
-    height: 450px;
+    overflow-x: hidden;
 }
 
 .game-container {
-    display: flex !important;
+    display: flex;
+    max-width: 650px;
+    margin: 20px auto;
+    gap: 15px;
     align-items: flex-start;
-    gap: 0px;
-    flex-direction: row !important; /* Force horizontal layout */
 }
 
 .panels-section {
-    width: 420px !important;
-    flex-shrink: 0; /* Prevent shrinking */
+    flex: 1;
+    min-width: 400px;
 }
 
-.stats-sidebar {
-    width: 210px !important;
-    flex-shrink: 0; /* Prevent shrinking */
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border-radius: 0px;
-    padding: 0px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    height: 400px;
-    margin-top: 40px; 
+.stats-section {
+    width: 200px;
+    flex-shrink: 0;
 }
 
-
-.stats-content {
-    font-size: 11px;
-    color: #6c757d;
-}
-
-.influence-stat1 {
-    background: white;
-    border-radius: 6px;
-    padding: 10px;
-    margin-top: 40px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    height: 100px;
-}
-
-.influence-stat2 {
-    background: white;
-    border-radius: 6px;
-    padding: 10px;
-    margin-top: 68px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    height: 100px;
-}
-
-.influence-text {
-    margin-bottom: 6px;
-    line-height: 1.2;
-    font-weight: 500;
-    font-size: 11px;
-}
-
-.bar-container {
-    background: #e9ecef;
-    height: 18px;
-    border-radius: 9px;
-    position: relative;
-    overflow: hidden;
-}
-
-.bar-center {
-    position: absolute;
-    left: 50%;
-    top: 0;
-    width: 1px;
-    height: 100%;
-    background: #495057;
-    z-index: 2;
-}
-
-.bar-fill {
-    height: 100%;
-    border-radius: 9px;
-    transition: all 0.3s ease;
-    position: absolute;
-    z-index: 1;
-}
-
-.bar-positive {
-    background: linear-gradient(90deg, #28a745, #20c997);
-    left: 50%;
-}
-
-.bar-negative {
-    background: linear-gradient(90deg, #dc3545, #fd7e14);
-    right: 50%;
-}
-
-.bar-labels {
-    display: flex;
-    justify-content: space-between;
-    font-size: 8px;
-    color: #6c757d;
-    margin-top: 2px;
-}
-
-.insufficient-data {
+.roundDisplay {
+    font-size: 18px;
     text-align: center;
-    color: #6c757d;
-    font-style: italic;
-    padding: 12px 0;
-    font-size: 10px;
+    padding: 10px 0;
+    margin-bottom: 10px;
+    color: #333;
+    font-weight: bold;
 }
-
-.data-counts {
-    font-size: 9px;
-    color: #868e96;
-    margin-top: 4px;
-    text-align: center;
-}
-
 
 .panel {
     position: relative;
-    width: 90%;
-    max-width: 450px; 
-    height: 130px; 
+    width: 100%;
+    height: 120px;
     display: flex;
-    flex-direction: column; 
+    flex-direction: column;
     justify-content: center;
     align-items: center;
-    background-color: white;
-    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.1);
+    background: white;
     border-radius: 8px;
-    transition: background-color 0.3s;
-    margin: 0px auto;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 10px;
+    border: 1px solid black;
 }
 
 .panel-header {
@@ -161,7 +67,6 @@ body {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    object-fit: cover;
     border: 2px solid #fff;
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
@@ -177,7 +82,6 @@ body {
     font-size: 16px;
     padding: 8px;
     color: #333;
-    transition: color 0.3s;
     margin-top: 0;
 }
 
@@ -197,108 +101,157 @@ body {
     box-shadow: 0 5px 15px rgba(0,0,0,0.2);
 }
 
-.green {
-    background-color: #4CAF50;
-}
-
-.red {
-    background-color: #f44336;
-}
-
-.hidden {
-    display: none;
-}
-
-.roundDisplay {
-    padding: 8px;
-    font-size: 18px;
-    text-align: center;
-    display: block;            
-}
+.green { background-color: #4CAF50; }
+.red { background-color: #f44336; }
+.hidden { display: none; }
 
 .flash {
     outline: 3px solid orange;
     transition: outline 0.2s ease;
 }
 
+/* Statistics */
+.stat-box {
+    background: white;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    font-size: 11px;
+}
 
+.stat-text {
+    margin-bottom: 8px;
+    line-height: 1.3;
+    font-weight: 500;
+    color: #333;
+}
+
+.bar-container {
+    background: #e9ecef;
+    height: 16px;
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+    margin: 6px 0;
+}
+
+.bar-center {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 1px;
+    height: 100%;
+    background: #495057;
+    z-index: 2;
+}
+
+.bar-fill {
+    height: 100%;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    position: absolute;
+    z-index: 1;
+}
+
+.bar-positive {
+    background: linear-gradient(90deg, #28a745, #20c997);
+    left: 50%;
+}
+
+.bar-negative {
+    background: linear-gradient(90deg, #dc3545, #fd7e14);
+    right: 50%;
+}
+
+.bar-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 8px;
+    color: #666;
+}
+
+.data-counts {
+    font-size: 9px;
+    color: #666;
+    text-align: center;
+    margin-top: 4px;
+}
+
+.insufficient-data {
+    text-align: center;
+    color: #999;
+    font-style: italic;
+    font-size: 10px;
+}
+
+/* Position stats relative to panels */
+.stat-1 { margin-top: 0; }
+.stat-2 { margin-top: 20px; }
 </style>
 </head>
 <body>
-    <div class="main-game">
-        <div style="height:500px;">
+    <div class="game-container">
+        <div class="panels-section">
+            <div id="roundDisplay" class="roundDisplay"></div>
             
+            <div id="panelAchoice" class="panel">
+                <div class="panel-header">
+                    <div class="panel-name">You</div>
+                </div>
+                <div id="actionPrompt" class="text">Press your button?</div>
+                <button id="btnNo" class="actionButton red">No (free)</button>
+                <button id="btnYes" class="actionButton green">Yes (cost $0.25)</button>
+            </div>
             
-            <div class="game-container">
-                <div class="panels-section">
-                  <div id="roundDisplay" class="roundDisplay"></div>
-                    <div class="panel-wrapper">
-                        <div id="panelAchoice" class="panel">
-                            <div class="panel-header">
-                                <div class="panel-name"> You </div>
-                            </div>
-                            <div id="actionPrompt" class="text">Press your button?</div>
-                            <button id="btnNo" class="actionButton red">No (free)</button>
-                            <button id="btnYes" class="actionButton green">Yes (cost $0.25)</button>
-                        </div>
-                    </div>
-                    
-                    <div class="panel-wrapper">
-                        <div id="panelXinfo" class="panel hidden">
-                            <div class="panel-header">
-                                <img src="https://via.placeholder.com/40/4CAF50/FFFFFF?text=P1" class="panel-icon" alt="Player">
-                                <div class="panel-name">Player Alpha</div>
-                            </div>
-                            <div id="riskText" class="text">(press "c" to continue)</div>
-                        </div>
-                    </div>
-                    
-                    <div class="panel-wrapper">
-                        <div id="panelYinfo" class="panel hidden">
-                            <div class="panel-header">
-                                <img src="https://via.placeholder.com/40/2196F3/FFFFFF?text=P2" class="panel-icon" alt="Player">
-                                <div class="panel-name">Player Beta (determines your bonus)</div>
-                            </div>
-                            <div id="resultText" class="text">(press "space" to continue)</div>
-                        </div>
-                    </div>
+            <div id="panelXinfo" class="panel hidden">
+                <div class="panel-header">
+                    <img src="https://via.placeholder.com/40/4CAF50/FFFFFF?text=P1" class="panel-icon" alt="Player">
+                    <div class="panel-name">Player A</div>
                 </div>
-                
-                <div class="stats-sidebar">
-                    <div class="stats-content">
-                        <div class="influence-stat1">
-                            <div id="influenceText1" class="influence-text">
-                                <div class="insufficient-data">Collecting data...</div>
-                            </div>
-                            <div id="barContainer1" class="bar-container" style="display: none;">
-                                <div class="bar-center"></div>
-                                <div id="barFill1" class="bar-fill"></div>
-                            </div>
-                            <div id="barLabels1" class="bar-labels" style="display: none;">
-                                <span>-100%</span>
-                                <span>0%</span>
-                                <span>+100%</span>
-                            </div>
-                            <div id="dataCounts1" class="data-counts"></div>
-                        </div>
-                        
-                        <div class="influence-stat2">
-                            <div id="influenceText2" class="influence-text">
-                                <div class="insufficient-data">Collecting data...</div>
-                            </div>
-                            <div id="barContainer2" class="bar-container" style="display: none;">
-                                <div class="bar-center"></div>
-                                <div id="barFill2" class="bar-fill"></div>
-                            </div>
-                            <div id="barLabels2" class="bar-labels" style="display: none;">
-                                <span>-100%</span>
-                                <span>0%</span>
-                                <span>+100%</span>
-                            </div>
-                            <div id="dataCounts2" class="data-counts"></div>
-                        </div>
-                    </div>
+                <div id="riskText" class="text">(press "c" to continue)</div>
+            </div>
+            
+            <div id="panelYinfo" class="panel hidden">
+                <div class="panel-header">
+                    <img src="https://via.placeholder.com/40/2196F3/FFFFFF?text=P2" class="panel-icon" alt="Player">
+                    <div class="panel-name">Player B (determines your bonus)</div>
                 </div>
+                <div id="resultText" class="text">(press "space" to continue)</div>
+            </div>
+        </div>
+        
+        <div class="stats-section">
+            <div class="stat-box stat-1">
+                <div id="influenceText1" class="stat-text">
+                    <div class="insufficient-data">Collecting data...</div>
+                </div>
+                <div id="barContainer1" class="bar-container" style="display: none;">
+                    <div class="bar-center"></div>
+                    <div id="barFill1" class="bar-fill"></div>
+                </div>
+                <div id="barLabels1" class="bar-labels" style="display: none;">
+                    <span>-100%</span>
+                    <span>0%</span>
+                    <span>+100%</span>
+                </div>
+                <div id="dataCounts1" class="data-counts"></div>
+            </div>
+            
+            <div class="stat-box stat-2">
+                <div id="influenceText2" class="stat-text">
+                    <div class="insufficient-data">Collecting data...</div>
+                </div>
+                <div id="barContainer2" class="bar-container" style="display: none;">
+                    <div class="bar-center"></div>
+                    <div id="barFill2" class="bar-fill"></div>
+                </div>
+                <div id="barLabels2" class="bar-labels" style="display: none;">
+                    <span>-100%</span>
+                    <span>0%</span>
+                    <span>+100%</span>
+                </div>
+                <div id="dataCounts2" class="data-counts"></div>
             </div>
         </div>
     </div>
@@ -311,8 +264,8 @@ let gameConfig = {
     yBonus: 1.0,
     aCost: 0.25,
     pY: 0.5,
-    playerName1: "Player Alpha",
-    playerName2: "Player Beta", 
+    playerName1: "Player A",
+    playerName2: "Player B", 
     playerPronoun1: "their",
     playerPronoun2: "their",
     noise: 0.1,
@@ -369,11 +322,9 @@ function updateSingleStat(statNum, player1Name, player2Name) {
     let condition1Data, condition0Data;
     
     if (statNum === 1) {
-        // You -> Player1 (A -> X)
         condition1Data = history.filter(round => round[0] === 1); // A = 1
         condition0Data = history.filter(round => round[0] === 0); // A = 0
     } else {
-        // Player1 -> Player2 (X -> Y)
         condition1Data = history.filter(round => round[1] === 1); // X = 1
         condition0Data = history.filter(round => round[1] === 0); // X = 0
     }
@@ -383,30 +334,22 @@ function updateSingleStat(statNum, player1Name, player2Name) {
     
     // Check if we have enough data (at least 3 cases for each scenario)
     if (condition1Count < 3 || condition0Count < 3) {
-        const needed1 = Math.max(0, 3 - condition1Count);
-        const needed0 = Math.max(0, 3 - condition0Count);
-        
         influenceText.innerHTML = '<div class="insufficient-data">[Insufficient data]</div>';
         barContainer.style.display = 'none';
         barLabels.style.display = 'none';
         
         let countText = `Pressed: ${condition1Count}, Not pressed: ${condition0Count}`;
-        if (needed1 > 0 || needed0 > 0) {
-            countText += `<br>Need ${needed1} more pressed, ${needed0} more not pressed`;
-        }
         dataCounts.innerHTML = countText;
         return;
     }
     
     // Calculate response rates
-    let response1When1, response0When1, response1When0, response0When0;
+    let response1When1, response1When0;
     
     if (statNum === 1) {
-        // Count X responses when A = 1 or 0
         response1When1 = condition1Data.filter(round => round[1] === 1).length; // X = 1 when A = 1
         response1When0 = condition0Data.filter(round => round[1] === 1).length; // X = 1 when A = 0
     } else {
-        // Count Y responses when X = 1 or 0
         response1When1 = condition1Data.filter(round => round[2] === 1).length; // Y = 1 when X = 1
         response1When0 = condition0Data.filter(round => round[2] === 1).length; // Y = 1 when X = 0
     }
@@ -421,7 +364,7 @@ function updateSingleStat(statNum, player1Name, player2Name) {
     const absPercentage = Math.abs(percentageDifference).toFixed(1);
     const direction = percentageDifference > 0 ? 'more' : 'less';
     
-    influenceText.innerHTML = `If ${player1Name} pressed their button, ${player2Name} pressed their button ${absPercentage}% ${direction} often.`;
+    influenceText.innerHTML = `If ${player1Name} pressed, ${player2Name} pressed ${absPercentage}% ${direction} often.`;
     
     // Update bar chart
     barContainer.style.display = 'block';
@@ -429,20 +372,18 @@ function updateSingleStat(statNum, player1Name, player2Name) {
     
     // Calculate bar position and width
     const clampedPercentage = Math.max(-100, Math.min(100, percentageDifference));
-    const barWidth = Math.abs(clampedPercentage) / 2; // 0-50% width (since bar goes from center)
+    const barWidth = Math.abs(clampedPercentage) / 2; // 0-50% width
     
-    // Reset bar position first
+    // Reset bar position
     barFill.style.left = 'auto';
     barFill.style.right = 'auto';
     barFill.style.width = '0%';
     
     if (clampedPercentage >= 0) {
-        // Positive influence - green bar extending right from center
         barFill.className = 'bar-fill bar-positive';
         barFill.style.left = '50%';
         barFill.style.width = `${barWidth}%`;
     } else {
-        // Negative influence - red bar extending left from center
         barFill.className = 'bar-fill bar-negative';
         barFill.style.right = '50%';
         barFill.style.width = `${barWidth}%`;
@@ -474,25 +415,17 @@ window.addEventListener('message', function(event) {
         participantId = event.data.participantId;
         console.log('Initialized with participant ID:', participantId);
         
-        // Apply game configuration from Qualtrics
         if (event.data.gameConfig) {
             const config = event.data.gameConfig;
-            console.log('Received game config from Qualtrics:', config);
-            
-            // Update configuration
             gameConfig = { ...gameConfig, ...config };
-            
-            // Apply visual updates
             applyGameConfiguration();
         }
     }
 });
 
 function applyGameConfiguration() {
-    // Update button text
     btnYes.textContent = `Yes (cost $${gameConfig.aCost})`;
     
-    // Update player names and icons
     const playerName1El = document.querySelector('#panelXinfo .panel-name');
     const playerName2El = document.querySelector('#panelYinfo .panel-name');
     const playerIcon1El = document.querySelector('#panelXinfo .panel-icon');
@@ -503,11 +436,7 @@ function applyGameConfiguration() {
     if (playerIcon1El) playerIcon1El.src = gameConfig.playerIcon1;
     if (playerIcon2El) playerIcon2El.src = gameConfig.playerIcon2;
     
-    // Update panel wrapper background
-    const panelWrappers = document.querySelectorAll('.main-game');
-    panelWrappers.forEach(wrapper => {
-        wrapper.style.background = `hsl(${gameConfig.currentHue} 70% 85%)`;
-    });
+    document.body.style.background = `hsl(${gameConfig.currentHue} 70% 85%)`;
 }
 
 /* ===================== GAME LOGIC ===================== */
@@ -532,10 +461,8 @@ function handleDecision(decision) {
     history.push([A, X, Y]);
     payment.push(-gameConfig.aCost*A + gameConfig.yBonus*Y);
     
-    // Update statistics after each round
     updateStatistics();
     
-    // Send round data to Qualtrics
     sendDataToQualtrics('ROUND_DATA', {
         round: roundCounter,
         playerA: A,
@@ -588,7 +515,6 @@ function initiateRound() {
 }
 
 function nextRound() {
-    // Send data to Qualtrics after each round
     sendDataToQualtrics('PROGRESS_DATA', {
         currentRound: roundCounter,
         history: history,
@@ -601,7 +527,6 @@ function nextRound() {
         roundDisplay.textContent = `Round ${roundCounter} of ${gameConfig.nRounds}`;
         initiateRound();
     } else if (roundCounter === gameConfig.nRounds) {
-        // Send final data
         const totalPayment = payment.reduce((sum, p) => sum + p, 0);
         const avgDecisionTime = roundTimes.reduce((sum, t) => sum + t, 0) / roundTimes.length;
         
@@ -615,11 +540,6 @@ function nextRound() {
         });
         
         console.log("Game completed!");
-        console.log("History:", history);
-        console.log("Times:", roundTimes);
-        console.log("Payments:", payment);
-        
-        // Notify Qualtrics that game is complete
         sendDataToQualtrics('GAME_COMPLETE', { completed: true });
     }
 }
@@ -640,14 +560,9 @@ btnYes.addEventListener("click", () => handleDecision('y'));
 btnNo.addEventListener("click", () => handleDecision('n'));
 document.addEventListener("keydown", handleKeyPress);
 
-// Add borders for panels
-[panelAchoice, panelXinfo, panelYinfo].forEach(p => p.style.border = "1px solid black");
-
 /* ===================== INITIALIZE GAME ===================== */
-// Apply initial configuration
 applyGameConfiguration();
 
-// Send game start notification
 setTimeout(() => {
     sendDataToQualtrics('GAME_START', { started: true });
     nextRound();
