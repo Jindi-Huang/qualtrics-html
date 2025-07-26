@@ -565,7 +565,7 @@ function handleKeyPress(e) {
             // Show actual outcome (endogenous player choice OR exogenous forced rounds)
             panelYinfo.style.backgroundColor = Y ? "green" : "red";
             resultText.innerHTML = Y
-                ? `<br>${gameConfig.playerName2} pressed ${gameConfig.playerPronoun2} button (bonus ${gameConfig.yBonus})<br> press 'space' to continue)`
+                ? `<br>${gameConfig.playerName2} pressed ${gameConfig.playerPronoun2} button (bonus ${gameConfig.yBonus})<br> (press 'space' to continue)`
                 : `<br>${gameConfig.playerName2} did <u>not</u> press ${gameConfig.playerPronoun2} button (no bonus)<br>(press 'space' to continue)`;
         }
         xReady = false;
@@ -679,7 +679,7 @@ applyGameConfiguration();
 setTimeout(() => {
     sendDataToQualtrics('GAME_START', { started: true });
     nextRound();
-}, 100);
+}, 3000);
 
 </script>
 </body>
