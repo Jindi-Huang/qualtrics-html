@@ -547,6 +547,34 @@ function applyGameConfiguration() {
         if (playerName2El) playerName2El.textContent += " (determines your bonus)";
     }
     
+    // MOVE ELEMENTS BASED ON TREATMENT - Always reset first
+    // First, ensure all elements are back in their original positions
+    const originalPanel = panelAchoice;
+    const elementsToMove = [progressIndicator, choiceGrid, validationMessage, document.querySelector('.submit-container')];
+    
+    elementsToMove.forEach(element => {
+        if (element && element.parentNode !== originalPanel) {
+            element.parentNode.removeChild(element);
+            originalPanel.appendChild(element);
+        }
+    });
+    
+    // Now move to correct panel based on treatment
+    if (gameConfig.causalElicitType === "XY") {
+        // Move elements to Player A panel for XY treatment
+        elementsToMove.forEach(element => {
+            if (element && element.parentNode === originalPanel) {
+                element.parentNode.removeChild(element);
+                panelXinfo.appendChild(element);
+            }
+        });
+        
+        // Update Player A panel header
+        if (playerName1El) {
+            playerName1El.textContent = gameConfig.playerName1;
+        }
+    }
+    
     // Add lock icons for forced players
     clearLockIcons();
     if (gameConfig.causalElicitType === 'AY') {
@@ -562,7 +590,7 @@ function applyGameConfiguration() {
         panelAchoice.appendChild(lockIcon);
     }
     
-    // Update initial panel messages and move choice grid for XY treatment
+    // Update initial panel messages and backgrounds
     const messages = getMessages();
     riskText.innerHTML = messages.xMessage;
     resultText.innerHTML = messages.yMessage;
@@ -829,7 +857,7 @@ function getMessages() {
         yMessage = `${gameConfig.playerName2} will decide based on ${gameConfig.playerName1}'s forced choice`;
         yBackgroundColor = 'lightgray';
     } else if (gameConfig.causalElicitType === "XY") {
-        xMessage = `Press ${gameConfig.playerName1}'s button?`;
+        xMessage = `<br><br><br>Press ${gameConfig.playerName1}'s button?`;
         xBackgroundColor = 'lightgray';
         
         yMessage = `${gameConfig.playerName2} will decide based on ${gameConfig.playerName1}'s choice`;
@@ -901,7 +929,7 @@ function initializeGame() {
         // Update Player A panel header
         const playerAHeader = panelXinfo.querySelector('.panel-name');
         if (playerAHeader) {
-            playerAHeader.textContent = gameConfig.playerName1;
+            playerAHeader.textContent = gameConfig.playerName1 + " (You choose for them)";
         }
         
         // Move choice grid, progress indicator, validation message, and submit button to Player A panel
