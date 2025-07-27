@@ -198,7 +198,6 @@ body {
     font-size: 12px;
 }
 
-/* Position stats relative to panels */
 .stat-1 { margin-top: 50px; }
 .stat-2 { margin-top: 20px; }
 </style>
@@ -288,9 +287,9 @@ let gameConfig = {
     playerIcon1: "https://via.placeholder.com/40/4CAF50/FFFFFF?text=P1",
     playerIcon2: "https://via.placeholder.com/40/2196F3/FFFFFF?text=P2",
     currentHue: 200,
-    treatment: "exo",  // NEW: default to exogenous treatment
-    pA: 0.5,            // NEW: probability for forced choice direction
-    buttonConfig: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]   // NEW: array specifying which rounds are player choice (1) or forced (0)
+    treatment: "exo",
+    pA: 0.5,
+    buttonConfig: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 };
 
 let participantId = null;
@@ -299,7 +298,7 @@ let participantId = null;
 let roundCounter = 0;
 let X, A, Y;
 let history = [];
-let visibleHistory = []; // Track only rounds where outcomes were visible to player
+let visibleHistory = [];
 let payment = [];
 let roundTimes = [];
 let roundStartTime = 0;
@@ -330,48 +329,25 @@ function updateSingleStat(statNum, player1Name, player2Name) {
     const barLabels = document.getElementById(`barLabels${statNum}`);
     const dataCounts = document.getElementById(`dataCounts${statNum}`);
     
-    // Use only visible history for statistics
-    const dataToUse = visibleHistory;
-    
     // For stat 1: A->X relationship, for stat 2: X->Y relationship
-    let condition1Data, condition0Data;
+    const condition1Data = visibleHistory.filter(round => round[statNum === 1 ? 0 : 1] === 1);
+    const condition0Data = visibleHistory.filter(round => round[statNum === 1 ? 0 : 1] === 0);
     
-    if (statNum === 1) {
-        condition1Data = dataToUse.filter(round => round[0] === 1); // A = 1
-        condition0Data = dataToUse.filter(round => round[0] === 0); // A = 0
-    } else {
-        condition1Data = dataToUse.filter(round => round[1] === 1); // X = 1
-        condition0Data = dataToUse.filter(round => round[1] === 0); // X = 0
-    }
-    
-    const condition1Count = condition1Data.length;
-    const condition0Count = condition0Data.length;
-    
-    // Check if we have enough data (at least 3 cases for each scenario)
-    if (condition1Count < 3 || condition0Count < 3) {
+    if (condition1Data.length < 3 || condition0Data.length < 3) {
         barContainer.style.display = 'none';
         barLabels.style.display = 'none';
         return;
     }
     
     // Calculate response rates
-    let response1When1, response1When0;
+    const responseIndex = statNum === 1 ? 1 : 2;
+    const response1When1 = condition1Data.filter(round => round[responseIndex] === 1).length;
+    const response1When0 = condition0Data.filter(round => round[responseIndex] === 1).length;
     
-    if (statNum === 1) {
-        response1When1 = condition1Data.filter(round => round[1] === 1).length; // X = 1 when A = 1
-        response1When0 = condition0Data.filter(round => round[1] === 1).length; // X = 1 when A = 0
-    } else {
-        response1When1 = condition1Data.filter(round => round[2] === 1).length; // Y = 1 when X = 1
-        response1When0 = condition0Data.filter(round => round[2] === 1).length; // Y = 1 when X = 0
-    }
+    const rateWhen1 = response1When1 / condition1Data.length;
+    const rateWhen0 = response1When0 / condition0Data.length;
     
-    const rateWhen1 = response1When1 / condition1Count;
-    const rateWhen0 = response1When0 / condition0Count;
-    
-    // Calculate percentage difference
     const percentageDifference = (rateWhen1 - rateWhen0) * 100;
-    
-    // Update text
     const absPercentage = Math.abs(percentageDifference).toFixed(0);
     const direction = percentageDifference > 0 ? 'more' : 'less';
     
@@ -381,29 +357,23 @@ function updateSingleStat(statNum, player1Name, player2Name) {
     barContainer.style.display = 'block';
     barLabels.style.display = 'flex';
     
-    // Calculate bar position and width
     const clampedPercentage = Math.max(-100, Math.min(100, percentageDifference));
-    const barWidth = Math.abs(clampedPercentage) / 2; // 0-50% width
+    const barWidth = Math.abs(clampedPercentage) / 2;
     
-    // Reset bar position
-    barFill.style.left = 'auto';
-    barFill.style.right = 'auto';
-    barFill.style.width = '0%';
+    // Reset bar
+    Object.assign(barFill.style, { left: 'auto', right: 'auto', width: '0%' });
     
     if (clampedPercentage >= 0) {
         barFill.className = 'bar-fill bar-positive';
-        barFill.style.left = '50%';
-        barFill.style.width = `${barWidth}%`;
+        Object.assign(barFill.style, { left: '50%', width: `${barWidth}%` });
     } else {
         barFill.className = 'bar-fill bar-negative';
-        barFill.style.right = '50%';
-        barFill.style.width = `${barWidth}%`;
+        Object.assign(barFill.style, { right: '50%', width: `${barWidth}%` });
     }
     
-    // Update data counts
     dataCounts.innerHTML = `
-        When pressed: ${response1When1}/${condition1Count} (${(rateWhen1 * 100).toFixed(0)}%)<br>
-        When not pressed: ${response1When0}/${condition0Count} (${(rateWhen0 * 100).toFixed(0)}%)
+        When pressed: ${response1When1}/${condition1Data.length} (${(rateWhen1 * 100).toFixed(0)}%)<br>
+        When not pressed: ${response1When0}/${condition0Data.length} (${(rateWhen0 * 100).toFixed(0)}%)
     `;
 }
 
@@ -420,15 +390,11 @@ function sendDataToQualtrics(dataType, data) {
     }
 }
 
-// Listen for initialization from Qualtrics
 window.addEventListener('message', function(event) {
     if (event.data.type === 'INIT') {
         participantId = event.data.participantId;
-        console.log('Initialized with participant ID:', participantId);
-        
         if (event.data.gameConfig) {
-            const config = event.data.gameConfig;
-            gameConfig = { ...gameConfig, ...config };
+            Object.assign(gameConfig, event.data.gameConfig);
             applyGameConfiguration();
         }
     }
@@ -437,38 +403,39 @@ window.addEventListener('message', function(event) {
 function applyGameConfiguration() {
     btnYes.textContent = `Yes (cost $${gameConfig.aCost})`;
     
-    const playerName1El = document.querySelector('#panelXinfo .panel-name');
-    const playerName2El = document.querySelector('#panelYinfo .panel-name');
-    const playerIcon1El = document.querySelector('#panelXinfo .panel-icon');
-    const playerIcon2El = document.querySelector('#panelYinfo .panel-icon');
+    const elements = {
+        playerName1: document.querySelector('#panelXinfo .panel-name'),
+        playerName2: document.querySelector('#panelYinfo .panel-name'),
+        playerIcon1: document.querySelector('#panelXinfo .panel-icon'),
+        playerIcon2: document.querySelector('#panelYinfo .panel-icon')
+    };
     
-    if (playerName1El) playerName1El.textContent = gameConfig.playerName1;
-    if (playerName2El) playerName2El.textContent = `${gameConfig.playerName2} (determines your bonus)`;
-    if (playerIcon1El) playerIcon1El.src = gameConfig.playerIcon1;
-    if (playerIcon2El) playerIcon2El.src = gameConfig.playerIcon2;
+    if (elements.playerName1) elements.playerName1.textContent = gameConfig.playerName1;
+    if (elements.playerName2) elements.playerName2.textContent = `${gameConfig.playerName2} (determines your bonus)`;
+    if (elements.playerIcon1) elements.playerIcon1.src = gameConfig.playerIcon1;
+    if (elements.playerIcon2) elements.playerIcon2.src = gameConfig.playerIcon2;
     
     document.body.style.background = `hsl(${gameConfig.currentHue} 70% 85%)`;
 }
 
 /* ===================== HELPER FUNCTIONS ===================== */
 function isPlayerChoiceRound() {
-    // In endogenous treatment, players always make their own choice
     if (gameConfig.treatment === "endog") return true;
-    
-    // In exogenous treatment, check buttonConfig
     if (!gameConfig.buttonConfig) return true;
-    const currentRoundIndex = roundCounter - 1;
-    return gameConfig.buttonConfig[currentRoundIndex] === 1;
+    return gameConfig.buttonConfig[roundCounter - 1] === 1;
 }
 
 /* ===================== GAME LOGIC ===================== */
 function handleDecision(decision) {
-    if (!panelAchoice || panelAchoice.style.display !== 'flex') return;
+    if (panelAchoice.style.display !== 'flex') return;
+    
     btnYes.disabled = btnNo.disabled = true;
-    (decision === 'y' ? btnYes : btnNo).classList.add("flash");
-    setTimeout(() => (decision === 'y' ? btnYes : btnNo).classList.remove("flash"), 200);
+    const selectedBtn = decision === 'y' ? btnYes : btnNo;
+    selectedBtn.classList.add("flash");
+    setTimeout(() => selectedBtn.classList.remove("flash"), 200);
 
     A = decision === 'y' ? 1 : 0;
+    
     if (gameConfig.causal === 0) {
         const pX = [gameConfig.noise, 1-gameConfig.noise, 1-gameConfig.noise, 1-gameConfig.noise];
         Y = Math.random() < gameConfig.pY ? 1 : 0;
@@ -482,18 +449,14 @@ function handleDecision(decision) {
 
     history.push([A, X, Y]);
     
-    // Determine if outcomes will be visible to player
     const isPlayerChoice = isPlayerChoiceRound();
-    const outcomesVisible = (gameConfig.treatment === "endog") || 
-                           (gameConfig.treatment === "exo" && !isPlayerChoice);
+    const outcomesVisible = (gameConfig.treatment === "endog") || (gameConfig.treatment === "exo" && !isPlayerChoice);
     
-    // Only add to visible history if outcomes will be shown
     if (outcomesVisible) {
         visibleHistory.push([A, X, Y]);
     }
     
-    // Only add payment for player choice rounds
-    if (isPlayerChoiceRound()) {
+    if (isPlayerChoice) {
         payment.push(-gameConfig.aCost*A + gameConfig.yBonus*Y);
     }
     
@@ -512,58 +475,42 @@ function handleDecision(decision) {
     colorDisplayed = false;
 
     setTimeout(() => {
-        // Check if this is a player choice round or forced round
         const isPlayerChoice = isPlayerChoiceRound();
         
         if (gameConfig.treatment === "exo" && isPlayerChoice) {
-            // Exogenous treatment, player choice round: hide outcomes, show generic message
             panelXinfo.style.backgroundColor = "lightgray";
             riskText.innerHTML = `${gameConfig.playerName1} has made ${gameConfig.playerPronoun1} decision <br>(press "c" to continue)`;
-            panelYinfo.style.backgroundColor = "white";
-            xReady = true;
         } else {
-            // Endogenous treatment OR forced round: show actual outcomes
             panelXinfo.style.backgroundColor = X ? "green" : "red";
             riskText.innerHTML = X
                 ? `<br>${gameConfig.playerName1} pressed ${gameConfig.playerPronoun1} button <br>(press "c" to continue)`
                 : `<br>${gameConfig.playerName1} did <u>not</u> press ${gameConfig.playerPronoun1} button <br>(press "c" to continue)`;
-            panelYinfo.style.backgroundColor = "white";
-            xReady = true;
         }
+        panelYinfo.style.backgroundColor = "white";
+        xReady = true;
     }, 200);
 }
 
 function handleKeyPress(e) {
-    // Check which buttons are currently visible and enabled
     const yesVisible = btnYes.style.display !== "none" && !btnYes.disabled;
     const noVisible = btnNo.style.display !== "none" && !btnNo.disabled;
-    
-    // Check if this is a player choice round (keyboard allowed) or forced round (no keyboard)
     const isPlayerChoice = isPlayerChoiceRound();
     
-    // Only allow keyboard input for player choice rounds
     if (isPlayerChoice) {
-        if (e.key === 'y' && yesVisible) {
-            handleDecision('y');
-        }
-        else if (e.key === 'n' && noVisible) {
-            handleDecision('n');
-        }
+        if (e.key === 'y' && yesVisible) handleDecision('y');
+        else if (e.key === 'n' && noVisible) handleDecision('n');
     }
     
     if (e.key === 'c' && xReady) {
         const isPlayerChoice = isPlayerChoiceRound();
         
         if (gameConfig.treatment === "exo" && isPlayerChoice) {
-            // Exogenous treatment, player choice round: hide outcomes, show generic message
             panelYinfo.style.backgroundColor = "lightgray";
             resultText.innerHTML = `<br>${gameConfig.playerName2} has made ${gameConfig.playerPronoun2} decision.<br>(press 'space' to continue)`;
         } else if (gameConfig.treatment === "endog" && !isPlayerChoice) {
-            // Endogenous treatment, forced round: show generic message
             panelYinfo.style.backgroundColor = "lightgray";
             resultText.innerHTML = `<br>${gameConfig.playerName2} has made ${gameConfig.playerPronoun2} decision.<br>(press 'space' to continue)`;
         } else {
-            // Show actual outcome (endogenous player choice OR exogenous forced rounds)
             panelYinfo.style.backgroundColor = Y ? "green" : "red";
             resultText.innerHTML = Y
                 ? `<br>${gameConfig.playerName2} pressed ${gameConfig.playerPronoun2} button (bonus ${gameConfig.yBonus})<br> (press 'space' to continue)`
@@ -573,22 +520,12 @@ function handleKeyPress(e) {
         colorDisplayed = true;
     }
     else if (e.key === ' ' && colorDisplayed) {
-        let roundEnd = Date.now();
-        roundTimes.push((roundEnd - roundStartTime) / 1000);
+        roundTimes.push((Date.now() - roundStartTime) / 1000);
         if (roundCounter <= gameConfig.nRounds) {
             nextRound();
             colorDisplayed = false;
         }
     }
-}
-
-function initiateRound() {
-    panelAchoice.style.display =
-    panelXinfo.style.display =
-    panelYinfo.style.display = "none";
-    setTimeout(() => {
-        showActionPanels();
-    }, 500);
 }
 
 function nextRound() {
@@ -602,8 +539,14 @@ function nextRound() {
     if (roundCounter < gameConfig.nRounds) {
         roundCounter++;
         roundDisplay.textContent = `Round ${roundCounter} of ${gameConfig.nRounds}`;
-        initiateRound();
-    } else if (roundCounter === gameConfig.nRounds) {
+        
+        // Hide panels first to create refresh effect
+        panelAchoice.style.display = "none";
+        panelXinfo.style.display = "none";
+        panelYinfo.style.display = "none";
+        
+        setTimeout(showActionPanels, 500);
+    } else {
         const totalPayment = payment.reduce((sum, p) => sum + p, 0);
         const avgDecisionTime = roundTimes.reduce((sum, t) => sum + t, 0) / roundTimes.length;
         
@@ -617,30 +560,25 @@ function nextRound() {
             config: gameConfig
         });
         
-        console.log("Game completed!");
         sendDataToQualtrics('GAME_COMPLETE', { completed: true });
     }
 }
 
 function showActionPanels() {
-    panelAchoice.style.display = "flex";
-    panelXinfo.style.display = "flex";
-    panelYinfo.style.display = "flex";
-    panelXinfo.style.backgroundColor =
-    panelYinfo.style.backgroundColor = "white";
+    // Reset all panels
+    Object.assign(panelAchoice.style, { display: "flex" });
+    Object.assign(panelXinfo.style, { display: "flex", backgroundColor: "white" });
+    Object.assign(panelYinfo.style, { display: "flex", backgroundColor: "white" });
+    
     riskText.textContent = resultText.textContent = "";
     btnYes.disabled = btnNo.disabled = false;
     
-    // Check if this is a player choice round
     const isPlayerChoice = isPlayerChoiceRound();
     
     if (isPlayerChoice) {
-        // PLAYER CHOICE: Show both buttons, allow keyboard input
-        btnNo.style.display = "inline-block";
-        btnYes.style.display = "inline-block";
+        btnNo.style.display = btnYes.style.display = "inline-block";
         document.getElementById("actionPrompt").textContent = "Press your button? (Use your keyboard)";
     } else {
-        // FORCED CHOICE: Force specific button choice, only mouse input
         if (Math.random() < gameConfig.pA) {
             btnNo.style.display = "none";
             btnYes.style.display = "inline-block";
@@ -656,32 +594,21 @@ function showActionPanels() {
 }
 
 /* ===================== EVENT LISTENERS ===================== */
-btnYes.addEventListener("click", () => {
-    // Only allow mouse clicks for forced rounds or endogenous treatment
+function handleButtonClick(decision) {
     const isPlayerChoice = isPlayerChoiceRound();
     if (gameConfig.treatment === "endog" || !isPlayerChoice) {
-        handleDecision('y');
+        handleDecision(decision);
     }
-});
+}
 
-btnNo.addEventListener("click", () => {
-    // Only allow mouse clicks for forced rounds or endogenous treatment
-    const isPlayerChoice = isPlayerChoiceRound();
-    if (gameConfig.treatment === "endog" || !isPlayerChoice) {
-        handleDecision('n');
-    }
-});
-
+btnYes.addEventListener("click", () => handleButtonClick('y'));
+btnNo.addEventListener("click", () => handleButtonClick('n'));
 document.addEventListener("keydown", handleKeyPress);
 
 /* ===================== INITIALIZE GAME ===================== */
-// Don't apply configuration immediately - wait for initialization
-
 setTimeout(() => {
-    // Apply configuration and show the game interface
     applyGameConfiguration();
     gameContainer.style.display = "flex";
-    
     sendDataToQualtrics('GAME_START', { started: true });
     nextRound();
 }, 3000);
