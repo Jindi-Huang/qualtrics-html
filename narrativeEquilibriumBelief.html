@@ -462,7 +462,7 @@ let gameConfig = {
     playerIcon1: "https://via.placeholder.com/40/4CAF50/FFFFFF?text=P1",
     playerIcon2: "https://via.placeholder.com/40/2196F3/FFFFFF?text=P2",
     currentHue: 200,
-    causalElicitType: "AY", // Can be "AX", "AY", or "XY"
+    causalElicitType: "XY", // Can be "AX", "AY", or "XY"
     exoButton: 1,
     costArray: [2, 1, 0.5, 0, -0.5, -1, -2],
     displayText1_1: `If You pressed, Player A pressed 60 percentage points more often.`,
@@ -561,13 +561,11 @@ function applyGameConfiguration() {
                     name: gameConfig.playerName1 + " (determines your bonus)", 
                     icon: gameConfig.playerIcon1,
                     text: `${gameConfig.playerName1} will make ${gameConfig.playerPronoun1} decision.`,
-                    backgroundColor: "lightgray"
                 },
                 Y: { 
                     name: gameConfig.playerName2, 
                     icon: gameConfig.playerIcon2,
                     text: `${gameConfig.playerName2} will make ${gameConfig.playerPronoun2} decision.`,
-                    backgroundColor: "lightgray",
                     showLock: false
                 }
             }
@@ -584,14 +582,12 @@ function applyGameConfiguration() {
                     name: gameConfig.playerName1, 
                     icon: gameConfig.playerIcon1,
                     text: `${gameConfig.playerName1} will make ${gameConfig.playerPronoun1} decision.`,
-                    backgroundColor: "lightgray",
                     showLock: false
                 },
                 Y: { 
                     name: gameConfig.playerName2 + " (determines your bonus)", 
                     icon: gameConfig.playerIcon2,
-                    text: `${gameConfig.playerName2} will make ${gameConfig.playerPronoun2} decision.`,
-                    backgroundColor: "lightgray"
+                    text: `${gameConfig.playerName2} will make ${gameConfig.playerPronoun2} decision.`
                 }
             }
         },
@@ -615,8 +611,7 @@ function applyGameConfiguration() {
                 Y: { 
                     name: gameConfig.playerName2 + " (determines your bonus)", 
                     icon: gameConfig.playerIcon2,
-                    text: `${gameConfig.playerName2} will make ${gameConfig.playerPronoun2} decision.`,
-                    backgroundColor: "lightgray"
+                    text: `${gameConfig.playerName2} will make ${gameConfig.playerPronoun2} decision.`
                 }
             }
         }
