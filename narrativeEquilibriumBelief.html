@@ -18,7 +18,7 @@ body {
     margin: 20px auto;
     gap: 15px;
     align-items: flex-start;
-    margin-left: 0px;
+    margin-left: 100px;
 }
 
 .panels-section {
@@ -384,7 +384,6 @@ body {
         <!-- Panel A (You/Player) -->
         <div id="panelA" class="panel" data-panel="A">
             <div class="panel-header">
-                <img id="panelA-icon" src="https://via.placeholder.com/40/FF9800/FFFFFF?text=Y" class="panel-icon" alt="You">
                 <div id="panelA-name" class="panel-name">You</div>
                 <div id="panelA-lock" class="lock-icon" style="display: none;"></div>
             </div>
@@ -630,7 +629,7 @@ function applyGameConfiguration() {
                 X: { 
                     name: gameConfig.playerName1, 
                     icon: gameConfig.playerIcon1,
-                    text: `Press ${gameConfig.playerName1}'s button for them`,
+                    text: `Press ${gameConfig.playerName1}'s button?`,
                     backgroundColor: "white"
                 },
                 Y: { 
