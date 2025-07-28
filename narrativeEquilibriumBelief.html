@@ -287,7 +287,7 @@ body {
 </head>
 <body>
 
-<div id="gameContainer" class="game-container">
+<div id="gameContainer" class="game-container" style="display: none;">
     <div class="panels-section">
         <div id="gameTitle" class="game-title">Make your choices for each cost scenario</div>
         
@@ -359,7 +359,7 @@ let gameConfig = {
     playerIcon1: "https://via.placeholder.com/40/4CAF50/FFFFFF?text=P1",
     playerIcon2: "https://via.placeholder.com/40/2196F3/FFFFFF?text=P2",
     currentHue: 200,
-    causalElicitType: "XY", // Can be "AX", "AY", or "XY"
+    causalElicitType: "AX", // Can be "AX", "AY", or "XY"
     exoButton: 1,
     costArray: [2, 1, 0.5, 0, -0.5, -1, -2]
 };
@@ -857,7 +857,7 @@ function getMessages() {
         yMessage = `${gameConfig.playerName2} will decide based on ${gameConfig.playerName1}'s forced choice`;
         yBackgroundColor = 'lightgray';
     } else if (gameConfig.causalElicitType === "XY") {
-        xMessage = `<br><br><br>Press ${gameConfig.playerName1}'s button?`;
+        xMessage = `Press ${gameConfig.playerName1}'s button for them`;
         xBackgroundColor = 'lightgray';
         
         yMessage = `${gameConfig.playerName2} will decide based on ${gameConfig.playerName1}'s choice`;
@@ -919,31 +919,18 @@ function showResults(selectedChoiceIndex, A, X, Y, payment) {
 /* ===================== INITIALIZE GAME ===================== */
 function initializeGame() {
     console.log("Initializing sequential choice game");
-    applyGameConfiguration();
     
-    // Determine where to add choice rows based on treatment
-    let targetPanel = panelAchoice; // Default for AX and AY
-    if (gameConfig.causalElicitType === "XY") {
-        targetPanel = panelXinfo;
-        
-        // Update Player A panel header
-        const playerAHeader = panelXinfo.querySelector('.panel-name');
-        if (playerAHeader) {
-            playerAHeader.textContent = gameConfig.playerName1 + " (You choose for them)";
-        }
-        
-        // Move choice grid, progress indicator, validation message, and submit button to Player A panel
-        targetPanel.appendChild(progressIndicator);
-        targetPanel.appendChild(choiceGrid);
-        targetPanel.appendChild(validationMessage);
-        targetPanel.appendChild(document.querySelector('.submit-container'));
-    }
+    // Show the game container
+    document.getElementById("gameContainer").style.display = "flex";
     
-    // Create choice rows in the appropriate panel
+    // Create choice rows first
     gameConfig.costArray.forEach((cost, index) => {
         const row = createChoiceRow(index);
         choiceGrid.appendChild(row);
     });
+    
+    // Apply configuration (this will move elements to correct panels)
+    applyGameConfiguration();
     
     // Initialize row states - only first row is active
     updateRowStates();
@@ -955,8 +942,8 @@ function initializeGame() {
     sendDataToQualtrics('GAME_START', { started: true });
 }
 
-// Start game
-setTimeout(initializeGame, 500);
+// Wait 3 seconds before starting the game
+setTimeout(initializeGame, 3000);
 
 </script>
 </body>
