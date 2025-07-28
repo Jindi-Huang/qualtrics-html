@@ -431,7 +431,7 @@ body {
         <div class="stats-container">
             <div class="stat-box stat-1">
                 <div id="influenceText1" class="stat-text">
-                    <div class="insufficient-data">Collecting data... <br><br><br><br><br><br></div>
+                    <div class="insufficient-data"> Collecting data...<br><br><br><br><br><br></div>
                 </div>
                 <div id="barContainer1" class="bar-container" style="display: none;">
                     <div class="bar-center"></div>
@@ -481,14 +481,12 @@ let gameConfig = {
     causalElicitType: "AX", // Can be "AX", "AY", or "XY"
     exoButton: 1,
     costArray: [2, 1, 0.5, 0, -0.5, -1, -2],
-    absPercentage: 30,
-    direction: "more",
-    response1When1: 8,
-    response1When0: 6,
-    condition0DataLength: 11,
-    condition1DataLength: 10,
-    rateWhen1: 0.8,
-    rateWhen0: 0.5454545454545454, 
+    displayText1_1: `If You pressed, Player A pressed 60 percentage points more often.`,
+    displayText1_2: `When pressed: 3/3 (100%) <br> When not pressed: 2/5 (40%)`,
+    displayText2_1: `If Player A pressed, Player B pressed 35 percentage points more often.`,
+    displayText2_2: `When pressed: 9/12 (75%) <br> When not pressed: 4/10 (40%)`,
+    percentageDifference1: 60,
+    percentageDifference2: 35
 };
 
 let participantId = null;
@@ -670,22 +668,40 @@ function setupStatisticsDisplay() {
     const dataCounts1 = document.getElementById('dataCounts1');
     const dataCounts2 = document.getElementById('dataCounts2');
     
-    influenceText1.innerHTML = `If you pressed, ${gameConfig.playerName1} pressed ${gameConfig.absPercentage} percentage points ${gameConfig.direction} often.`;
+    influenceText1.innerHTML = `${gameConfig.displayText1_1}`;
+    dataCounts1.innerHTML = `${gameConfig.displayText1_2}`;
+
+    influenceText2.innerHTML = `${gameConfig.displayText2_1}`;
+    dataCounts2.innerHTML = `${gameConfig.displayText2_2}`;
+
     barContainer1.style.display = 'block';
     barLabels1.style.display = 'flex';
-    barFill1.className = 'bar-fill bar-positive';
-    barFill1.style.left = '50%';
-    barFill1.style.width = `${gameConfig.absPercentage/2}%`;
-    dataCounts1.innerHTML = `When pressed: ${gameConfig.response1When1}/${gameConfig.condition1DataLength} (${(gameConfig.rateWhen1 * 100).toFixed(0)}%)<br>
-        When not pressed: ${gameConfig.response1When0}/${gameConfig.condition0DataLength} (${(gameConfig.rateWhen0 * 100).toFixed(0)}%)`;
-    
-    influenceText2.innerHTML = `If ${gameConfig.playerName1} pressed, ${gameConfig.playerName2} pressed 35 percentage points more often.`;
     barContainer2.style.display = 'block';
     barLabels2.style.display = 'flex';
-    barFill2.className = 'bar-fill bar-positive';
-    barFill2.style.left = '50%';
-    barFill2.style.width = '17.5%';
-    dataCounts2.innerHTML = `When pressed: 9/12 (75%)<br>When not pressed: 4/10 (40%)`;
+
+    // Reset bar
+    const barWidth1 = Math.abs(`${gameConfig.percentageDifference1}`) / 2;
+    const barWidth2 = Math.abs(`${gameConfig.percentageDifference2}`) / 2;
+    Object.assign(barFill1.style, { left: 'auto', right: 'auto', width: '0%' });
+
+    if (`${gameConfig.percentageDifference1}` >= 0) {
+        barFill1.className = 'bar-fill bar-positive';
+        Object.assign(barFill1.style, { left: '50%', width: `${barWidth1}%` });
+    } else {
+        barFill1.className = 'bar-fill bar-negative';
+        Object.assign(barFill1.style, { right: '50%', width: `${barWidth1}%` });
+    }
+
+    // Reset bar
+    Object.assign(barFill2.style, { left: 'auto', right: 'auto', width: '0%' });
+
+    if (`${gameConfig.percentageDifference2}` >= 0) {
+        barFill2.className = 'bar-fill bar-positive';
+        Object.assign(barFill2.style, { left: '50%', width: `${barWidth2}%` });
+    } else {
+        barFill2.className = 'bar-fill bar-negative';
+        Object.assign(barFill2.style, { right: '50%', width: `${barWidth2}%` });
+    }
 }
 
 /* ===================== GAME LOGIC (UNCHANGED) ===================== */

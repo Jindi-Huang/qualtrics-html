@@ -577,7 +577,7 @@ function handleKeyPress(e) {
         } else {
             panelYinfo.style.backgroundColor = Y ? "green" : "red";
             resultText.innerHTML = Y
-                ? `<br>${gameConfig.playerName2} pressed ${gameConfig.playerPronoun2} button (bonus ${gameConfig.yBonus})<br> (press 'space' to continue)`
+                ? `<br>${gameConfig.playerName2} pressed ${gameConfig.playerPronoun2} button (bonus $${gameConfig.yBonus})<br> (press 'space' to continue)`
                 : `<br>${gameConfig.playerName2} did <u>not</u> press ${gameConfig.playerPronoun2} button (no bonus)<br>(press 'space' to continue)`;
         }
         xReady = false;
