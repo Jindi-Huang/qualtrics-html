@@ -387,6 +387,8 @@ function updateSingleStat(statNum, player1Name, player2Name) {
     statData.percentageDifference = percentageDifference;
     statData.absPercentage = parseFloat(absPercentage);
     statData.direction = direction;
+    statData.condition0DataLength = condition0Data.length;
+    statData.condition1DataLength = condition1Data.length;
     statData.displayText = `If ${player1Name} pressed, ${player2Name} pressed ${absPercentage} percentage points ${direction} often.`;
     
     // Store the detailed breakdown
@@ -677,7 +679,7 @@ setTimeout(() => {
     gameContainer.style.display = "flex";
     sendDataToQualtrics('GAME_START', { started: true });
     nextRound();
-}, 3000);
+}, 2000);
 
 </script>
 </body>

@@ -97,6 +97,7 @@ body {
 
 .choice-row {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 8px 12px;
@@ -136,18 +137,27 @@ body {
 
 .choice-buttons {
     display: flex;
-    gap: 8px;
+    flex-direction: row;
+    gap: 6px;
+    width: 100%;
+    max-width: 300px;
 }
 
 .actionButton {
     padding: 6px 12px;
-    font-size: 12px;
+    font-size: 11px;
     cursor: pointer;
     border: none;
     color: white;
     border-radius: 4px;
     transition: background-color 0.3s, transform 0.2s;
     text-align: center;
+    flex: 1;
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
 }
 
 .actionButton:hover:not(:disabled) {
@@ -361,7 +371,6 @@ let gameConfig = {
     causalElicitType: "AX", // Can be "AX", "AY", or "XY"
     exoButton: 1,
     costArray: [2, 1, 0.5, 0, -0.5, -1, -2],
-    
 };
 
 let participantId = null;
@@ -802,7 +811,7 @@ function submitAllChoices() {
         } else {
             payment = (1-X) * selectedCost + gameConfig.yBonus * Y;
         }
-    } else if (gameConfig.causalElicitType === "AX") {
+            } else if (gameConfig.causalElicitType === "AX") {
         A = selectedChoice === 'y' ? 1 : 0;
         Y = gameConfig.exoButton;
         if (gameConfig.causal === 0) {
@@ -972,8 +981,8 @@ function initializeGame() {
     sendDataToQualtrics('GAME_START', { started: true });
 }
 
-// Wait 3 seconds before starting the game
-setTimeout(initializeGame, 3000);
+// Wait 2 seconds before starting the game
+setTimeout(initializeGame, 2000);
 
 </script>
 </body>
