@@ -89,7 +89,7 @@ body {
 
 .text {
     text-align: center;
-    font-size: 16px;
+    font-size: 18px;
     padding: 8px;
     color: #333;
     margin-top: 0;
@@ -116,9 +116,7 @@ body {
 }
 
 .choice-row.hidden {
-    opacity: 0.3;
-    pointer-events: none;
-    background: #e9ecef;
+    display: none;
 }
 
 .choice-row.current {
@@ -153,7 +151,7 @@ body {
 
 .actionButton {
     padding: 6px 12px;
-    font-size: 11px;
+    font-size: 16px;
     cursor: pointer;
     border: none;
     color: white;
@@ -173,11 +171,6 @@ body {
     box-shadow: 0 5px 15px rgba(0,0,0,0.2);
 }
 
-.actionButton:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-}
 
 .green { background-color: green; }
 .red { background-color: red; }
@@ -253,7 +246,7 @@ body {
 .lock-icon {
     position: absolute;
     top: 5px;
-    right: -350px;
+    right: 12px;
     display: flex;
     justify-content: center;
     opacity: 0.8;
@@ -281,12 +274,6 @@ body {
     margin-bottom: 30px;
 }
 
-.insufficient-data {
-    text-align: center;
-    color: #999;
-    font-style: italic;
-    font-size: 12px;
-}
 
 .stat-1 { 
     margin-top: 50px; 
@@ -359,10 +346,6 @@ body {
     border: 1px solid #4CAF50;
 }
 
-.results-text {
-    color: #2e7d32;
-    font-weight: bold;
-}
 
 /* Interactive elements - hidden by default */
 .interactive-elements {
@@ -383,9 +366,9 @@ body {
     <div class="panels-section">
         <!-- Panel A (You/Player) -->
         <div id="panelA" class="panel" data-panel="A">
+            <div id="panelA-lock" class="lock-icon" style="display: none;"></div>
             <div class="panel-header">
                 <div id="panelA-name" class="panel-name">You</div>
-                <div id="panelA-lock" class="lock-icon" style="display: none;"></div>
             </div>
             <div class="panel-content">
                 <div id="panelA-text" class="text">Press your button?</div>
@@ -402,10 +385,11 @@ body {
         
         <!-- Panel X (Player A) -->
         <div id="panelX" class="panel" data-panel="X">
+            <div id="panelX-lock" class="lock-icon" style="display: none;"></div>
             <div class="panel-header">
                 <img id="panelX-icon" src="https://via.placeholder.com/40/4CAF50/FFFFFF?text=P1" class="panel-icon" alt="Player">
                 <div id="panelX-name" class="panel-name">Player A</div>
-                <div id="panelX-lock" class="lock-icon" style="display: none;"></div>
+                
             </div>
             <div class="panel-content">
                 <div id="panelX-text" class="text">(waiting for your choices)</div>
@@ -415,10 +399,10 @@ body {
         
         <!-- Panel Y (Player B) -->
         <div id="panelY" class="panel" data-panel="Y">
+            <div id="panelY-lock" class="lock-icon" style="display: none;"></div>
             <div class="panel-header">
                 <img id="panelY-icon" src="https://via.placeholder.com/40/2196F3/FFFFFF?text=P2" class="panel-icon" alt="Player">
                 <div id="panelY-name" class="panel-name">Player B</div>
-                <div id="panelY-lock" class="lock-icon" style="display: none;"></div>
             </div>
             <div class="panel-content">
                 <div id="panelY-text" class="text">(waiting for your choices)</div>
@@ -478,7 +462,7 @@ let gameConfig = {
     playerIcon1: "https://via.placeholder.com/40/4CAF50/FFFFFF?text=P1",
     playerIcon2: "https://via.placeholder.com/40/2196F3/FFFFFF?text=P2",
     currentHue: 200,
-    causalElicitType: "AX", // Can be "AX", "AY", or "XY"
+    causalElicitType: "AY", // Can be "AX", "AY", or "XY"
     exoButton: 1,
     costArray: [2, 1, 0.5, 0, -0.5, -1, -2],
     displayText1_1: `If You pressed, Player A pressed 60 percentage points more often.`,
@@ -576,17 +560,15 @@ function applyGameConfiguration() {
                 X: { 
                     name: gameConfig.playerName1 + " (determines your bonus)", 
                     icon: gameConfig.playerIcon1,
-                    text: `${gameConfig.playerName1} will decide based on your choice`,
+                    text: `${gameConfig.playerName1} will make ${gameConfig.playerPronoun1} decision.`,
                     backgroundColor: "lightgray"
                 },
                 Y: { 
                     name: gameConfig.playerName2, 
                     icon: gameConfig.playerIcon2,
-                    text: gameConfig.exoButton == 1 
-                        ? `${gameConfig.playerName2} is forced to press ${gameConfig.playerPronoun2} button`
-                        : `${gameConfig.playerName2} is forced NOT to press ${gameConfig.playerPronoun2} button`,
-                    backgroundColor: gameConfig.exoButton == 1 ? "green" : "red",
-                    showLock: true
+                    text: `${gameConfig.playerName2} will make ${gameConfig.playerPronoun2} decision.`,
+                    backgroundColor: "lightgray",
+                    showLock: false
                 }
             }
         },
@@ -601,16 +583,14 @@ function applyGameConfiguration() {
                 X: { 
                     name: gameConfig.playerName1, 
                     icon: gameConfig.playerIcon1,
-                    text: gameConfig.exoButton == 1 
-                        ? `${gameConfig.playerName1} is forced to press ${gameConfig.playerPronoun1} button`
-                        : `${gameConfig.playerName1} is forced NOT to press ${gameConfig.playerPronoun1} button`,
-                    backgroundColor: gameConfig.exoButton == 1 ? "green" : "red",
-                    showLock: true
+                    text: `${gameConfig.playerName1} will make ${gameConfig.playerPronoun1} decision.`,
+                    backgroundColor: "lightgray",
+                    showLock: false
                 },
                 Y: { 
                     name: gameConfig.playerName2 + " (determines your bonus)", 
                     icon: gameConfig.playerIcon2,
-                    text: `${gameConfig.playerName2} will decide based on ${gameConfig.playerName1}'s forced choice`,
+                    text: `${gameConfig.playerName2} will make ${gameConfig.playerPronoun2} decision.`,
                     backgroundColor: "lightgray"
                 }
             }
@@ -621,21 +601,21 @@ function applyGameConfiguration() {
                 A: { 
                     name: "You", 
                     text: gameConfig.exoButton == 1 
-                        ? "You are forced to press your button"
-                        : "You are forced NOT to press your button",
+                        ? "You are forced to press your button."
+                        : "You are forced NOT to press your button.",
                     backgroundColor: gameConfig.exoButton == 1 ? "green" : "red",
                     showLock: true
                 },
                 X: { 
                     name: gameConfig.playerName1, 
                     icon: gameConfig.playerIcon1,
-                    text: `Press ${gameConfig.playerName1}'s button?`,
+                    text: `<br>Press ${gameConfig.playerName1}'s button?`,
                     backgroundColor: "white"
                 },
                 Y: { 
                     name: gameConfig.playerName2 + " (determines your bonus)", 
                     icon: gameConfig.playerIcon2,
-                    text: `${gameConfig.playerName2} will decide based on ${gameConfig.playerName1}'s choice`,
+                    text: `${gameConfig.playerName2} will make ${gameConfig.playerPronoun2} decision.`,
                     backgroundColor: "lightgray"
                 }
             }
@@ -704,7 +684,7 @@ function setupStatisticsDisplay() {
     }
 }
 
-/* ===================== GAME LOGIC (UNCHANGED) ===================== */
+/* ===================== GAME LOGIC ===================== */
 function updateProgressIndicator() {
     const completedChoices = choices.filter(choice => choice !== null).length;
     const totalChoices = gameConfig.costArray.length;
@@ -758,7 +738,7 @@ function highlightInvalidSwitch() {
 
 function showInvalidSwitchWarning() {
     const validationMessage = document.getElementById('validationMessage');
-    validationMessage.textContent = "Warning: You switched from 'Yes' back to 'No'. This creates an invalid pattern. You can change your previous choices by clicking on them, or continue with your current choices.";
+    validationMessage.textContent = "Warning: You pressed the button when the cost was higher, but didn't press it when the cost was lower. You can change your previous choices by clicking on them.";
     validationMessage.className = 'validation-message validation-error';
     validationMessage.style.display = 'block';
     highlightInvalidSwitch();
@@ -1031,58 +1011,7 @@ function submitAllChoices() {
 }
 
 function showResults(selectedChoiceIndex, A, X, Y, payment) {
-    // Find the active panel and update its text
-    const activePanelId = gameConfig.causalElicitType === "XY" ? 'X' : 'A';
-    const activePanel = getPanel(activePanelId);
-    activePanel.text.innerHTML = `One of the rows is randomly selected to be implemented`;
-    
-    // Hide interactive elements
-    document.getElementById('choiceGrid').style.display = 'none';
-    document.getElementById('validationMessage').style.display = 'none';
-    document.getElementById('progressIndicator').style.display = 'none';
-    document.getElementById('submitChoices').style.display = 'none';
-    
-    // Update panel states based on treatment
-    if (gameConfig.causalElicitType === "AX") {
-        setPanelState('X', {
-            text: `${gameConfig.playerName1} has made ${gameConfig.playerPronoun1} decision`,
-            backgroundColor: "lightgray"
-        });
-        
-        setPanelState('Y', {
-            text: gameConfig.exoButton == 1 
-                ? `${gameConfig.playerName2} is forced to press ${gameConfig.playerPronoun2} button`
-                : `${gameConfig.playerName2} is forced NOT to press ${gameConfig.playerPronoun2} button`,
-            backgroundColor: gameConfig.exoButton == 1 ? "green" : "red"
-        });
-    } else if (gameConfig.causalElicitType === "AY") {
-        setPanelState('X', {
-            text: gameConfig.exoButton == 1 
-                ? `${gameConfig.playerName1} is forced to press ${gameConfig.playerPronoun1} button`
-                : `${gameConfig.playerName1} is forced NOT to press ${gameConfig.playerPronoun1} button`,
-            backgroundColor: gameConfig.exoButton == 1 ? "green" : "red"
-        });
-        
-        setPanelState('Y', {
-            text: `${gameConfig.playerName2} has made ${gameConfig.playerPronoun2} decision`,
-            backgroundColor: "lightgray"
-        });
-    } else if (gameConfig.causalElicitType === "XY") {
-        setPanelState('X', {
-            text: `${gameConfig.playerName1} has made ${gameConfig.playerPronoun1} decision`,
-            backgroundColor: "lightgray"
-        });
-        
-        setPanelState('Y', {
-            text: `${gameConfig.playerName2} has made ${gameConfig.playerPronoun2} decision`,
-            backgroundColor: "lightgray"
-        });
-    }
-    
-    // Change active panel styling to show completion
-    activePanel.element.classList.add('results-panel');
-    activePanel.text.classList.add('results-text');
-    
+
     sendDataToQualtrics('GAME_COMPLETE', { completed: true });
 }
 
