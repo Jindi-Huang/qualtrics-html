@@ -18,7 +18,7 @@ body {
     margin: 20px auto;
     gap: 15px;
     align-items: flex-start;
-    margin-left: 250px;
+    margin-left: 0px;
 }
 
 .panels-section {
@@ -179,8 +179,8 @@ body {
     transform: none;
 }
 
-.green { background-color: #4CAF50; }
-.red { background-color: #f44336; }
+.green { background-color: green; }
+.red { background-color: red; }
 
 .selected {
     outline: 3px solid #007bff;
@@ -586,7 +586,7 @@ function applyGameConfiguration() {
                     text: gameConfig.exoButton == 1 
                         ? `${gameConfig.playerName2} is forced to press ${gameConfig.playerPronoun2} button`
                         : `${gameConfig.playerName2} is forced NOT to press ${gameConfig.playerPronoun2} button`,
-                    backgroundColor: gameConfig.exoButton == 1 ? "lightgreen" : "lightcoral",
+                    backgroundColor: gameConfig.exoButton == 1 ? "green" : "red",
                     showLock: true
                 }
             }
@@ -605,7 +605,7 @@ function applyGameConfiguration() {
                     text: gameConfig.exoButton == 1 
                         ? `${gameConfig.playerName1} is forced to press ${gameConfig.playerPronoun1} button`
                         : `${gameConfig.playerName1} is forced NOT to press ${gameConfig.playerPronoun1} button`,
-                    backgroundColor: gameConfig.exoButton == 1 ? "lightgreen" : "lightcoral",
+                    backgroundColor: gameConfig.exoButton == 1 ? "green" : "red",
                     showLock: true
                 },
                 Y: { 
@@ -624,7 +624,7 @@ function applyGameConfiguration() {
                     text: gameConfig.exoButton == 1 
                         ? "You are forced to press your button"
                         : "You are forced NOT to press your button",
-                    backgroundColor: gameConfig.exoButton == 1 ? "lightgreen" : "lightcoral",
+                    backgroundColor: gameConfig.exoButton == 1 ? "green" : "red",
                     showLock: true
                 },
                 X: { 
@@ -921,14 +921,14 @@ function createChoiceRow(index) {
     let yesText, noText;
     
     if (cost > 0) {
-        yesText = `Yes (<span class="cost-amt">cost ${cost.toFixed(1)}</span>)`;
+        yesText = `Yes (<span class="cost-amt">cost $${cost.toFixed(1)}</span>)`;
         noText = `No (<span class="cost-amt">free</span>)`;
     } else if (cost === 0) {
         yesText = `Yes (<span class="cost-amt">free</span>)`;
         noText = `No (<span class="cost-amt">free</span>)`;
     } else {
         yesText = `Yes (<span class="cost-amt">free</span>)`;
-        noText = `No (<span class="cost-amt">cost ${Math.abs(cost).toFixed(1)}</span>)`;
+        noText = `No (<span class="cost-amt">cost $${Math.abs(cost).toFixed(1)}</span>)`;
     }
     
     row.innerHTML = `
@@ -1054,14 +1054,14 @@ function showResults(selectedChoiceIndex, A, X, Y, payment) {
             text: gameConfig.exoButton == 1 
                 ? `${gameConfig.playerName2} is forced to press ${gameConfig.playerPronoun2} button`
                 : `${gameConfig.playerName2} is forced NOT to press ${gameConfig.playerPronoun2} button`,
-            backgroundColor: gameConfig.exoButton == 1 ? "lightgreen" : "lightcoral"
+            backgroundColor: gameConfig.exoButton == 1 ? "green" : "red"
         });
     } else if (gameConfig.causalElicitType === "AY") {
         setPanelState('X', {
             text: gameConfig.exoButton == 1 
                 ? `${gameConfig.playerName1} is forced to press ${gameConfig.playerPronoun1} button`
                 : `${gameConfig.playerName1} is forced NOT to press ${gameConfig.playerPronoun1} button`,
-            backgroundColor: gameConfig.exoButton == 1 ? "lightgreen" : "lightcoral"
+            backgroundColor: gameConfig.exoButton == 1 ? "green" : "red"
         });
         
         setPanelState('Y', {
