@@ -304,6 +304,7 @@ let roundTimes = [];
 let roundStartTime = 0;
 let xReady = false;
 let colorDisplayed = false;
+let statisticsHistory = [];
 
 /* ========================== DOM ELEMENTS ========================== */
 const gameContainer = document.getElementById("gameContainer");
@@ -318,8 +319,22 @@ const roundDisplay = document.getElementById("roundDisplay");
 
 /* ===================== STATISTICS FUNCTIONS ===================== */
 function updateStatistics() {
-    updateSingleStat(1, "You", gameConfig.playerName1);
-    updateSingleStat(2, gameConfig.playerName1, gameConfig.playerName2);
+    const stat1Data = updateSingleStat(1, "You", gameConfig.playerName1);
+    const stat2Data = updateSingleStat(2, gameConfig.playerName1, gameConfig.playerName2);
+    
+    // Store the current statistics snapshot
+    const currentStats = {
+        round: roundCounter,
+        timestamp: new Date().toISOString(),
+        stat1: stat1Data,
+        stat2: stat2Data,
+        visibleHistoryLength: visibleHistory.length
+    };
+    
+    statisticsHistory.push(currentStats);
+    
+    // Send statistics data to Qualtrics
+    sendDataToQualtrics('STATISTICS_DATA', currentStats);
 }
 
 function updateSingleStat(statNum, player1Name, player2Name) {
@@ -333,10 +348,23 @@ function updateSingleStat(statNum, player1Name, player2Name) {
     const condition1Data = visibleHistory.filter(round => round[statNum === 1 ? 0 : 1] === 1);
     const condition0Data = visibleHistory.filter(round => round[statNum === 1 ? 0 : 1] === 0);
     
-    if (condition1Data.length < 3 || condition0Data.length < 3) {
+    // Initialize return data object
+    const statData = {
+        statNum: statNum,
+        player1Name: player1Name,
+        player2Name: player2Name,
+        condition1Count: condition1Data.length,
+        condition0Count: condition0Data.length,
+        sufficientData: condition1Data.length >= 3 && condition0Data.length >= 3
+    };
+    
+    if (!statData.sufficientData) {
         barContainer.style.display = 'none';
         barLabels.style.display = 'none';
-        return;
+        
+        // Return data even when insufficient
+        statData.displayText = "Insufficient data";
+        return statData;
     }
     
     // Calculate response rates
@@ -351,7 +379,32 @@ function updateSingleStat(statNum, player1Name, player2Name) {
     const absPercentage = Math.abs(percentageDifference).toFixed(0);
     const direction = percentageDifference > 0 ? 'more' : 'less';
     
-    influenceText.innerHTML = `If ${player1Name} pressed, ${player2Name} pressed ${absPercentage} percentage points ${direction} often.`;
+    // Store all the calculated values
+    statData.response1When1 = response1When1;
+    statData.response1When0 = response1When0;
+    statData.rateWhen1 = rateWhen1;
+    statData.rateWhen0 = rateWhen0;
+    statData.percentageDifference = percentageDifference;
+    statData.absPercentage = parseFloat(absPercentage);
+    statData.direction = direction;
+    statData.displayText = `If ${player1Name} pressed, ${player2Name} pressed ${absPercentage} percentage points ${direction} often.`;
+    
+    // Store the detailed breakdown
+    statData.breakdown = {
+        whenPressed: {
+            responses: response1When1,
+            total: condition1Data.length,
+            rate: (rateWhen1 * 100).toFixed(0)
+        },
+        whenNotPressed: {
+            responses: response1When0,
+            total: condition0Data.length,
+            rate: (rateWhen0 * 100).toFixed(0)
+        }
+    };
+    
+    // Update UI (existing code)
+    influenceText.innerHTML = statData.displayText;
     
     // Update bar chart
     barContainer.style.display = 'block';
@@ -359,6 +412,13 @@ function updateSingleStat(statNum, player1Name, player2Name) {
     
     const clampedPercentage = Math.max(-100, Math.min(100, percentageDifference));
     const barWidth = Math.abs(clampedPercentage) / 2;
+    
+    // Store bar chart info
+    statData.barChart = {
+        clampedPercentage: clampedPercentage,
+        barWidth: barWidth,
+        direction: clampedPercentage >= 0 ? 'positive' : 'negative'
+    };
     
     // Reset bar
     Object.assign(barFill.style, { left: 'auto', right: 'auto', width: '0%' });
@@ -375,7 +435,10 @@ function updateSingleStat(statNum, player1Name, player2Name) {
         When pressed: ${response1When1}/${condition1Data.length} (${(rateWhen1 * 100).toFixed(0)}%)<br>
         When not pressed: ${response1When0}/${condition0Data.length} (${(rateWhen0 * 100).toFixed(0)}%)
     `;
+    
+    return statData;
 }
+
 
 /* =============== QUALTRICS COMMUNICATION =============== */
 function sendDataToQualtrics(dataType, data) {
@@ -533,7 +596,8 @@ function nextRound() {
         currentRound: roundCounter,
         history: history,
         roundTimes: roundTimes,
-        payment: payment
+        payment: payment,
+        currentStatistics: statisticsHistory.length > 0 ? statisticsHistory[statisticsHistory.length - 1] : null
     });
     
     if (roundCounter < gameConfig.nRounds) {
@@ -557,7 +621,9 @@ function nextRound() {
             payment: payment,
             totalPayment: totalPayment,
             avgDecisionTime: avgDecisionTime,
-            config: gameConfig
+            config: gameConfig,
+            statisticsHistory: statisticsHistory, // Add complete statistics history
+            finalStatistics: statisticsHistory.length > 0 ? statisticsHistory[statisticsHistory.length - 1] : null
         });
         
         sendDataToQualtrics('GAME_COMPLETE', { completed: true });

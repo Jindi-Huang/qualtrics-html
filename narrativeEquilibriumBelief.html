@@ -147,7 +147,6 @@ body {
     color: white;
     border-radius: 4px;
     transition: background-color 0.3s, transform 0.2s;
-    min-width: 120px;
     text-align: center;
 }
 
@@ -361,7 +360,8 @@ let gameConfig = {
     currentHue: 200,
     causalElicitType: "AX", // Can be "AX", "AY", or "XY"
     exoButton: 1,
-    costArray: [2, 1, 0.5, 0, -0.5, -1, -2]
+    costArray: [2, 1, 0.5, 0, -0.5, -1, -2],
+    
 };
 
 let participantId = null;
@@ -398,7 +398,9 @@ function createLockIcon() {
 
 function updateProgressIndicator() {
     const completedChoices = choices.filter(choice => choice !== null).length;
-    progressIndicator.textContent = `Decision ${completedChoices + 1} of 7`;
+    const totalChoices = gameConfig.costArray.length;
+    const displayNumber = Math.min(completedChoices + 1, totalChoices);
+    progressIndicator.textContent = `Decision ${displayNumber} of ${totalChoices}`;
 }
 
 function updateRowStates() {
@@ -705,6 +707,31 @@ function handleChoice(choiceIndex, decision) {
     }, 500);
 }
 
+function handleKeyPress(event) {
+    // Only handle y/n keys when game is active
+    if (document.getElementById("gameContainer").style.display === "none") {
+        return; // Game not started yet
+    }
+    
+    const key = event.key.toLowerCase();
+    
+    if (key === 'y' || key === 'n') {
+        event.preventDefault(); // Prevent default browser behavior
+        
+        const decision = key === 'y' ? 'y' : 'n';
+        
+        // If all choices are complete, can't use keyboard for editing (too ambiguous which choice to edit)
+        if (currentChoiceIndex >= choices.length) {
+            return;
+        }
+        
+        // Handle current choice with keyboard
+        if (currentChoiceIndex < choices.length) {
+            handleChoice(currentChoiceIndex, decision);
+        }
+    }
+}
+
 function createChoiceRow(index) {
     const cost = gameConfig.costArray[index];
     const row = document.createElement('div');
@@ -869,8 +896,8 @@ function getMessages() {
 
 function showResults(selectedChoiceIndex, A, X, Y, payment) {
     // Update game state displays
-    gameTitle.textContent = `Results - Choice ${selectedChoiceIndex + 1} was selected`;
-    actionPrompt.innerHTML = `<strong>Your selected choice:</strong> ${choices[selectedChoiceIndex] === 'y' ? 'Yes' : 'No'} (Cost: ${gameConfig.costArray[selectedChoiceIndex]})`;
+    gameTitle.textContent = `Results`;
+    actionPrompt.innerHTML = `One of the rows is randomly selected to be implemented`;
     
     // Hide choice grid, validation message, progress indicator and submit button
     choiceGrid.style.display = 'none';
@@ -938,6 +965,9 @@ function initializeGame() {
     
     // Add submit button listener
     submitButton.addEventListener('click', submitAllChoices);
+    
+    // Add keyboard event listener
+    document.addEventListener('keydown', handleKeyPress);
     
     sendDataToQualtrics('GAME_START', { started: true });
 }
