@@ -287,7 +287,7 @@ let gameConfig = {
     playerIcon1: "https://via.placeholder.com/40/4CAF50/FFFFFF?text=P1",
     playerIcon2: "https://via.placeholder.com/40/2196F3/FFFFFF?text=P2",
     currentHue: 200,
-    treatment: "exo",
+    treatment: "endog", // "exo" or "endog"
     pA: 0.5,
     buttonConfig: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 };
@@ -363,7 +363,7 @@ function updateSingleStat(statNum, player1Name, player2Name) {
         barLabels.style.display = 'none';
         
         // Return data even when insufficient
-        statData.displayText = "Insufficient data";
+        statData.displayText1 = "Insufficient data";
         return statData;
     }
     
@@ -389,7 +389,11 @@ function updateSingleStat(statNum, player1Name, player2Name) {
     statData.direction = direction;
     statData.condition0DataLength = condition0Data.length;
     statData.condition1DataLength = condition1Data.length;
-    statData.displayText = `If ${player1Name} pressed, ${player2Name} pressed ${absPercentage} percentage points ${direction} often.`;
+    statData.displayText1 = `If ${player1Name} pressed, ${player2Name} pressed ${absPercentage} percentage points ${direction} often.`;
+    statData.displayText2 = `
+        When pressed: ${response1When1}/${condition1Data.length} (${(rateWhen1 * 100).toFixed(0)}%)<br>
+        When not pressed: ${response1When0}/${condition0Data.length} (${(rateWhen0 * 100).toFixed(0)}%)
+    `;
     
     // Store the detailed breakdown
     statData.breakdown = {
@@ -406,38 +410,33 @@ function updateSingleStat(statNum, player1Name, player2Name) {
     };
     
     // Update UI (existing code)
-    influenceText.innerHTML = statData.displayText;
+    influenceText.innerHTML = statData.displayText1;
     
     // Update bar chart
     barContainer.style.display = 'block';
     barLabels.style.display = 'flex';
     
-    const clampedPercentage = Math.max(-100, Math.min(100, percentageDifference));
-    const barWidth = Math.abs(clampedPercentage) / 2;
+    const barWidth = absPercentage / 2;
     
     // Store bar chart info
     statData.barChart = {
-        clampedPercentage: clampedPercentage,
         barWidth: barWidth,
-        direction: clampedPercentage >= 0 ? 'positive' : 'negative'
+        direction: percentageDifference >= 0 ? 'positive' : 'negative'
     };
     
     // Reset bar
     Object.assign(barFill.style, { left: 'auto', right: 'auto', width: '0%' });
     
-    if (clampedPercentage >= 0) {
+    if (percentageDifference >= 0) {
         barFill.className = 'bar-fill bar-positive';
         Object.assign(barFill.style, { left: '50%', width: `${barWidth}%` });
     } else {
         barFill.className = 'bar-fill bar-negative';
         Object.assign(barFill.style, { right: '50%', width: `${barWidth}%` });
     }
-    
-    dataCounts.innerHTML = `
-        When pressed: ${response1When1}/${condition1Data.length} (${(rateWhen1 * 100).toFixed(0)}%)<br>
-        When not pressed: ${response1When0}/${condition0Data.length} (${(rateWhen0 * 100).toFixed(0)}%)
-    `;
-    
+
+    dataCounts.innerHTML = statData.displayText2;
+
     return statData;
 }
 
@@ -642,10 +641,14 @@ function showActionPanels() {
     btnYes.disabled = btnNo.disabled = false;
     
     const isPlayerChoice = isPlayerChoiceRound();
-    
+
     if (isPlayerChoice) {
         btnNo.style.display = btnYes.style.display = "inline-block";
-        document.getElementById("actionPrompt").textContent = "Press your button? (Use your keyboard)";
+        if (gameConfig.treatment === "exo") {
+            document.getElementById("actionPrompt").textContent = "Press your button? (Use your keyboard)";
+        } else {
+            document.getElementById("actionPrompt").textContent = "Press your button?";
+        }
     } else {
         if (Math.random() < gameConfig.pA) {
             btnNo.style.display = "none";
@@ -679,7 +682,7 @@ setTimeout(() => {
     gameContainer.style.display = "flex";
     sendDataToQualtrics('GAME_START', { started: true });
     nextRound();
-}, 2000);
+}, 1000);
 
 </script>
 </body>

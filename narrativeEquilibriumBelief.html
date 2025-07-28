@@ -53,7 +53,6 @@ body {
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     margin-bottom: 10px;
     border: 1px solid black;
-    padding: 15px;
 }
 
 .panel-header {
@@ -77,6 +76,14 @@ body {
     font-weight: bold;
     font-size: 20px;
     color: #333;
+}
+
+.panel-content {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
 }
 
 .text {
@@ -188,6 +195,7 @@ body {
 
 .submit-container {
     margin-top: 15px;
+    margin-bottom: 15px;
     text-align: center;
 }
 
@@ -244,9 +252,8 @@ body {
 .lock-icon {
     position: absolute;
     top: 5px;
-    right: 10px;
+    right: -350px;
     display: flex;
-    align-items: center;
     justify-content: center;
     opacity: 0.8;
     z-index: 10;
@@ -280,8 +287,71 @@ body {
     font-size: 12px;
 }
 
-.stat-1 { margin-top: 50px; }
-.stat-2 { margin-top: 20px; }
+.stat-1 { 
+    margin-top: 50px; 
+}
+
+.stat-2 { 
+    margin-top: 20px; 
+}
+
+.stat-text {
+    margin-bottom: 8px;
+    line-height: 1.3;
+    font-weight: 500;
+    color: #333;
+}
+
+.bar-container {
+    background: #e9ecef;
+    height: 16px;
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+    margin: 6px 0px;
+}
+
+.bar-center {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 1px;
+    height: 100%;
+    background: #495057;
+    z-index: 2;
+}
+
+.bar-fill {
+    height: 100%;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    position: absolute;
+    z-index: 1;
+}
+
+.bar-positive {
+    background: linear-gradient(90deg, #28a745, #20c997);
+    left: 50%;
+}
+
+.bar-negative {
+    background: linear-gradient(90deg, #dc3545, #fd7e14);
+    right: 50%;
+}
+
+.bar-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: #666;
+}
+
+.data-counts {
+    font-size: 10px;
+    color: #666;
+    text-align: center;
+    margin-top: 4px;
+}
 
 .results-panel {
     background: #e8f5e8;
@@ -292,63 +362,103 @@ body {
     color: #2e7d32;
     font-weight: bold;
 }
+
+/* Interactive elements - hidden by default */
+.interactive-elements {
+    display: none;
+    width: 100%;
+}
+
+.interactive-elements.active {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
 </style>
 </head>
 <body>
 
 <div id="gameContainer" class="game-container" style="display: none;">
     <div class="panels-section">
-        <div id="gameTitle" class="game-title">Make your choices for each cost scenario</div>
-        
-        <div id="panelAchoice" class="panel">
+        <!-- Panel A (You/Player) -->
+        <div id="panelA" class="panel" data-panel="A">
             <div class="panel-header">
-                <div class="panel-name">You</div>
+                <img id="panelA-icon" src="https://via.placeholder.com/40/FF9800/FFFFFF?text=Y" class="panel-icon" alt="You">
+                <div id="panelA-name" class="panel-name">You</div>
+                <div id="panelA-lock" class="lock-icon" style="display: none;"></div>
             </div>
-            <div id="actionPrompt" class="text">Press your button? (You must switch from No to Yes exactly once)</div>
-            
-            <div id="progressIndicator" class="progress-indicator">Decision 1 of 7</div>
-            
-            <div id="choiceGrid" class="choice-grid">
-                <!-- Choice rows will be generated here -->
-            </div>
-            
-            <div id="validationMessage" class="validation-message" style="display: none;"></div>
-            
-            <div class="submit-container">
-                <button id="submitChoices" class="submit-button" disabled>Submit All Choices</button>
+            <div class="panel-content">
+                <div id="panelA-text" class="text">Press your button?</div>
+                <div class="interactive-elements" id="panelA-interactive">
+                    <div id="progressIndicator" class="progress-indicator">Decision 1 of 7</div>
+                    <div id="choiceGrid" class="choice-grid"></div>
+                    <div id="validationMessage" class="validation-message" style="display: none;"></div>
+                    <div class="submit-container">
+                        <button id="submitChoices" class="submit-button" disabled>Submit All Choices</button>
+                    </div>
+                </div>
             </div>
         </div>
         
-        <div id="panelXinfo" class="panel">
+        <!-- Panel X (Player A) -->
+        <div id="panelX" class="panel" data-panel="X">
             <div class="panel-header">
-                <img src="https://via.placeholder.com/40/4CAF50/FFFFFF?text=P1" class="panel-icon" alt="Player">
-                <div class="panel-name">Player A</div>
+                <img id="panelX-icon" src="https://via.placeholder.com/40/4CAF50/FFFFFF?text=P1" class="panel-icon" alt="Player">
+                <div id="panelX-name" class="panel-name">Player A</div>
+                <div id="panelX-lock" class="lock-icon" style="display: none;"></div>
             </div>
-            <div id="riskText" class="text">(waiting for your choices)</div>
+            <div class="panel-content">
+                <div id="panelX-text" class="text">(waiting for your choices)</div>
+                <div class="interactive-elements" id="panelX-interactive"></div>
+            </div>
         </div>
         
-        <div id="panelYinfo" class="panel">
+        <!-- Panel Y (Player B) -->
+        <div id="panelY" class="panel" data-panel="Y">
             <div class="panel-header">
-                <img src="https://via.placeholder.com/40/2196F3/FFFFFF?text=P2" class="panel-icon" alt="Player">
-                <div class="panel-name">Player B</div>
+                <img id="panelY-icon" src="https://via.placeholder.com/40/2196F3/FFFFFF?text=P2" class="panel-icon" alt="Player">
+                <div id="panelY-name" class="panel-name">Player B</div>
+                <div id="panelY-lock" class="lock-icon" style="display: none;"></div>
             </div>
-            <div id="resultText" class="text">(waiting for your choices)</div>
+            <div class="panel-content">
+                <div id="panelY-text" class="text">(waiting for your choices)</div>
+                <div class="interactive-elements" id="panelY-interactive"></div>
+            </div>
         </div>
     </div>
     
     <div class="stats-section">
         <div class="stats-container">
             <div class="stat-box stat-1">
-                <div class="insufficient-data">Sequential Choice Mode</div>
+                <div id="influenceText1" class="stat-text">
+                    <div class="insufficient-data">Collecting data... <br><br><br><br><br><br></div>
+                </div>
+                <div id="barContainer1" class="bar-container" style="display: none;">
+                    <div class="bar-center"></div>
+                    <div id="barFill1" class="bar-fill"></div>
+                </div>
+                <div id="barLabels1" class="bar-labels" style="display: none;">
+                    <span>-100%</span>
+                    <span>0%</span>
+                    <span>+100%</span>
+                </div>
+                <div id="dataCounts1" class="data-counts"></div>
             </div>
             
             <div class="stat-box stat-2">
-                <div class="insufficient-data">Focus on causal relationships<br><br>
-                <strong>Rule:</strong> You must switch from No to Yes exactly once as costs decrease<br><br>
-                <strong>Current:</strong> A → Y<br>
-                You choose A<br>
-                A determines Y<br>
-                X is forced</div>
+                <div id="influenceText2" class="stat-text">
+                    <div class="insufficient-data">Collecting data...<br><br><br><br><br><br></div>
+                </div>
+                <div id="barContainer2" class="bar-container" style="display: none;">
+                    <div class="bar-center"></div>
+                    <div id="barFill2" class="bar-fill"></div>
+                </div>
+                <div id="barLabels2" class="bar-labels" style="display: none;">
+                    <span>-100%</span>
+                    <span>0%</span>
+                    <span>+100%</span>
+                </div>
+                <div id="dataCounts2" class="data-counts"></div>
             </div>
         </div>
     </div>
@@ -371,67 +481,237 @@ let gameConfig = {
     causalElicitType: "AX", // Can be "AX", "AY", or "XY"
     exoButton: 1,
     costArray: [2, 1, 0.5, 0, -0.5, -1, -2],
+    absPercentage: 30,
+    direction: "more",
+    response1When1: 8,
+    response1When0: 6,
+    condition0DataLength: 11,
+    condition1DataLength: 10,
+    rateWhen1: 0.8,
+    rateWhen0: 0.5454545454545454, 
 };
 
 let participantId = null;
 
 /* ========================= GAME STATE ========================= */
-let choices = new Array(7).fill(null); // Store player choices
-let currentChoiceIndex = 0; // Track which choice is currently active
+let choices = new Array(7).fill(null);
+let currentChoiceIndex = 0;
 let gameStartTime = Date.now();
 
-/* ========================== DOM ELEMENTS ========================== */
-const choiceGrid = document.getElementById("choiceGrid");
-const submitButton = document.getElementById("submitChoices");
-const panelXinfo = document.getElementById("panelXinfo");
-const panelYinfo = document.getElementById("panelYinfo");
-const panelAchoice = document.getElementById("panelAchoice");
-const resultText = document.getElementById("resultText");
-const riskText = document.getElementById("riskText");
-const gameTitle = document.getElementById("gameTitle");
-const actionPrompt = document.getElementById("actionPrompt");
-const validationMessage = document.getElementById("validationMessage");
-const progressIndicator = document.getElementById("progressIndicator");
+/* ===================== DOM UTILITY FUNCTIONS ===================== */
+function getPanel(panelId) {
+    return {
+        element: document.getElementById(`panel${panelId}`),
+        icon: document.getElementById(`panel${panelId}-icon`),
+        name: document.getElementById(`panel${panelId}-name`),
+        text: document.getElementById(`panel${panelId}-text`),
+        lock: document.getElementById(`panel${panelId}-lock`),
+        interactive: document.getElementById(`panel${panelId}-interactive`)
+    };
+}
 
-/* ===================== HELPER FUNCTIONS ===================== */
 function createLockIcon() {
-    const lockSvg = document.createElement('div');
-    lockSvg.className = 'lock-icon';
-    lockSvg.innerHTML = `
+    return `
         <svg class="svg-icon" style="width: 2.5em; height: 2.5em; vertical-align: middle; overflow: hidden;" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg">
             <path d="M824.888889 426.666667v-85.333334c0-173.511111-139.377778-312.888889-312.888889-312.888889S199.111111 167.822222 199.111111 341.333333v85.333334H85.333333v455.111111h853.333334V426.666667h-113.777778z m-284.444445 219.022222V739.555556h-56.888888v-93.866667c-17.066667-8.533333-28.444444-28.444444-28.444445-48.355556 0-31.288889 25.6-56.888889 56.888889-56.888889s56.888889 25.6 56.888889 56.888889c0 19.911111-11.377778 39.822222-28.444445 48.355556zM512 426.666667h-199.111111v-85.333334c0-110.933333 88.177778-199.111111 199.111111-199.111111s199.111111 88.177778 199.111111 199.111111v85.333334h-199.111111z" fill="" />
         </svg>
     `;
-    return lockSvg;
 }
 
+function moveInteractiveElements(targetPanelId) {
+    // Hide all interactive containers
+    ['A', 'X', 'Y'].forEach(id => {
+        const panel = getPanel(id);
+        panel.interactive.classList.remove('active');
+    });
+    
+    // Show the target interactive container and move elements there
+    const targetPanel = getPanel(targetPanelId);
+    targetPanel.interactive.classList.add('active');
+    
+    // Move the actual interactive elements to the target panel
+    const elements = [
+        document.getElementById('progressIndicator'),
+        document.getElementById('choiceGrid'),
+        document.getElementById('validationMessage'),
+        document.querySelector('.submit-container')
+    ];
+    
+    elements.forEach(element => {
+        if (element) {
+            targetPanel.interactive.appendChild(element);
+        }
+    });
+}
+
+function setPanelState(panelId, config) {
+    const panel = getPanel(panelId);
+    
+    if (config.name) panel.name.textContent = config.name;
+    if (config.icon) panel.icon.src = config.icon;
+    if (config.text) panel.text.innerHTML = config.text;
+    if (config.backgroundColor) panel.element.style.backgroundColor = config.backgroundColor;
+    if (config.showLock) {
+        panel.lock.innerHTML = createLockIcon();
+        panel.lock.style.display = 'flex';
+    } else {
+        panel.lock.style.display = 'none';
+    }
+}
+
+/* ===================== GAME CONFIGURATION ===================== */
+function applyGameConfiguration() {
+    console.log("Applying game configuration");
+    
+    document.body.style.background = `hsl(${gameConfig.currentHue} 70% 85%)`;
+    
+    // Configure panels based on treatment
+    const treatmentConfigs = {
+        "AX": {
+            activePanel: 'A',
+            panels: {
+                A: { 
+                    name: "You", 
+                    text: "Press your button?",
+                    backgroundColor: "white"
+                },
+                X: { 
+                    name: gameConfig.playerName1 + " (determines your bonus)", 
+                    icon: gameConfig.playerIcon1,
+                    text: `${gameConfig.playerName1} will decide based on your choice`,
+                    backgroundColor: "lightgray"
+                },
+                Y: { 
+                    name: gameConfig.playerName2, 
+                    icon: gameConfig.playerIcon2,
+                    text: gameConfig.exoButton == 1 
+                        ? `${gameConfig.playerName2} is forced to press ${gameConfig.playerPronoun2} button`
+                        : `${gameConfig.playerName2} is forced NOT to press ${gameConfig.playerPronoun2} button`,
+                    backgroundColor: gameConfig.exoButton == 1 ? "lightgreen" : "lightcoral",
+                    showLock: true
+                }
+            }
+        },
+        "AY": {
+            activePanel: 'A',
+            panels: {
+                A: { 
+                    name: "You", 
+                    text: "Press your button?",
+                    backgroundColor: "white"
+                },
+                X: { 
+                    name: gameConfig.playerName1, 
+                    icon: gameConfig.playerIcon1,
+                    text: gameConfig.exoButton == 1 
+                        ? `${gameConfig.playerName1} is forced to press ${gameConfig.playerPronoun1} button`
+                        : `${gameConfig.playerName1} is forced NOT to press ${gameConfig.playerPronoun1} button`,
+                    backgroundColor: gameConfig.exoButton == 1 ? "lightgreen" : "lightcoral",
+                    showLock: true
+                },
+                Y: { 
+                    name: gameConfig.playerName2 + " (determines your bonus)", 
+                    icon: gameConfig.playerIcon2,
+                    text: `${gameConfig.playerName2} will decide based on ${gameConfig.playerName1}'s forced choice`,
+                    backgroundColor: "lightgray"
+                }
+            }
+        },
+        "XY": {
+            activePanel: 'X',
+            panels: {
+                A: { 
+                    name: "You", 
+                    text: gameConfig.exoButton == 1 
+                        ? "You are forced to press your button"
+                        : "You are forced NOT to press your button",
+                    backgroundColor: gameConfig.exoButton == 1 ? "lightgreen" : "lightcoral",
+                    showLock: true
+                },
+                X: { 
+                    name: gameConfig.playerName1, 
+                    icon: gameConfig.playerIcon1,
+                    text: `Press ${gameConfig.playerName1}'s button for them`,
+                    backgroundColor: "white"
+                },
+                Y: { 
+                    name: gameConfig.playerName2 + " (determines your bonus)", 
+                    icon: gameConfig.playerIcon2,
+                    text: `${gameConfig.playerName2} will decide based on ${gameConfig.playerName1}'s choice`,
+                    backgroundColor: "lightgray"
+                }
+            }
+        }
+    };
+    
+    const config = treatmentConfigs[gameConfig.causalElicitType];
+    
+    // Apply panel configurations
+    Object.entries(config.panels).forEach(([panelId, panelConfig]) => {
+        setPanelState(panelId, panelConfig);
+    });
+    
+    // Move interactive elements to the correct panel
+    moveInteractiveElements(config.activePanel);
+    
+    // Set up statistics display
+    setupStatisticsDisplay();
+}
+
+function setupStatisticsDisplay() {
+    const influenceText1 = document.getElementById('influenceText1');
+    const influenceText2 = document.getElementById('influenceText2');
+    const barContainer1 = document.getElementById('barContainer1');
+    const barContainer2 = document.getElementById('barContainer2');
+    const barFill1 = document.getElementById('barFill1');
+    const barFill2 = document.getElementById('barFill2');
+    const barLabels1 = document.getElementById('barLabels1');
+    const barLabels2 = document.getElementById('barLabels2');
+    const dataCounts1 = document.getElementById('dataCounts1');
+    const dataCounts2 = document.getElementById('dataCounts2');
+    
+    influenceText1.innerHTML = `If you pressed, ${gameConfig.playerName1} pressed ${gameConfig.absPercentage} percentage points ${gameConfig.direction} often.`;
+    barContainer1.style.display = 'block';
+    barLabels1.style.display = 'flex';
+    barFill1.className = 'bar-fill bar-positive';
+    barFill1.style.left = '50%';
+    barFill1.style.width = `${gameConfig.absPercentage/2}%`;
+    dataCounts1.innerHTML = `When pressed: ${gameConfig.response1When1}/${gameConfig.condition1DataLength} (${(gameConfig.rateWhen1 * 100).toFixed(0)}%)<br>
+        When not pressed: ${gameConfig.response1When0}/${gameConfig.condition0DataLength} (${(gameConfig.rateWhen0 * 100).toFixed(0)}%)`;
+    
+    influenceText2.innerHTML = `If ${gameConfig.playerName1} pressed, ${gameConfig.playerName2} pressed 35 percentage points more often.`;
+    barContainer2.style.display = 'block';
+    barLabels2.style.display = 'flex';
+    barFill2.className = 'bar-fill bar-positive';
+    barFill2.style.left = '50%';
+    barFill2.style.width = '17.5%';
+    dataCounts2.innerHTML = `When pressed: 9/12 (75%)<br>When not pressed: 4/10 (40%)`;
+}
+
+/* ===================== GAME LOGIC (UNCHANGED) ===================== */
 function updateProgressIndicator() {
     const completedChoices = choices.filter(choice => choice !== null).length;
     const totalChoices = gameConfig.costArray.length;
     const displayNumber = Math.min(completedChoices + 1, totalChoices);
-    progressIndicator.textContent = `Decision ${displayNumber} of ${totalChoices}`;
+    document.getElementById('progressIndicator').textContent = `Decision ${displayNumber} of ${totalChoices}`;
 }
 
 function updateRowStates() {
     console.log('Updating row states, currentChoiceIndex:', currentChoiceIndex);
     
     document.querySelectorAll('.choice-row').forEach((row, index) => {
-        // Clear all state classes
         row.classList.remove('current', 'completed', 'hidden');
         
         const buttons = row.querySelectorAll('.actionButton');
         
         if (index < currentChoiceIndex) {
-            // Completed rows
             row.classList.add('completed');
-            buttons.forEach(btn => btn.disabled = false); // Keep enabled for potential editing
+            buttons.forEach(btn => btn.disabled = false);
         } else if (index === currentChoiceIndex) {
-            // Current active row
             row.classList.add('current');
             buttons.forEach(btn => btn.disabled = false);
             console.log('Set row', index, 'as current');
         } else {
-            // Future rows
             row.classList.add('hidden');
             buttons.forEach(btn => btn.disabled = true);
         }
@@ -439,7 +719,6 @@ function updateRowStates() {
 }
 
 function checkForInvalidSwitch() {
-    // Look for any "Yes" followed by "No" in the current choices
     for (let i = 1; i <= currentChoiceIndex; i++) {
         if (choices[i-1] === 'y' && choices[i] === 'n') {
             return true;
@@ -449,12 +728,10 @@ function checkForInvalidSwitch() {
 }
 
 function highlightInvalidSwitch() {
-    // Clear previous highlighting
     document.querySelectorAll('.choice-row').forEach(row => {
         row.classList.remove('invalid');
     });
     
-    // Find and highlight instances where "Yes" is followed by "No"
     for (let i = 1; i <= currentChoiceIndex; i++) {
         if (choices[i-1] === 'y' && choices[i] === 'n') {
             document.querySelector(`[data-choice="${i-1}"]`).classList.add('invalid');
@@ -464,6 +741,7 @@ function highlightInvalidSwitch() {
 }
 
 function showInvalidSwitchWarning() {
+    const validationMessage = document.getElementById('validationMessage');
     validationMessage.textContent = "Warning: You switched from 'Yes' back to 'No'. This creates an invalid pattern. You can change your previous choices by clicking on them, or continue with your current choices.";
     validationMessage.className = 'validation-message validation-error';
     validationMessage.style.display = 'block';
@@ -471,24 +749,21 @@ function showInvalidSwitchWarning() {
 }
 
 function hideValidationMessage() {
+    const validationMessage = document.getElementById('validationMessage');
     validationMessage.style.display = 'none';
-    // Clear any previous invalid highlighting
     document.querySelectorAll('.choice-row').forEach(row => {
         row.classList.remove('invalid');
     });
 }
 
 function updateButtonSelection(choiceIndex, decision) {
-    // Update button appearance
     const row = document.querySelector(`[data-choice="${choiceIndex}"]`);
     const yesBtn = row.querySelector('.yes-btn');
     const noBtn = row.querySelector('.no-btn');
     
-    // Reset both buttons
     yesBtn.classList.remove('selected');
     noBtn.classList.remove('selected');
     
-    // Highlight selected button
     if (decision === 'y') {
         yesBtn.classList.add('selected');
     } else {
@@ -507,12 +782,6 @@ function sendChoiceData(choiceIndex, decision, hasInvalidSwitch, isEdit = false)
     });
 }
 
-function clearLockIcons() {
-    const existingLocks = document.querySelectorAll('.lock-icon');
-    existingLocks.forEach(lock => lock.remove());
-}
-
-/* =============== QUALTRICS COMMUNICATION =============== */
 function sendDataToQualtrics(dataType, data) {
     console.log(`Qualtrics data [${dataType}]:`, data);
     if (window.parent !== window) {
@@ -526,116 +795,13 @@ function sendDataToQualtrics(dataType, data) {
     }
 }
 
-window.addEventListener('message', function(event) {
-    if (event.data.type === 'INIT') {
-        participantId = event.data.participantId;
-        if (event.data.gameConfig) {
-            Object.assign(gameConfig, event.data.gameConfig);
-            applyGameConfiguration();
-        }
-    }
-});
-
-function applyGameConfiguration() {
-    console.log("Applying game configuration");
-    
-    document.body.style.background = `hsl(${gameConfig.currentHue} 70% 85%)`;
-    
-    const playerName1El = document.querySelector('#panelXinfo .panel-name');
-    const playerName2El = document.querySelector('#panelYinfo .panel-name');
-    const playerIcon1El = document.querySelector('#panelXinfo .panel-icon');
-    const playerIcon2El = document.querySelector('#panelYinfo .panel-icon');
-    
-    if (playerName1El) playerName1El.textContent = gameConfig.playerName1;
-    if (playerName2El) playerName2El.textContent = gameConfig.playerName2;
-    if (playerIcon1El) playerIcon1El.src = gameConfig.playerIcon1;
-    if (playerIcon2El) playerIcon2El.src = gameConfig.playerIcon2;
-    
-    // Apply bonus indicators based on treatment
-    if (gameConfig.causalElicitType === "AX") {
-        if (playerName1El) playerName1El.textContent += " (determines your bonus)";
-    } else if (gameConfig.causalElicitType === "AY" || gameConfig.causalElicitType === "XY") {
-        if (playerName2El) playerName2El.textContent += " (determines your bonus)";
-    }
-    
-    // MOVE ELEMENTS BASED ON TREATMENT - Always reset first
-    // First, ensure all elements are back in their original positions
-    const originalPanel = panelAchoice;
-    const elementsToMove = [progressIndicator, choiceGrid, validationMessage, document.querySelector('.submit-container')];
-    
-    elementsToMove.forEach(element => {
-        if (element && element.parentNode !== originalPanel) {
-            element.parentNode.removeChild(element);
-            originalPanel.appendChild(element);
-        }
-    });
-    
-    // Now move to correct panel based on treatment
-    if (gameConfig.causalElicitType === "XY") {
-        // Move elements to Player A panel for XY treatment
-        elementsToMove.forEach(element => {
-            if (element && element.parentNode === originalPanel) {
-                element.parentNode.removeChild(element);
-                panelXinfo.appendChild(element);
-            }
-        });
-        
-        // Update Player A panel header
-        if (playerName1El) {
-            playerName1El.textContent = gameConfig.playerName1;
-        }
-    }
-    
-    // Add lock icons for forced players
-    clearLockIcons();
-    if (gameConfig.causalElicitType === 'AY') {
-        const lockIcon = createLockIcon();
-        panelXinfo.appendChild(lockIcon);
-    }
-    if (gameConfig.causalElicitType === 'AX') {
-        const lockIcon = createLockIcon();
-        panelYinfo.appendChild(lockIcon);
-    }
-    if (gameConfig.causalElicitType === 'XY') {
-        const lockIcon = createLockIcon();
-        panelAchoice.appendChild(lockIcon);
-    }
-    
-    // Update initial panel messages and backgrounds
-    const messages = getMessages();
-    riskText.innerHTML = messages.xMessage;
-    resultText.innerHTML = messages.yMessage;
-    panelXinfo.style.backgroundColor = messages.xBackgroundColor;
-    panelYinfo.style.backgroundColor = messages.yBackgroundColor;
-    
-    // Update action prompt based on treatment
-    if (gameConfig.causalElicitType === "XY") {
-        if (gameConfig.exoButton == 1) {
-            actionPrompt.innerHTML = "You are forced to press your button";
-            panelAchoice.style.backgroundColor = "lightgreen";
-        } else {
-            actionPrompt.innerHTML = "You are forced NOT to press your button";
-            panelAchoice.style.backgroundColor = "lightcoral";
-        }
-        // Set Player A background to white for XY treatment
-        panelXinfo.style.backgroundColor = "white";
-    } else {
-        actionPrompt.innerHTML = "Press your button?";
-        panelAchoice.style.backgroundColor = "white";
-    }
-}
-
-/* ===================== CHOICE HANDLING ===================== */
 function handleChoice(choiceIndex, decision) {
     console.log('handleChoice called:', choiceIndex, decision, 'currentChoiceIndex:', currentChoiceIndex);
     
-    // Allow editing any choice if all choices are complete
     if (currentChoiceIndex >= choices.length) {
-        // All choices complete - allow editing any choice
         choices[choiceIndex] = decision;
         updateButtonSelection(choiceIndex, decision);
         
-        // Check for invalid switching and update warning
         const hasInvalidSwitch = checkForInvalidSwitch();
         if (hasInvalidSwitch) {
             showInvalidSwitchWarning();
@@ -644,16 +810,13 @@ function handleChoice(choiceIndex, decision) {
         }
         
         sendChoiceData(choiceIndex, decision, hasInvalidSwitch, true);
-        return; // Don't proceed to next choice when editing
+        return;
     }
     
-    // Allow editing previous choices if there's an invalid switch or if it's the current choice
     if (choiceIndex < currentChoiceIndex) {
-        // This is a previous choice - allow editing
         choices[choiceIndex] = decision;
         updateButtonSelection(choiceIndex, decision);
         
-        // Check for invalid switching and show warning
         const hasInvalidSwitch = checkForInvalidSwitch();
         if (hasInvalidSwitch) {
             showInvalidSwitchWarning();
@@ -662,13 +825,12 @@ function handleChoice(choiceIndex, decision) {
         }
         
         sendChoiceData(choiceIndex, decision, hasInvalidSwitch, true);
-        return; // Don't proceed to next choice when editing previous choices
+        return;
     }
     
-    // Normal sequential choice handling for current choice
     if (choiceIndex !== currentChoiceIndex) {
         console.log('Ignoring click - not current choice');
-        return; // Ignore clicks on future choices during sequential mode
+        return;
     }
     
     choices[choiceIndex] = decision;
@@ -676,7 +838,6 @@ function handleChoice(choiceIndex, decision) {
     
     updateButtonSelection(choiceIndex, decision);
     
-    // Check for invalid switching and show warning
     const hasInvalidSwitch = checkForInvalidSwitch();
     if (hasInvalidSwitch) {
         showInvalidSwitchWarning();
@@ -686,18 +847,15 @@ function handleChoice(choiceIndex, decision) {
     
     sendChoiceData(choiceIndex, decision, hasInvalidSwitch);
     
-    // Move to next choice after a short delay
     setTimeout(() => {
         currentChoiceIndex++;
         console.log('Moving to next choice, new currentChoiceIndex:', currentChoiceIndex);
         updateProgressIndicator();
         updateRowStates();
         
-        // If all choices are made, enable submit button
         if (currentChoiceIndex >= choices.length) {
-            submitButton.disabled = false;
+            document.getElementById('submitChoices').disabled = false;
             
-            // Only show warning if there's an invalid switch, otherwise hide message
             const hasInvalidSwitch = checkForInvalidSwitch();
             if (hasInvalidSwitch) {
                 showInvalidSwitchWarning();
@@ -705,7 +863,6 @@ function handleChoice(choiceIndex, decision) {
                 hideValidationMessage();
             }
             
-            // Make all rows editable
             document.querySelectorAll('.choice-row').forEach((row, index) => {
                 row.classList.remove('current', 'hidden');
                 row.classList.add('completed');
@@ -717,24 +874,21 @@ function handleChoice(choiceIndex, decision) {
 }
 
 function handleKeyPress(event) {
-    // Only handle y/n keys when game is active
     if (document.getElementById("gameContainer").style.display === "none") {
-        return; // Game not started yet
+        return;
     }
     
     const key = event.key.toLowerCase();
     
     if (key === 'y' || key === 'n') {
-        event.preventDefault(); // Prevent default browser behavior
+        event.preventDefault();
         
         const decision = key === 'y' ? 'y' : 'n';
         
-        // If all choices are complete, can't use keyboard for editing (too ambiguous which choice to edit)
         if (currentChoiceIndex >= choices.length) {
             return;
         }
         
-        // Handle current choice with keyboard
         if (currentChoiceIndex < choices.length) {
             handleChoice(currentChoiceIndex, decision);
         }
@@ -750,14 +904,14 @@ function createChoiceRow(index) {
     let yesText, noText;
     
     if (cost > 0) {
-        yesText = `Yes (<span class="cost-amt">cost $${cost.toFixed(1)}</span>)`;
+        yesText = `Yes (<span class="cost-amt">cost ${cost.toFixed(1)}</span>)`;
         noText = `No (<span class="cost-amt">free</span>)`;
     } else if (cost === 0) {
         yesText = `Yes (<span class="cost-amt">free</span>)`;
         noText = `No (<span class="cost-amt">free</span>)`;
     } else {
         yesText = `Yes (<span class="cost-amt">free</span>)`;
-        noText = `No (<span class="cost-amt">cost $${Math.abs(cost).toFixed(1)}</span>)`;
+        noText = `No (<span class="cost-amt">cost ${Math.abs(cost).toFixed(1)}</span>)`;
     }
     
     row.innerHTML = `
@@ -767,7 +921,6 @@ function createChoiceRow(index) {
         </div>
     `;
     
-    // Add event listeners
     const yesBtn = row.querySelector('.yes-btn');
     const noBtn = row.querySelector('.no-btn');
     
@@ -785,15 +938,14 @@ function createChoiceRow(index) {
 }
 
 function submitAllChoices() {
+    const submitButton = document.getElementById('submitChoices');
     submitButton.disabled = true;
     submitButton.textContent = "Processing...";
     
-    // Randomly select one choice to implement
     const selectedChoiceIndex = Math.floor(Math.random() * 7);
     const selectedChoice = choices[selectedChoiceIndex];
     const selectedCost = gameConfig.costArray[selectedChoiceIndex];
     
-    // Calculate game outcome based on selected choice
     let A, X, Y, payment;
     
     if (gameConfig.causalElicitType === "XY") {
@@ -811,7 +963,7 @@ function submitAllChoices() {
         } else {
             payment = (1-X) * selectedCost + gameConfig.yBonus * Y;
         }
-            } else if (gameConfig.causalElicitType === "AX") {
+    } else if (gameConfig.causalElicitType === "AX") {
         A = selectedChoice === 'y' ? 1 : 0;
         Y = gameConfig.exoButton;
         if (gameConfig.causal === 0) {
@@ -844,7 +996,6 @@ function submitAllChoices() {
         }
     }
     
-    // Send final data
     sendDataToQualtrics('FINAL_DATA', {
         allChoices: choices,
         costs: gameConfig.costArray,
@@ -860,129 +1011,98 @@ function submitAllChoices() {
         switchingPoint: choices.indexOf('y')
     });
     
-    // Show results
     showResults(selectedChoiceIndex, A, X, Y, payment);
 }
 
-function getMessages() {
-    let xMessage = '';
-    let yMessage = '';
-    let xBackgroundColor = 'white';
-    let yBackgroundColor = 'white';
-    
-    if (gameConfig.causalElicitType === "AX") {
-        xMessage = `${gameConfig.playerName1} will decide based on your choice`;
-        xBackgroundColor = 'lightgray';
-        
-        if (gameConfig.exoButton == 1) {
-            yMessage = `${gameConfig.playerName2} is forced to press ${gameConfig.playerPronoun2} button`;
-            yBackgroundColor = "lightgreen";
-        } else {
-            yMessage = `${gameConfig.playerName2} is forced NOT to press ${gameConfig.playerPronoun2} button`;
-            yBackgroundColor = "lightcoral";
-        }
-    } else if (gameConfig.causalElicitType === "AY") {
-        if (gameConfig.exoButton == 1) {
-            xMessage = `${gameConfig.playerName1} is forced to press ${gameConfig.playerPronoun1} button`;
-            xBackgroundColor = "lightgreen";
-        } else {
-            xMessage = `${gameConfig.playerName1} is forced NOT to press ${gameConfig.playerPronoun1} button`;
-            xBackgroundColor = "lightcoral";
-        }
-        
-        yMessage = `${gameConfig.playerName2} will decide based on ${gameConfig.playerName1}'s forced choice`;
-        yBackgroundColor = 'lightgray';
-    } else if (gameConfig.causalElicitType === "XY") {
-        xMessage = `Press ${gameConfig.playerName1}'s button for them`;
-        xBackgroundColor = 'lightgray';
-        
-        yMessage = `${gameConfig.playerName2} will decide based on ${gameConfig.playerName1}'s choice`;
-        yBackgroundColor = 'lightgray';
-    }
-    
-    return { xMessage, yMessage, xBackgroundColor, yBackgroundColor };
-}
-
 function showResults(selectedChoiceIndex, A, X, Y, payment) {
-    // Update game state displays
-    gameTitle.textContent = `Results`;
-    actionPrompt.innerHTML = `One of the rows is randomly selected to be implemented`;
+    // Find the active panel and update its text
+    const activePanelId = gameConfig.causalElicitType === "XY" ? 'X' : 'A';
+    const activePanel = getPanel(activePanelId);
+    activePanel.text.innerHTML = `One of the rows is randomly selected to be implemented`;
     
-    // Hide choice grid, validation message, progress indicator and submit button
-    choiceGrid.style.display = 'none';
-    validationMessage.style.display = 'none';
-    progressIndicator.style.display = 'none';
-    submitButton.style.display = 'none';
+    // Hide interactive elements
+    document.getElementById('choiceGrid').style.display = 'none';
+    document.getElementById('validationMessage').style.display = 'none';
+    document.getElementById('progressIndicator').style.display = 'none';
+    document.getElementById('submitChoices').style.display = 'none';
     
-    // Show only that Player A has made their decision, without revealing the outcome
+    // Update panel states based on treatment
     if (gameConfig.causalElicitType === "AX") {
-        riskText.innerHTML = `${gameConfig.playerName1} has made ${gameConfig.playerPronoun1} decision`;
-        panelXinfo.style.backgroundColor = "lightgray";
+        setPanelState('X', {
+            text: `${gameConfig.playerName1} has made ${gameConfig.playerPronoun1} decision`,
+            backgroundColor: "lightgray"
+        });
         
-        if (gameConfig.exoButton == 1) {
-            resultText.innerHTML = `${gameConfig.playerName2} is forced to press ${gameConfig.playerPronoun2} button`;
-            panelYinfo.style.backgroundColor = "lightgreen";
-        } else {
-            resultText.innerHTML = `${gameConfig.playerName2} is forced NOT to press ${gameConfig.playerPronoun2} button`;
-            panelYinfo.style.backgroundColor = "lightcoral";
-        }
+        setPanelState('Y', {
+            text: gameConfig.exoButton == 1 
+                ? `${gameConfig.playerName2} is forced to press ${gameConfig.playerPronoun2} button`
+                : `${gameConfig.playerName2} is forced NOT to press ${gameConfig.playerPronoun2} button`,
+            backgroundColor: gameConfig.exoButton == 1 ? "lightgreen" : "lightcoral"
+        });
     } else if (gameConfig.causalElicitType === "AY") {
-        if (gameConfig.exoButton == 1) {
-            riskText.innerHTML = `${gameConfig.playerName1} is forced to press ${gameConfig.playerPronoun1} button`;
-            panelXinfo.style.backgroundColor = "lightgreen";
-        } else {
-            riskText.innerHTML = `${gameConfig.playerName1} is forced NOT to press ${gameConfig.playerPronoun1} button`;
-            panelXinfo.style.backgroundColor = "lightcoral";
-        }
+        setPanelState('X', {
+            text: gameConfig.exoButton == 1 
+                ? `${gameConfig.playerName1} is forced to press ${gameConfig.playerPronoun1} button`
+                : `${gameConfig.playerName1} is forced NOT to press ${gameConfig.playerPronoun1} button`,
+            backgroundColor: gameConfig.exoButton == 1 ? "lightgreen" : "lightcoral"
+        });
         
-        resultText.innerHTML = `${gameConfig.playerName2} has made ${gameConfig.playerPronoun2} decision`;
-        panelYinfo.style.backgroundColor = "lightgray";
+        setPanelState('Y', {
+            text: `${gameConfig.playerName2} has made ${gameConfig.playerPronoun2} decision`,
+            backgroundColor: "lightgray"
+        });
     } else if (gameConfig.causalElicitType === "XY") {
-        riskText.innerHTML = `${gameConfig.playerName1} has made ${gameConfig.playerPronoun1} decision`;
-        panelXinfo.style.backgroundColor = "lightgray";
+        setPanelState('X', {
+            text: `${gameConfig.playerName1} has made ${gameConfig.playerPronoun1} decision`,
+            backgroundColor: "lightgray"
+        });
         
-        resultText.innerHTML = `${gameConfig.playerName2} has made ${gameConfig.playerPronoun2} decision`;
-        panelYinfo.style.backgroundColor = "lightgray";
+        setPanelState('Y', {
+            text: `${gameConfig.playerName2} has made ${gameConfig.playerPronoun2} decision`,
+            backgroundColor: "lightgray"
+        });
     }
     
-    // Change panel styling to show completion
-    panelAchoice.classList.add('results-panel');
-    actionPrompt.classList.add('results-text');
+    // Change active panel styling to show completion
+    activePanel.element.classList.add('results-panel');
+    activePanel.text.classList.add('results-text');
     
     sendDataToQualtrics('GAME_COMPLETE', { completed: true });
 }
 
-/* ===================== INITIALIZE GAME ===================== */
+window.addEventListener('message', function(event) {
+    if (event.data.type === 'INIT') {
+        participantId = event.data.participantId;
+        if (event.data.gameConfig) {
+            Object.assign(gameConfig, event.data.gameConfig);
+            applyGameConfiguration();
+        }
+    }
+});
+
 function initializeGame() {
     console.log("Initializing sequential choice game");
     
-    // Show the game container
     document.getElementById("gameContainer").style.display = "flex";
     
-    // Create choice rows first
     gameConfig.costArray.forEach((cost, index) => {
         const row = createChoiceRow(index);
-        choiceGrid.appendChild(row);
+        document.getElementById('choiceGrid').appendChild(row);
     });
     
-    // Apply configuration (this will move elements to correct panels)
     applyGameConfiguration();
     
-    // Initialize row states - only first row is active
     updateRowStates();
     updateProgressIndicator();
     
-    // Add submit button listener
-    submitButton.addEventListener('click', submitAllChoices);
+    document.getElementById('submitChoices').addEventListener('click', submitAllChoices);
     
-    // Add keyboard event listener
     document.addEventListener('keydown', handleKeyPress);
     
     sendDataToQualtrics('GAME_START', { started: true });
 }
 
-// Wait 2 seconds before starting the game
-setTimeout(initializeGame, 2000);
+setTimeout(initializeGame, 1000);
 
 </script>
 </body>
