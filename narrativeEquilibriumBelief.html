@@ -433,6 +433,22 @@ body {
     margin-bottom: 20px;
 }
 
+.instruction-main-title {
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+.instruction-bullets {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.instruction-bullets li {
+    margin-bottom: 8px;
+}
+
 
 </style>
 </head>
@@ -564,8 +580,7 @@ let gameConfig = {
     displayText2_1: `If Player A pressed, Player B pressed 35 percentage points more often.`,
     displayText2_2: `When pressed: 9/12 (75%) <br> When not pressed: 4/10 (40%)`,
     percentageDifference1: 60,
-    percentageDifference2: 35,
-    instructionTitle:  `<div style="text-align:center"><span style="font-size:24px;"><strong> Ann is forced to press their button!</strong></span></div><ul><li>You will receive a <u>bonus of $1 if <b> Player B</b> presses their button.</u></li><li><u> Ann is forced to press their button!</u></li></ul>`
+    percentageDifference2: 35
 };
 
 let participantId = null;
@@ -646,6 +661,11 @@ function applyGameConfiguration() {
     const treatmentConfigs = {
         "AX": {
             activePanel: 'A',
+            instructionTitle: `Your payoff now depends on <b>${gameConfig.playerName1}'s</b> choice!`,
+            instructionBullets: [
+                `You will receive a <u>bonus of $${gameConfig.yBonus} if <b>${gameConfig.playerName1}</b> presses ${gameConfig.playerPronoun1} button.</u>`,
+                `The cost of pressing or not pressing the button will vary across decisions.`
+            ],
             panels: {
                 A: { 
                     name: "You", 
@@ -672,6 +692,11 @@ function applyGameConfiguration() {
         },
         "AY": {
             activePanel: 'A',
+            instructionTitle: "Making Decisions at Varying Button Costs!",
+            instructionBullets: [
+                `You will receive a bonus of $${gameConfig.yBonus} if <b>${gameConfig.playerName2}</b> presses ${gameConfig.playerPronoun2} button.`,
+                `The cost of pressing or not pressing the button will vary across decisions.`
+            ],
             panels: {
                 A: { 
                     name: "You", 
@@ -698,6 +723,16 @@ function applyGameConfiguration() {
         },
         "XY": {
             activePanel: 'X',
+            instructionTitle: gameConfig.exoButton == 1 
+                ? `You are forced to press your button and you can now control ${gameConfig.playerName2}'s button!`
+                : `You are forced NOT to press your button and you can now control ${gameConfig.playerName2}'s button!`,
+            instructionBullets: [
+                `You will receive a <u>bonus of $${gameConfig.yBonus} if <b>${gameConfig.playerName2}</b> presses ${gameConfig.playerPronoun2} button.</u>`,
+                gameConfig.exoButton == 1 
+                    ? `You are forced to press your button.`
+                    : `You are forced NOT to press your button.`,
+                `The cost of pressing or not pressing the button will vary across decisions.`   
+            ],
             panels: {
                 A: { 
                     name: "You", 
@@ -731,6 +766,19 @@ function applyGameConfiguration() {
     
     const config = treatmentConfigs[gameConfig.causalElicitType];
     currentTreatmentConfig = config; // Store for use in showResults
+    
+    // Populate instruction title
+    const instructionTitleDiv = document.getElementById("instructionTitle");
+    if (config.instructionTitle && config.instructionBullets) {
+        const titleHtml = `
+            <div class="instruction-main-title">${config.instructionTitle}</div>
+            <ul class="instruction-bullets">
+                ${config.instructionBullets.map(bullet => `<li>${bullet}</li>`).join('')}
+            </ul>
+        `;
+        instructionTitleDiv.innerHTML = titleHtml;
+        instructionTitleDiv.style.display = "block";
+    }
     
     // Apply panel configurations
     Object.entries(config.panels).forEach(([panelId, panelConfig]) => {
@@ -1271,13 +1319,6 @@ window.addEventListener('message', function(event) {
 
 function initializeGame() {
     console.log("Initializing sequential choice game");
-    
-    // Show and populate instruction title
-    const instructionTitleDiv = document.getElementById("instructionTitle");
-    if (gameConfig.instructionTitle) {
-        instructionTitleDiv.innerHTML = gameConfig.instructionTitle;
-        instructionTitleDiv.style.display = "block";
-    }
     
     document.getElementById("gameContainer").style.display = "flex";
     
