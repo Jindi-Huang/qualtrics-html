@@ -425,10 +425,22 @@ body {
     margin-top: 20px;
 }
 
+#instructionTitle {
+    display: none;
+    margin-left: 100px;
+    max-width: 820px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
 
 </style>
 </head>
 <body>
+
+<div id="instructionTitle">
+    <!-- Instruction title will be filled by JavaScript -->
+</div>
 
 <div id="gameContainer" class="game-container" style="display: none;">
     <div class="panels-section">
@@ -552,7 +564,8 @@ let gameConfig = {
     displayText2_1: `If Player A pressed, Player B pressed 35 percentage points more often.`,
     displayText2_2: `When pressed: 9/12 (75%) <br> When not pressed: 4/10 (40%)`,
     percentageDifference1: 60,
-    percentageDifference2: 35
+    percentageDifference2: 35,
+    instructionTitle:  `<div style="text-align:center"><span style="font-size:24px;"><strong> Ann is forced to press their button!</strong></span></div><ul><li>You will receive a <u>bonus of $1 if <b> Player B</b> presses their button.</u></li><li><u> Ann is forced to press their button!</u></li></ul>`
 };
 
 let participantId = null;
@@ -1258,6 +1271,13 @@ window.addEventListener('message', function(event) {
 
 function initializeGame() {
     console.log("Initializing sequential choice game");
+    
+    // Show and populate instruction title
+    const instructionTitleDiv = document.getElementById("instructionTitle");
+    if (gameConfig.instructionTitle) {
+        instructionTitleDiv.innerHTML = gameConfig.instructionTitle;
+        instructionTitleDiv.style.display = "block";
+    }
     
     document.getElementById("gameContainer").style.display = "flex";
     
