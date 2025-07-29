@@ -419,6 +419,13 @@ body {
     cursor: pointer;
     flex: 1;
 }
+
+.question-submit-container {
+    text-align: right;
+    margin-top: 20px;
+}
+
+
 </style>
 </head>
 <body>
@@ -516,6 +523,9 @@ body {
         </div>
         <div id="optionsContainer" class="options-container">
             <!-- Options will be filled by JavaScript -->
+        </div>
+        <div class="question-submit-container">
+            <button id="questionSubmitButton" class="submit-button" disabled>Next</button>
         </div>
     </div>
 </div>
@@ -1146,19 +1156,29 @@ function showResults(selectedChoiceIndex, A, X, Y, payment) {
     const optionsContainer = document.getElementById('optionsContainer');
     optionsContainer.innerHTML = ''; // Clear any existing content
     
-    const options = [
-        `Decreases the chance that ${currentTreatmentConfig.verbal.affectedPlayer} presses ${currentTreatmentConfig.verbal.affectedPronoun} button by 80-100%`,
-        `Decreases the chance that ${currentTreatmentConfig.verbal.affectedPlayer} presses ${currentTreatmentConfig.verbal.affectedPronoun} button by 60-79%`,
-        `Decreases the chance that ${currentTreatmentConfig.verbal.affectedPlayer} presses ${currentTreatmentConfig.verbal.affectedPronoun} button by 40-59%`,
-        `Decreases the chance that ${currentTreatmentConfig.verbal.affectedPlayer} presses ${currentTreatmentConfig.verbal.affectedPronoun} button by 20-39%`,
-        `Decreases the chance that ${currentTreatmentConfig.verbal.affectedPlayer} presses ${currentTreatmentConfig.verbal.affectedPronoun} button by 1-19%`,
-        `No change in the chance that ${currentTreatmentConfig.verbal.affectedPlayer} presses ${currentTreatmentConfig.verbal.affectedPronoun} button`,
-        `Increases the chance that ${currentTreatmentConfig.verbal.affectedPlayer} presses ${currentTreatmentConfig.verbal.affectedPronoun} button by 1-19%`,
-        `Increases the chance that ${currentTreatmentConfig.verbal.affectedPlayer} presses ${currentTreatmentConfig.verbal.affectedPronoun} button by 20-39%`,
-        `Increases the chance that ${currentTreatmentConfig.verbal.affectedPlayer} presses ${currentTreatmentConfig.verbal.affectedPronoun} button by 40-59%`,
-        `Increases the chance that ${currentTreatmentConfig.verbal.affectedPlayer} presses ${currentTreatmentConfig.verbal.affectedPronoun} button by 60-79%`,
-        `Increases the chance that ${currentTreatmentConfig.verbal.affectedPlayer} presses ${currentTreatmentConfig.verbal.affectedPronoun} button by 80-100%`
+    // Define percentage ranges for options
+    const percentageRanges = [
+        { type: 'Decreases', range: '80-100%' },
+        { type: 'Decreases', range: '60-79%' },
+        { type: 'Decreases', range: '40-59%' },
+        { type: 'Decreases', range: '20-39%' },
+        { type: 'Decreases', range: '1-19%' },
+        { type: 'No change', range: '' },
+        { type: 'Increases', range: '1-19%' },
+        { type: 'Increases', range: '20-39%' },
+        { type: 'Increases', range: '40-59%' },
+        { type: 'Increases', range: '60-79%' },
+        { type: 'Increases', range: '80-100%' }
     ];
+    
+    // Generate options using the percentage ranges
+    const options = percentageRanges.map(item => {
+        if (item.type === 'No change') {
+            return `No change in the chance that ${currentTreatmentConfig.verbal.affectedPlayer} presses ${currentTreatmentConfig.verbal.affectedPronoun} button.`;
+        } else {
+            return `${item.type} the chance that ${currentTreatmentConfig.verbal.affectedPlayer} presses ${currentTreatmentConfig.verbal.affectedPronoun} button by ${item.range}.`;
+        }
+    });
     
     options.forEach((option, index) => {
         const optionDiv = document.createElement('div');
@@ -1187,6 +1207,11 @@ function showResults(selectedChoiceIndex, A, X, Y, payment) {
             optionDiv.classList.add('selected');
             
             radio.checked = true;
+            
+            // Enable the submit button
+            const submitButton = document.getElementById('questionSubmitButton');
+            submitButton.disabled = false;
+            
             sendDataToQualtrics('CAUSAL_BELIEF', {
                 selectedOption: index,
                 optionText: option
@@ -1196,10 +1221,29 @@ function showResults(selectedChoiceIndex, A, X, Y, payment) {
         optionsContainer.appendChild(optionDiv);
     });
     
+    // Add submit button functionality
+    const submitButton = document.getElementById('questionSubmitButton');
+    submitButton.addEventListener('click', () => {
+        const selectedRadio = document.querySelector('input[name="causalEffect"]:checked');
+        if (selectedRadio) {
+            const selectedIndex = parseInt(selectedRadio.value);
+            const selectedOption = options[selectedIndex];
+            
+            // Disable the submit button and options
+            submitButton.disabled = true;
+            
+            // Send final submission data
+            sendDataToQualtrics('CAUSAL_BELIEF_SUBMITTED', {
+                selectedOption: selectedIndex,
+                optionText: selectedOption,
+                finalSubmission: true
+            });
+            sendDataToQualtrics('GAME_COMPLETE', { completed: true });
+        }
+    });
+    
     // Show the question section
     document.getElementById('questionSection').style.display = 'block';
-
-    sendDataToQualtrics('GAME_COMPLETE', { completed: true });
 }
 
 window.addEventListener('message', function(event) {
@@ -1234,7 +1278,7 @@ function initializeGame() {
     sendDataToQualtrics('GAME_START', { started: true });
 }
 
-setTimeout(initializeGame, 0);
+setTimeout(initializeGame, 1000);
 
 </script>
 </body>
