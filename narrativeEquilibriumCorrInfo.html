@@ -87,15 +87,24 @@ body {
     margin-top: 0;
 }
 
+.button-container {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+}
+
 .actionButton {
     padding: 8px 16px;
-    margin: 4px;
+    margin: 0;
     font-size: 16px;
     cursor: pointer;
     border: none;
     color: white;
     border-radius: 4px;
     transition: background-color 0.3s, transform 0.2s;
+    width: 150px;
+    text-align: center;
 }
 
 .actionButton:hover {
@@ -103,8 +112,19 @@ body {
     box-shadow: 0 5px 15px rgba(0,0,0,0.2);
 }
 
+.actionButton:hover.grayed-out {
+    transform: none;
+    box-shadow: none;
+}
+
 .green { background-color: #4CAF50; }
 .red { background-color: #f44336; }
+.grayed-out { 
+    background-color: #cccccc !important; 
+    color: #666666 !important; 
+    cursor: not-allowed !important;
+    opacity: 1 !important;
+}
 .hidden { display: none; }
 
 .flash {
@@ -213,8 +233,10 @@ body {
                     <div class="panel-name">You</div>
                 </div>
                 <div id="actionPrompt" class="text">Press your button?</div>
-                <button id="btnNo" class="actionButton red">No (free)</button>
-                <button id="btnYes" class="actionButton green">Yes (cost $0.25)</button>
+                <div class="button-container">
+                    <button id="btnNo" class="actionButton red">No (free)</button>
+                    <button id="btnYes" class="actionButton green">Yes (cost $0.25)</button>
+                </div>
             </div>
             
             <div id="panelXinfo" class="panel hidden">
@@ -545,7 +567,7 @@ function handleDecision(decision) {
         
         if (gameConfig.treatment === "exo" && isPlayerChoice) {
             panelXinfo.style.backgroundColor = "lightgray";
-            riskText.innerHTML = `${gameConfig.playerName1} has made ${gameConfig.playerPronoun1} decision <br>(press "c" to continue)`;
+            riskText.innerHTML = `<br>${gameConfig.playerName1} has made ${gameConfig.playerPronoun1} decision <br>(press "c" to continue)`;
         } else {
             panelXinfo.style.backgroundColor = X ? "green" : "red";
             riskText.innerHTML = X
@@ -646,19 +668,27 @@ function showActionPanels() {
 
     if (isPlayerChoice) {
         btnNo.style.display = btnYes.style.display = "inline-block";
+        btnNo.classList.remove("grayed-out");
+        btnYes.classList.remove("grayed-out");
+        btnNo.disabled = btnYes.disabled = false;
         if (gameConfig.treatment === "exo") {
             document.getElementById("actionPrompt").textContent = "Press your button? (Use your keyboard)";
         } else {
             document.getElementById("actionPrompt").textContent = "Press your button?";
         }
     } else {
+        btnNo.style.display = btnYes.style.display = "inline-block";
         if (Math.random() < gameConfig.pA) {
-            btnNo.style.display = "none";
-            btnYes.style.display = "inline-block";
+            btnNo.classList.add("grayed-out");
+            btnNo.disabled = true;
+            btnYes.classList.remove("grayed-out");
+            btnYes.disabled = false;
             document.getElementById("actionPrompt").innerHTML = "You must press \"Yes\" in this round. <br> Press your button? (Use your mouse)";
         } else {
-            btnNo.style.display = "inline-block";
-            btnYes.style.display = "none";
+            btnNo.classList.remove("grayed-out");
+            btnNo.disabled = false;
+            btnYes.classList.add("grayed-out");
+            btnYes.disabled = true;
             document.getElementById("actionPrompt").innerHTML = "You must press \"No\" in this round. <br> Press your button? (Use your mouse)";
         }
     }
