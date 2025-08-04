@@ -5,11 +5,10 @@
 <title>Button Game</title>
 <style>
 body {
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
     background: white;
-    overflow-x: hidden;
 }
 
 .game-container {
@@ -24,12 +23,6 @@ body {
 .panels-section {
     flex: 1;
     min-width: 500px;
-}
-
-.stats-section {
-    width: 300px;
-    flex-shrink: 0;
-    margin-top: 50px;
 }
 
 .roundDisplay {
@@ -123,7 +116,6 @@ body {
     background-color: #cccccc !important; 
     color: #666666 !important; 
     cursor: not-allowed !important;
-    opacity: 1 !important;
 }
 .hidden { display: none; }
 
@@ -132,8 +124,10 @@ body {
     transition: outline 0.2s ease;
 }
 
-/* Statistics */
 .stats-container {
+    width: 300px;
+    flex-shrink: 0;
+    margin-top: 50px;
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     border-radius: 10px;
     padding: 15px;
@@ -221,8 +215,10 @@ body {
 
 .stat-1 { margin-top: 50px; }
 .stat-2 { margin-top: 20px; }
+
 </style>
 </head>
+
 <body>
     <div id="gameContainer" class="game-container" style="display: none;">
         <div class="panels-section">
@@ -256,44 +252,44 @@ body {
             </div>
         </div>
         
-        <div class="stats-section">
-            <div class="stats-container">
-                <div class="stat-box stat-1">
-                    <div id="influenceText1" class="stat-text">
-                        <div class="insufficient-data">Collecting data... <br><br><br><br><br><br></div>
-                    </div>
-                    <div id="barContainer1" class="bar-container" style="display: none;">
-                        <div class="bar-center"></div>
-                        <div id="barFill1" class="bar-fill"></div>
-                    </div>
-                    <div id="barLabels1" class="bar-labels" style="display: none;">
-                        <span>-100%</span>
-                        <span>0%</span>
-                        <span>+100%</span>
-                    </div>
-                    <div id="dataCounts1" class="data-counts"></div>
+        
+        <div id="statsContainer" class="stats-container"  style="display: none;">
+            <div class="stat-box stat-1">
+                <div id="influenceText1" class="stat-text">
+                    <div class="insufficient-data">Collecting data... <br><br><br><br><br><br></div>
                 </div>
-                
-                <div class="stat-box stat-2">
-                    <div id="influenceText2" class="stat-text">
-                        <div class="insufficient-data">Collecting data...<br><br><br><br><br><br></div>
-                    </div>
-                    <div id="barContainer2" class="bar-container" style="display: none;">
-                        <div class="bar-center"></div>
-                        <div id="barFill2" class="bar-fill"></div>
-                    </div>
-                    <div id="barLabels2" class="bar-labels" style="display: none;">
-                        <span>-100%</span>
-                        <span>0%</span>
-                        <span>+100%</span>
-                    </div>
-                    <div id="dataCounts2" class="data-counts"></div>
+                <div id="barContainer1" class="bar-container" style="display: none;">
+                    <div class="bar-center"></div>
+                    <div id="barFill1" class="bar-fill"></div>
                 </div>
+                <div id="barLabels1" class="bar-labels" style="display: none;">
+                    <span>-100%</span>
+                    <span>0%</span>
+                    <span>+100%</span>
+                </div>
+                <div id="dataCounts1" class="data-counts"></div>
+            </div>
+            
+            <div class="stat-box stat-2">
+                <div id="influenceText2" class="stat-text">
+                    <div class="insufficient-data">Collecting data...<br><br><br><br><br><br></div>
+                </div>
+                <div id="barContainer2" class="bar-container" style="display: none;">
+                    <div class="bar-center"></div>
+                    <div id="barFill2" class="bar-fill"></div>
+                </div>
+                <div id="barLabels2" class="bar-labels" style="display: none;">
+                    <span>-100%</span>
+                    <span>0%</span>
+                    <span>+100%</span>
+                </div>
+                <div id="dataCounts2" class="data-counts"></div>
             </div>
         </div>
     </div>
 
 <script>
+    
 /* ===================== DEFAULT CONFIGURATION ===================== */
 let gameConfig = {
     nRounds: 20,
@@ -329,8 +325,13 @@ let xReady = false;
 let colorDisplayed = false;
 let statisticsHistory = [];
 
+// Round-specific state variables
+let isPlayerChoice = false;
+let outcomesVisible = false;
+
 /* ========================== DOM ELEMENTS ========================== */
 const gameContainer = document.getElementById("gameContainer");
+const statsContainer = document.getElementById("statsContainer");
 const btnNo = document.getElementById("btnNo");
 const btnYes = document.getElementById("btnYes");
 const panelXinfo = document.getElementById("panelXinfo");
@@ -348,16 +349,13 @@ function updateStatistics() {
     // Store the current statistics snapshot
     const currentStats = {
         round: roundCounter,
-        timestamp: new Date().toISOString(),
         stat1: stat1Data,
         stat2: stat2Data,
         visibleHistoryLength: visibleHistory.length
     };
     
     statisticsHistory.push(currentStats);
-    
-    // Send statistics data to Qualtrics
-    sendDataToQualtrics('STATISTICS_DATA', currentStats);
+
 }
 
 function updateSingleStat(statNum, player1Name, player2Name) {
@@ -374,8 +372,6 @@ function updateSingleStat(statNum, player1Name, player2Name) {
     // Initialize return data object
     const statData = {
         statNum: statNum,
-        player1Name: player1Name,
-        player2Name: player2Name,
         condition1Count: condition1Data.length,
         condition0Count: condition0Data.length,
         sufficientData: condition1Data.length >= 3 && condition0Data.length >= 3
@@ -404,15 +400,7 @@ function updateSingleStat(statNum, player1Name, player2Name) {
     const direction = percentageDifference > 0 ? 'more' : 'less';
     
     // Store all the calculated values
-    statData.response1When1 = response1When1;
-    statData.response1When0 = response1When0;
-    statData.rateWhen1 = rateWhen1;
-    statData.rateWhen0 = rateWhen0;
     statData.percentageDifference = percentageDifference;
-    statData.absPercentage = parseFloat(absPercentage);
-    statData.direction = direction;
-    statData.condition0DataLength = condition0Data.length;
-    statData.condition1DataLength = condition1Data.length;
     statData.displayText1 = `If ${player1Name} pressed, ${player2Name} pressed ${absPercentage} percentage points ${direction} often.`;
     statData.displayText2 = `
         When pressed: ${response1When1}/${condition1Data.length} (${(rateWhen1 * 100).toFixed(0)}%)<br>
@@ -441,12 +429,6 @@ function updateSingleStat(statNum, player1Name, player2Name) {
     barLabels.style.display = 'flex';
     
     const barWidth = absPercentage / 2;
-    
-    // Store bar chart info
-    statData.barChart = {
-        barWidth: barWidth,
-        direction: percentageDifference >= 0 ? 'positive' : 'negative'
-    };
     
     // Reset bar
     Object.assign(barFill.style, { left: 'auto', right: 'auto', width: '0%' });
@@ -488,6 +470,8 @@ window.addEventListener('message', function(event) {
     }
 });
 
+/* =============== HELPER FUNCTIONS =============== */
+
 function applyGameConfiguration() {
     btnYes.textContent = `Yes (cost $${gameConfig.aCost})`;
     
@@ -506,11 +490,16 @@ function applyGameConfiguration() {
     document.body.style.background = `hsl(${gameConfig.currentHue} 70% 85%)`;
 }
 
-/* ===================== HELPER FUNCTIONS ===================== */
+
 function isPlayerChoiceRound() {
     if (gameConfig.treatment === "endog") return true;
     if (!gameConfig.buttonConfig) return true;
     return gameConfig.buttonConfig[roundCounter - 1] === 1;
+}
+
+function updateRoundState() {
+    isPlayerChoice = isPlayerChoiceRound();
+    outcomesVisible = (gameConfig.treatment === "endog") || (gameConfig.treatment === "exo" && !isPlayerChoice);
 }
 
 /* ===================== GAME LOGIC ===================== */
@@ -537,35 +526,18 @@ function handleDecision(decision) {
 
     history.push([A, X, Y]);
     
-    const isPlayerChoice = isPlayerChoiceRound();
-    const outcomesVisible = (gameConfig.treatment === "endog") || (gameConfig.treatment === "exo" && !isPlayerChoice);
-    
     if (outcomesVisible) {
         visibleHistory.push([A, X, Y]);
     }
     
-    if (isPlayerChoice) {
-        payment.push(-gameConfig.aCost*A + gameConfig.yBonus*Y);
-    }
-    
+    payment.push(-gameConfig.aCost*A + gameConfig.yBonus*Y);
     updateStatistics();
-    
-    sendDataToQualtrics('ROUND_DATA', {
-        round: roundCounter,
-        playerA: A,
-        playerX: X,
-        playerY: Y,
-        payment: payment.length > 0 ? payment[payment.length - 1] : 0,
-        decisionTime: (Date.now() - roundStartTime) / 1000
-    });
     
     xReady = false;
     colorDisplayed = false;
 
     setTimeout(() => {
-        const isPlayerChoice = isPlayerChoiceRound();
-        
-        if (gameConfig.treatment === "exo" && isPlayerChoice) {
+        if (!outcomesVisible) {
             panelXinfo.style.backgroundColor = "lightgray";
             riskText.innerHTML = `<br>${gameConfig.playerName1} has made ${gameConfig.playerPronoun1} decision <br>(press "c" to continue)`;
         } else {
@@ -582,7 +554,6 @@ function handleDecision(decision) {
 function handleKeyPress(e) {
     const yesVisible = btnYes.style.display !== "none" && !btnYes.disabled;
     const noVisible = btnNo.style.display !== "none" && !btnNo.disabled;
-    const isPlayerChoice = isPlayerChoiceRound();
     
     if (isPlayerChoice) {
         if (e.key === 'y' && yesVisible) handleDecision('y');
@@ -590,15 +561,11 @@ function handleKeyPress(e) {
     }
     
     if (e.key === 'c' && xReady) {
-        const isPlayerChoice = isPlayerChoiceRound();
-        
-        if (gameConfig.treatment === "exo" && isPlayerChoice) {
+        if (!outcomesVisible) {
             panelYinfo.style.backgroundColor = "lightgray";
             resultText.innerHTML = `<br>${gameConfig.playerName2} has made ${gameConfig.playerPronoun2} decision.<br>(press 'space' to continue)`;
-        } else if (gameConfig.treatment === "endog" && !isPlayerChoice) {
-            panelYinfo.style.backgroundColor = "lightgray";
-            resultText.innerHTML = `<br>${gameConfig.playerName2} has made ${gameConfig.playerPronoun2} decision.<br>(press 'space' to continue)`;
-        } else {
+        } 
+        else {
             panelYinfo.style.backgroundColor = Y ? "green" : "red";
             resultText.innerHTML = Y
                 ? `<br>${gameConfig.playerName2} pressed ${gameConfig.playerPronoun2} button (bonus $${gameConfig.yBonus})<br> (press 'space' to continue)`
@@ -617,16 +584,10 @@ function handleKeyPress(e) {
 }
 
 function nextRound() {
-    sendDataToQualtrics('PROGRESS_DATA', {
-        currentRound: roundCounter,
-        history: history,
-        roundTimes: roundTimes,
-        payment: payment,
-        currentStatistics: statisticsHistory.length > 0 ? statisticsHistory[statisticsHistory.length - 1] : null
-    });
     
     if (roundCounter < gameConfig.nRounds) {
         roundCounter++;
+        updateRoundState(); // Update the round-specific state variables
         roundDisplay.textContent = `Round ${roundCounter} of ${gameConfig.nRounds}`;
         
         // Hide panels first to create refresh effect
@@ -641,13 +602,10 @@ function nextRound() {
         
         sendDataToQualtrics('FINAL_DATA', {
             history: history,
-            visibleHistory: visibleHistory,
             roundTimes: roundTimes,
             payment: payment,
-            totalPayment: totalPayment,
-            avgDecisionTime: avgDecisionTime,
             config: gameConfig,
-            statisticsHistory: statisticsHistory, // Add complete statistics history
+            statisticsHistory: statisticsHistory, 
             finalStatistics: statisticsHistory.length > 0 ? statisticsHistory[statisticsHistory.length - 1] : null
         });
         
@@ -663,8 +621,6 @@ function showActionPanels() {
     
     riskText.textContent = resultText.textContent = "";
     btnYes.disabled = btnNo.disabled = false;
-    
-    const isPlayerChoice = isPlayerChoiceRound();
 
     if (isPlayerChoice) {
         btnNo.style.display = btnYes.style.display = "inline-block";
@@ -698,7 +654,6 @@ function showActionPanels() {
 
 /* ===================== EVENT LISTENERS ===================== */
 function handleButtonClick(decision) {
-    const isPlayerChoice = isPlayerChoiceRound();
     if (gameConfig.treatment === "endog" || !isPlayerChoice) {
         handleDecision(decision);
     }
@@ -712,6 +667,7 @@ document.addEventListener("keydown", handleKeyPress);
 setTimeout(() => {
     applyGameConfiguration();
     gameContainer.style.display = "flex";
+    statsContainer.style.display = "block";
     sendDataToQualtrics('GAME_START', { started: true });
     nextRound();
 }, 2000);
