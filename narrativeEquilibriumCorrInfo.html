@@ -17,13 +17,12 @@ body {
     margin: 20px auto;
     gap: 15px;
     align-items: flex-start;
-    justify-content: center;
+    margin-left: 100px;
 }
 
 .panels-section {
     flex: 1;
     min-width: 500px;
-    max-width: 500px;
 }
 
 .roundDisplay {
@@ -125,6 +124,98 @@ body {
     transition: outline 0.2s ease;
 }
 
+.stats-container {
+    width: 300px;
+    flex-shrink: 0;
+    margin-top: 50px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.stat-box {
+    background: white;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 15px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    font-size: 14px;
+}
+
+.stat-box:last-child {
+    margin-bottom: 30px;
+}
+
+.stat-text {
+    margin-bottom: 8px;
+    line-height: 1.3;
+    font-weight: 500;
+    color: #333;
+}
+
+.bar-container {
+    background: #e9ecef;
+    height: 16px;
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+    margin: 6px 0px;
+}
+
+.bar-center {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 1px;
+    height: 100%;
+    background: #495057;
+    z-index: 2;
+}
+
+.bar-fill {
+    height: 100%;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    position: absolute;
+    z-index: 1;
+}
+
+.bar-positive {
+    background: linear-gradient(90deg, #28a745, #20c997);
+    left: 50%;
+}
+
+.bar-negative {
+    background: linear-gradient(90deg, #dc3545, #fd7e14);
+    right: 50%;
+}
+
+.bar-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: #666;
+}
+
+.data-counts {
+    font-size: 10px;
+    color: #666;
+    text-align: center;
+    margin-top: 4px;
+}
+
+.insufficient-data {
+    text-align: center;
+    color: #999;
+    font-style: italic;
+    font-size: 12px;
+}
+
+.stat-1 { margin-top: 50px; }
+.stat-2 { margin-top: 20px; }
+
 </style>
 </head>
 
@@ -149,7 +240,50 @@ body {
                     <img src="https://via.placeholder.com/40/4CAF50/FFFFFF?text=P1" class="panel-icon" alt="Player">
                     <div class="panel-name">Player A</div>
                 </div>
+                <div id="riskText" class="text">(press "c" to continue)</div>
+            </div>
+            
+            <div id="panelYinfo" class="panel hidden">
+                <div class="panel-header">
+                    <img src="https://via.placeholder.com/40/2196F3/FFFFFF?text=P2" class="panel-icon" alt="Player">
+                    <div class="panel-name">Player B (determines your bonus)</div>
+                </div>
                 <div id="resultText" class="text">(press "space" to continue)</div>
+            </div>
+        </div>
+        
+        
+        <div id="statsContainer" class="stats-container"  style="display: none;">
+            <div class="stat-box stat-1">
+                <div id="influenceText1" class="stat-text">
+                    <div class="insufficient-data">Collecting data... <br><br><br><br><br><br></div>
+                </div>
+                <div id="barContainer1" class="bar-container" style="display: none;">
+                    <div class="bar-center"></div>
+                    <div id="barFill1" class="bar-fill"></div>
+                </div>
+                <div id="barLabels1" class="bar-labels" style="display: none;">
+                    <span>-100%</span>
+                    <span>0%</span>
+                    <span>+100%</span>
+                </div>
+                <div id="dataCounts1" class="data-counts"></div>
+            </div>
+            
+            <div class="stat-box stat-2">
+                <div id="influenceText2" class="stat-text">
+                    <div class="insufficient-data">Collecting data...<br><br><br><br><br><br></div>
+                </div>
+                <div id="barContainer2" class="bar-container" style="display: none;">
+                    <div class="bar-center"></div>
+                    <div id="barFill2" class="bar-fill"></div>
+                </div>
+                <div id="barLabels2" class="bar-labels" style="display: none;">
+                    <span>-100%</span>
+                    <span>0%</span>
+                    <span>+100%</span>
+                </div>
+                <div id="dataCounts2" class="data-counts"></div>
             </div>
         </div>
     </div>
@@ -160,36 +294,158 @@ body {
 let gameConfig = {
     nRounds: 20,
     id: 1,
+    yBonus: 1.0,
     aCost: 0.25,
+    pY: 0.5,
     playerName1: "Player A",
+    playerName2: "Player B", 
     playerPronoun1: "their",
+    playerPronoun2: "their",
     noise: 0.1,
+    causal: 0,
     playerIcon1: "https://via.placeholder.com/40/4CAF50/FFFFFF?text=P1",
+    playerIcon2: "https://via.placeholder.com/40/2196F3/FFFFFF?text=P2",
     currentHue: 200,
-    pA: 0.5, // Probability of being forced to press "Yes"
-    pX_given_A1: 0.8, // Probability X=1 when A=1
-    pX_given_A0: 0.2  // Probability X=1 when A=0
+    treatment: "exo", // "exo" or "endog"
+    pA: 0.5,
+    buttonConfig: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 };
 
 let participantId = null;
 
 /* ========================= GAME STATE ========================= */
 let roundCounter = 0;
-let X, A;
+let X, A, Y;
 let history = [];
+let visibleHistory = [];
 let payment = [];
 let roundTimes = [];
 let roundStartTime = 0;
-let resultDisplayed = false;
+let xReady = false;
+let colorDisplayed = false;
+let statisticsHistory = [];
+
+// Round-specific state variables
+let isPlayerChoice = false;
+let outcomesVisible = false;
 
 /* ========================== DOM ELEMENTS ========================== */
 const gameContainer = document.getElementById("gameContainer");
+const statsContainer = document.getElementById("statsContainer");
 const btnNo = document.getElementById("btnNo");
 const btnYes = document.getElementById("btnYes");
 const panelXinfo = document.getElementById("panelXinfo");
+const panelYinfo = document.getElementById("panelYinfo");
 const panelAchoice = document.getElementById("panelAchoice");
 const resultText = document.getElementById("resultText");
+const riskText = document.getElementById("riskText");
 const roundDisplay = document.getElementById("roundDisplay");
+
+/* ===================== STATISTICS FUNCTIONS ===================== */
+function updateStatistics() {
+    const stat1Data = updateSingleStat(1, "You", gameConfig.playerName1);
+    const stat2Data = updateSingleStat(2, gameConfig.playerName1, gameConfig.playerName2);
+    
+    // Store the current statistics snapshot
+    const currentStats = {
+        round: roundCounter,
+        stat1: stat1Data,
+        stat2: stat2Data,
+        visibleHistoryLength: visibleHistory.length
+    };
+    
+    statisticsHistory.push(currentStats);
+
+}
+
+function updateSingleStat(statNum, player1Name, player2Name) {
+    const influenceText = document.getElementById(`influenceText${statNum}`);
+    const barContainer = document.getElementById(`barContainer${statNum}`);
+    const barFill = document.getElementById(`barFill${statNum}`);
+    const barLabels = document.getElementById(`barLabels${statNum}`);
+    const dataCounts = document.getElementById(`dataCounts${statNum}`);
+    
+    // For stat 1: A->X relationship, for stat 2: X->Y relationship
+    const condition1Data = visibleHistory.filter(round => round[statNum === 1 ? 0 : 1] === 1);
+    const condition0Data = visibleHistory.filter(round => round[statNum === 1 ? 0 : 1] === 0);
+    
+    // Initialize return data object
+    const statData = {
+        statNum: statNum,
+        condition1Count: condition1Data.length,
+        condition0Count: condition0Data.length,
+        sufficientData: condition1Data.length >= 3 && condition0Data.length >= 3
+    };
+    
+    if (!statData.sufficientData) {
+        barContainer.style.display = 'none';
+        barLabels.style.display = 'none';
+        
+        // Return data even when insufficient
+        statData.displayText1 = "Insufficient data";
+        statData.displayText2 = "Insufficient data";
+        return statData;
+    }
+    
+    // Calculate response rates
+    const responseIndex = statNum === 1 ? 1 : 2;
+    const response1When1 = condition1Data.filter(round => round[responseIndex] === 1).length;
+    const response1When0 = condition0Data.filter(round => round[responseIndex] === 1).length;
+    
+    const rateWhen1 = response1When1 / condition1Data.length;
+    const rateWhen0 = response1When0 / condition0Data.length;
+    
+    const percentageDifference = (rateWhen1 - rateWhen0) * 100;
+    const absPercentage = Math.abs(percentageDifference).toFixed(0);
+    const direction = percentageDifference > 0 ? 'more' : 'less';
+    
+    // Store all the calculated values
+    statData.percentageDifference = percentageDifference;
+    statData.displayText1 = `If ${player1Name} pressed, ${player2Name} pressed ${absPercentage} percentage points ${direction} often.`;
+    statData.displayText2 = `
+        When pressed: ${response1When1}/${condition1Data.length} (${(rateWhen1 * 100).toFixed(0)}%)<br>
+        When not pressed: ${response1When0}/${condition0Data.length} (${(rateWhen0 * 100).toFixed(0)}%)
+    `;
+    
+    // Store the detailed breakdown
+    statData.breakdown = {
+        whenPressed: {
+            responses: response1When1,
+            total: condition1Data.length,
+            rate: (rateWhen1 * 100).toFixed(0)
+        },
+        whenNotPressed: {
+            responses: response1When0,
+            total: condition0Data.length,
+            rate: (rateWhen0 * 100).toFixed(0)
+        }
+    };
+    
+    // Update UI (existing code)
+    influenceText.innerHTML = statData.displayText1;
+    
+    // Update bar chart
+    barContainer.style.display = 'block';
+    barLabels.style.display = 'flex';
+    
+    const barWidth = absPercentage / 2;
+    
+    // Reset bar
+    Object.assign(barFill.style, { left: 'auto', right: 'auto', width: '0%' });
+    
+    if (percentageDifference >= 0) {
+        barFill.className = 'bar-fill bar-positive';
+        Object.assign(barFill.style, { left: '50%', width: `${barWidth}%` });
+    } else {
+        barFill.className = 'bar-fill bar-negative';
+        Object.assign(barFill.style, { right: '50%', width: `${barWidth}%` });
+    }
+
+    dataCounts.innerHTML = statData.displayText2;
+
+    return statData;
+}
+
 
 /* =============== QUALTRICS COMMUNICATION =============== */
 function sendDataToQualtrics(dataType, data) {
@@ -221,13 +477,29 @@ function applyGameConfiguration() {
     
     const elements = {
         playerName1: document.querySelector('#panelXinfo .panel-name'),
-        playerIcon1: document.querySelector('#panelXinfo .panel-icon')
+        playerName2: document.querySelector('#panelYinfo .panel-name'),
+        playerIcon1: document.querySelector('#panelXinfo .panel-icon'),
+        playerIcon2: document.querySelector('#panelYinfo .panel-icon')
     };
     
     if (elements.playerName1) elements.playerName1.textContent = gameConfig.playerName1;
+    if (elements.playerName2) elements.playerName2.textContent = `${gameConfig.playerName2} (determines your bonus)`;
     if (elements.playerIcon1) elements.playerIcon1.src = gameConfig.playerIcon1;
+    if (elements.playerIcon2) elements.playerIcon2.src = gameConfig.playerIcon2;
     
     document.body.style.background = `hsl(${gameConfig.currentHue} 70% 85%)`;
+}
+
+
+function isPlayerChoiceRound() {
+    if (gameConfig.treatment === "endog") return true;
+    if (!gameConfig.buttonConfig) return true;
+    return gameConfig.buttonConfig[roundCounter - 1] === 1;
+}
+
+function updateRoundState() {
+    isPlayerChoice = isPlayerChoiceRound();
+    outcomesVisible = (gameConfig.treatment === "endog") || (gameConfig.treatment === "exo" && !isPlayerChoice);
 }
 
 /* ===================== GAME LOGIC ===================== */
@@ -241,43 +513,87 @@ function handleDecision(decision) {
 
     A = decision === 'y' ? 1 : 0;
     
-    // Generate X based on A with the configured probabilities
-    const pX = A === 1 ? gameConfig.pX_given_A1 : gameConfig.pX_given_A0;
-    X = Math.random() < pX ? 1 : 0;
+    if (gameConfig.causal === 0) {
+        const pX = [gameConfig.noise, 1-gameConfig.noise, 1-gameConfig.noise, 1-gameConfig.noise];
+        Y = Math.random() < gameConfig.pY ? 1 : 0;
+        X = Math.random() < pX[A*2 + Y] ? 1 : 0;
+    } else {
+        const pX = [gameConfig.noise, 1-gameConfig.noise];
+        const pY = [gameConfig.noise, 1-gameConfig.noise];
+        X = Math.random() < pX[A] ? 1 : 0;
+        Y = Math.random() < pY[X] ? 1 : 0;
+    }
 
-    history.push([A, X]);
-    payment.push(-gameConfig.aCost * A);
+    history.push([A, X, Y]);
     
-    resultDisplayed = false;
+    if (outcomesVisible) {
+        visibleHistory.push([A, X, Y]);
+    }
+    
+    payment.push(-gameConfig.aCost*A + gameConfig.yBonus*Y);
+    updateStatistics();
+    
+    xReady = false;
+    colorDisplayed = false;
 
     setTimeout(() => {
-        panelXinfo.style.backgroundColor = X ? "green" : "red";
-        resultText.innerHTML = X
-            ? `<br>${gameConfig.playerName1} pressed ${gameConfig.playerPronoun1} button <br>(press "space" to continue)`
-            : `<br>${gameConfig.playerName1} did <u>not</u> press ${gameConfig.playerPronoun1} button <br>(press "space" to continue)`;
-        panelXinfo.classList.remove("hidden");
-        resultDisplayed = true;
+        if (!outcomesVisible) {
+            panelXinfo.style.backgroundColor = "lightgray";
+            riskText.innerHTML = `<br>${gameConfig.playerName1} has made ${gameConfig.playerPronoun1} decision <br>(press "c" to continue)`;
+        } else {
+            panelXinfo.style.backgroundColor = X ? "green" : "red";
+            riskText.innerHTML = X
+                ? `<br>${gameConfig.playerName1} pressed ${gameConfig.playerPronoun1} button <br>(press "c" to continue)`
+                : `<br>${gameConfig.playerName1} did <u>not</u> press ${gameConfig.playerPronoun1} button <br>(press "c" to continue)`;
+        }
+        panelYinfo.style.backgroundColor = "white";
+        xReady = true;
     }, 200);
 }
 
 function handleKeyPress(e) {
-    if (e.key === ' ' && resultDisplayed) {
+    const yesVisible = btnYes.style.display !== "none" && !btnYes.disabled;
+    const noVisible = btnNo.style.display !== "none" && !btnNo.disabled;
+    
+    if (isPlayerChoice) {
+        if (e.key === 'y' && yesVisible) handleDecision('y');
+        else if (e.key === 'n' && noVisible) handleDecision('n');
+    }
+    
+    if (e.key === 'c' && xReady) {
+        if (!outcomesVisible) {
+            panelYinfo.style.backgroundColor = "lightgray";
+            resultText.innerHTML = `<br>${gameConfig.playerName2} has made ${gameConfig.playerPronoun2} decision.<br>(press 'space' to continue)`;
+        } 
+        else {
+            panelYinfo.style.backgroundColor = Y ? "green" : "red";
+            resultText.innerHTML = Y
+                ? `<br>${gameConfig.playerName2} pressed ${gameConfig.playerPronoun2} button (bonus $${gameConfig.yBonus})<br> (press 'space' to continue)`
+                : `<br>${gameConfig.playerName2} did <u>not</u> press ${gameConfig.playerPronoun2} button (no bonus)<br>(press 'space' to continue)`;
+        }
+        xReady = false;
+        colorDisplayed = true;
+    }
+    else if (e.key === ' ' && colorDisplayed) {
         roundTimes.push((Date.now() - roundStartTime) / 1000);
         if (roundCounter <= gameConfig.nRounds) {
             nextRound();
-            resultDisplayed = false;
+            colorDisplayed = false;
         }
     }
 }
 
 function nextRound() {
+    
     if (roundCounter < gameConfig.nRounds) {
         roundCounter++;
+        updateRoundState(); // Update the round-specific state variables
         roundDisplay.textContent = `Round ${roundCounter} of ${gameConfig.nRounds}`;
         
         // Hide panels first to create refresh effect
         panelAchoice.style.display = "none";
-        panelXinfo.classList.add("hidden");
+        panelXinfo.style.display = "none";
+        panelYinfo.style.display = "none";
         
         setTimeout(showActionPanels, 500);
     } else {
@@ -288,7 +604,9 @@ function nextRound() {
             history: history,
             roundTimes: roundTimes,
             payment: payment,
-            config: gameConfig
+            config: gameConfig,
+            statisticsHistory: statisticsHistory, 
+            finalStatistics: statisticsHistory.length > 0 ? statisticsHistory[statisticsHistory.length - 1] : null
         });
         
         sendDataToQualtrics('GAME_COMPLETE', { completed: true });
@@ -296,32 +614,39 @@ function nextRound() {
 }
 
 function showActionPanels() {
-    // Reset panels
+    // Reset all panels
     Object.assign(panelAchoice.style, { display: "flex" });
-    Object.assign(panelXinfo.style, { backgroundColor: "white" });
+    Object.assign(panelXinfo.style, { display: "flex", backgroundColor: "white" });
+    Object.assign(panelYinfo.style, { display: "flex", backgroundColor: "white" });
     
-    resultText.textContent = "";
+    riskText.textContent = resultText.textContent = "";
     btnYes.disabled = btnNo.disabled = false;
 
-    // Determine if player is forced to press a specific button
-    const forcedChoice = Math.random() < gameConfig.pA;
-    
-    btnNo.style.display = btnYes.style.display = "inline-block";
-    
-    if (forcedChoice) {
-        // Force "Yes"
-        btnNo.classList.add("grayed-out");
-        btnNo.disabled = true;
-        btnYes.classList.remove("grayed-out");
-        btnYes.disabled = false;
-        document.getElementById("actionPrompt").innerHTML = "You must press \"Yes\" in this round. <br> Press your button? (Use your mouse)";
-    } else {
-        // Force "No"
+    if (isPlayerChoice) {
+        btnNo.style.display = btnYes.style.display = "inline-block";
         btnNo.classList.remove("grayed-out");
-        btnNo.disabled = false;
-        btnYes.classList.add("grayed-out");
-        btnYes.disabled = true;
-        document.getElementById("actionPrompt").innerHTML = "You must press \"No\" in this round. <br> Press your button? (Use your mouse)";
+        btnYes.classList.remove("grayed-out");
+        btnNo.disabled = btnYes.disabled = false;
+        if (gameConfig.treatment === "exo") {
+            document.getElementById("actionPrompt").textContent = "Press your button? (Use your keyboard)";
+        } else {
+            document.getElementById("actionPrompt").textContent = "Press your button?";
+        }
+    } else {
+        btnNo.style.display = btnYes.style.display = "inline-block";
+        if (Math.random() < gameConfig.pA) {
+            btnNo.classList.add("grayed-out");
+            btnNo.disabled = true;
+            btnYes.classList.remove("grayed-out");
+            btnYes.disabled = false;
+            document.getElementById("actionPrompt").innerHTML = "You must press \"Yes\" in this round. <br> Press your button? (Use your mouse)";
+        } else {
+            btnNo.classList.remove("grayed-out");
+            btnNo.disabled = false;
+            btnYes.classList.add("grayed-out");
+            btnYes.disabled = true;
+            document.getElementById("actionPrompt").innerHTML = "You must press \"No\" in this round. <br> Press your button? (Use your mouse)";
+        }
     }
     
     roundStartTime = Date.now();
@@ -329,7 +654,9 @@ function showActionPanels() {
 
 /* ===================== EVENT LISTENERS ===================== */
 function handleButtonClick(decision) {
-    handleDecision(decision);
+    if (gameConfig.treatment === "endog" || !isPlayerChoice) {
+        handleDecision(decision);
+    }
 }
 
 btnYes.addEventListener("click", () => handleButtonClick('y'));
@@ -340,6 +667,7 @@ document.addEventListener("keydown", handleKeyPress);
 setTimeout(() => {
     applyGameConfiguration();
     gameContainer.style.display = "flex";
+    statsContainer.style.display = "block";
     sendDataToQualtrics('GAME_START', { started: true });
     nextRound();
 }, 2000);
