@@ -932,16 +932,6 @@ function updateButtonSelection(choiceIndex, decision) {
     }
 }
 
-function sendChoiceData(choiceIndex, decision, hasInvalidSwitch, isEdit = false) {
-    sendDataToQualtrics('CHOICE_DATA', {
-        choiceIndex: choiceIndex,
-        cost: gameConfig.costArray[choiceIndex],
-        decision: decision,
-        timestamp: Date.now() - gameStartTime,
-        hasInvalidSwitch: hasInvalidSwitch,
-        isEdit: isEdit
-    });
-}
 
 function sendDataToQualtrics(dataType, data) {
     console.log(`Qualtrics data [${dataType}]:`, data);
@@ -970,7 +960,6 @@ function handleChoice(choiceIndex, decision) {
             hideValidationMessage();
         }
         
-        sendChoiceData(choiceIndex, decision, hasInvalidSwitch, true);
         return;
     }
     
@@ -985,7 +974,6 @@ function handleChoice(choiceIndex, decision) {
             hideValidationMessage();
         }
         
-        sendChoiceData(choiceIndex, decision, hasInvalidSwitch, true);
         return;
     }
     
@@ -1006,7 +994,6 @@ function handleChoice(choiceIndex, decision) {
         hideValidationMessage();
     }
     
-    sendChoiceData(choiceIndex, decision, hasInvalidSwitch);
     
     setTimeout(() => {
         currentChoiceIndex++;
@@ -1125,79 +1112,86 @@ function submitAllChoices() {
         activePanelText.style.display = 'none';
     }
     
-    const selectedChoiceIndex = Math.floor(Math.random() * 7);
-    const selectedChoice = choices[selectedChoiceIndex];
-    const selectedCost = gameConfig.costArray[selectedChoiceIndex];
+    // Convert choices to binary array (0 for 'n', 1 for 'y')
+    const ChoicesArray = choices.map(choice => choice === 'y' ? 1 : 0);
     
-    let A, X, Y, payment;
-    
-    if (gameConfig.causalElicitType === "XY") {
-        A = gameConfig.exoButton;
-        X = selectedChoice === 'y' ? 1 : 0;
-        if (gameConfig.causal === 0) {
-            Y = Math.random() < gameConfig.pY ? 1 : 0;
-        } else {
-            const pY = [gameConfig.noise, 1-gameConfig.noise];
-            Y = Math.random() < pY[X] ? 1 : 0;
+    // Calculate payment for each choice
+    const paymentArray = choices.map((choice, index) => {
+        const cost = gameConfig.costArray[index];
+        let A, X, Y, payment;
+        
+        if (gameConfig.causalElicitType === "XY") {
+            A = gameConfig.exoButton;
+            X = choice === 'y' ? 1 : 0;
+            if (gameConfig.causal === 0) {
+                Y = Math.random() < gameConfig.pY ? 1 : 0;
+            } else {
+                const pY = [gameConfig.noise, 1-gameConfig.noise];
+                Y = Math.random() < pY[X] ? 1 : 0;
+            }
+            
+            if (cost >= 0) {
+                payment = -X * cost + gameConfig.yBonus * Y;
+            } else {
+                payment = (1-X) * cost + gameConfig.yBonus * Y;
+            }
+        } else if (gameConfig.causalElicitType === "AX") {
+            A = choice === 'y' ? 1 : 0;
+            Y = gameConfig.exoButton;
+            if (gameConfig.causal === 0) {
+                const pX = [gameConfig.noise, 1-gameConfig.noise, 1-gameConfig.noise, 1-gameConfig.noise];
+                X = Math.random() < pX[A*2 + Y] ? 1 : 0;
+            } else {
+                const pX = [gameConfig.noise, 1-gameConfig.noise];
+                X = Math.random() < pX[A] ? 1 : 0;
+            }
+            
+            if (cost >= 0) {
+                payment = -A * cost + gameConfig.yBonus * X;
+            } else {
+                payment = (1-A) * cost + gameConfig.yBonus * X;
+            }
+        } else if (gameConfig.causalElicitType === "AY") {
+            A = choice === 'y' ? 1 : 0;
+            X = gameConfig.exoButton;
+            if (gameConfig.causal === 0) {
+                Y = Math.random() < gameConfig.pY ? 1 : 0;
+            } else {
+                const pY = [gameConfig.noise, 1-gameConfig.noise];
+                Y = Math.random() < pY[X] ? 1 : 0;
+            }
+            
+            if (cost >= 0) {
+                payment = -A * cost + gameConfig.yBonus * Y;
+            } else {
+                payment = (1-A) * cost + gameConfig.yBonus * Y;
+            }
         }
         
-        if (selectedCost >= 0) {
-            payment = -X * selectedCost + gameConfig.yBonus * Y;
-        } else {
-            payment = (1-X) * selectedCost + gameConfig.yBonus * Y;
-        }
-    } else if (gameConfig.causalElicitType === "AX") {
-        A = selectedChoice === 'y' ? 1 : 0;
-        Y = gameConfig.exoButton;
-        if (gameConfig.causal === 0) {
-            const pX = [gameConfig.noise, 1-gameConfig.noise, 1-gameConfig.noise, 1-gameConfig.noise];
-            X = Math.random() < pX[A*2 + Y] ? 1 : 0;
-        } else {
-            const pX = [gameConfig.noise, 1-gameConfig.noise];
-            X = Math.random() < pX[A] ? 1 : 0;
-        }
-        
-        if (selectedCost >= 0) {
-            payment = -A * selectedCost + gameConfig.yBonus * X;
-        } else {
-            payment = (1-A) * selectedCost + gameConfig.yBonus * X;
-        }
-    } else if (gameConfig.causalElicitType === "AY") {
-        A = selectedChoice === 'y' ? 1 : 0;
-        X = gameConfig.exoButton;
-        if (gameConfig.causal === 0) {
-            Y = Math.random() < gameConfig.pY ? 1 : 0;
-        } else {
-            const pY = [gameConfig.noise, 1-gameConfig.noise];
-            Y = Math.random() < pY[X] ? 1 : 0;
-        }
-        
-        if (selectedCost >= 0) {
-            payment = -A * selectedCost + gameConfig.yBonus * Y;
-        } else {
-            payment = (1-A) * selectedCost + gameConfig.yBonus * Y;
-        }
-    }
+        return payment;
+    });
     
-    sendDataToQualtrics('FINAL_DATA', {
-        allChoices: choices,
-        costs: gameConfig.costArray,
-        selectedChoiceIndex: selectedChoiceIndex,
-        selectedChoice: selectedChoice,
-        selectedCost: selectedCost,
-        playerA: A,
-        playerX: X,
-        playerY: Y,
-        payment: payment,
+    sendDataToQualtrics('CHOICE_DATA', {
+        choices: ChoicesArray,
+        payment: paymentArray,
         totalTime: (Date.now() - gameStartTime) / 1000,
-        config: gameConfig,
         switchingPoint: choices.indexOf('y')
     });
     
-    showResults(selectedChoiceIndex, A, X, Y, payment);
+    // Log the data being sent for debugging
+    console.log('=== FINAL DATA SENT TO QUALTRICS ===');
+    console.log('Choices Array (binary):', ChoicesArray);
+    console.log('Payment Array:', paymentArray);
+    console.log('Costs Array:', gameConfig.costArray);
+    console.log('Original Choices:', choices);
+    console.log('Total Time:', (Date.now() - gameStartTime) / 1000);
+    console.log('Switching Point:', choices.indexOf('y'));
+    console.log('=====================================');
+    
+    showResults();
 }
 
-function showResults(selectedChoiceIndex, A, X, Y, payment) {
+function showResults() {
     // Move the statistics section up
     const statsSection = document.querySelector('.stats-section');
     if (statsSection) {
@@ -1272,11 +1266,7 @@ function showResults(selectedChoiceIndex, A, X, Y, payment) {
             // Enable the submit button
             const submitButton = document.getElementById('questionSubmitButton');
             submitButton.disabled = false;
-            
-            sendDataToQualtrics('CAUSAL_BELIEF', {
-                selectedOption: index,
-                optionText: option
-            });
+        
         });
         
         optionsContainer.appendChild(optionDiv);
@@ -1294,11 +1284,18 @@ function showResults(selectedChoiceIndex, A, X, Y, payment) {
             submitButton.disabled = true;
             
             // Send final submission data
-            sendDataToQualtrics('CAUSAL_BELIEF_SUBMITTED', {
+            sendDataToQualtrics('CAUSAL_BELIEF', {
                 selectedOption: selectedIndex,
-                optionText: selectedOption,
-                finalSubmission: true
+                optionText: selectedOption
             });
+            
+            // Log the causal belief data being sent
+            console.log('=== CAUSAL BELIEF DATA SENT TO QUALTRICS ===');
+            console.log('Selected Option Index:', selectedIndex);
+            console.log('Selected Option Text:', selectedOption);
+            console.log('Percentage Range:', percentageRanges[selectedIndex]);
+            console.log('============================================');
+            
             sendDataToQualtrics('GAME_COMPLETE', { completed: true });
         }
     });
