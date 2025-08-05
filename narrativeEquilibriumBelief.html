@@ -729,8 +729,8 @@ function applyGameConfiguration() {
             instructionBullets: [
                 `You will receive a <u>bonus of $${gameConfig.yBonus} if <b>${gameConfig.playerName2}</b> presses ${gameConfig.playerPronoun2} button.</u>`,
                 gameConfig.exoButton == 1 
-                    ? `You are forced to press your button.`
-                    : `You are forced NOT to press your button.`,
+                    ? `You are forced to press your button and you can control ${gameConfig.playerName1}'s button.`
+                    : `You are forced NOT to press your button and you can control ${gameConfig.playerName1}'s button.`,
                 `The cost of pressing or not pressing the button will vary across decisions.`   
             ],
             panels: {
@@ -772,6 +772,7 @@ function applyGameConfiguration() {
     if (config.instructionTitle && config.instructionBullets) {
         const titleHtml = `
             <div class="instruction-main-title">${config.instructionTitle}</div>
+            <p style="text-align: center; margin-top: 20px; font-style: italic; color: #666;">Please read the rules carefully. The decision panel will show up soon.</p>
             <ul class="instruction-bullets">
                 ${config.instructionBullets.map(bullet => `<li>${bullet}</li>`).join('')}
             </ul>
@@ -1314,6 +1315,25 @@ window.addEventListener('message', function(event) {
     }
 });
 
+function showInstructionsFirst() {
+    console.log("Showing instructions first");
+    
+    // Apply configuration to populate instruction title
+    applyGameConfiguration();
+    
+    // Show only the instruction title initially
+    document.getElementById("instructionTitle").style.display = "block";
+    
+    // Hide everything else initially
+    document.getElementById("gameContainer").style.display = "none";
+    document.getElementById("questionSection").style.display = "none";
+    
+    // After 10 seconds, show the rest of the page
+    setTimeout(() => {
+        initializeGame();
+    }, 10000);
+}
+
 function initializeGame() {
     console.log("Initializing sequential choice game");
     
@@ -1336,7 +1356,7 @@ function initializeGame() {
     sendDataToQualtrics('GAME_START', { started: true });
 }
 
-setTimeout(initializeGame, 2000);
+setTimeout(showInstructionsFirst, 2000);
 
 </script>
 </body>
