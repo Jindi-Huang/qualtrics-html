@@ -24,6 +24,7 @@ body {
     flex: 1;
     min-width: 500px;
     max-width: 500px;
+    margin: 20px auto;
 }
 
 .roundDisplay {
@@ -38,7 +39,7 @@ body {
 .panel {
     position: relative;
     width: 100%;
-    height: 120px;
+    min-height: 120px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -48,6 +49,8 @@ body {
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     margin-bottom: 10px;
     border: 1px solid black;
+    padding: 20px;
+    box-sizing: border-box;
 }
 
 .panel-header {
@@ -78,7 +81,7 @@ body {
     font-size: 18px;
     padding: 8px;
     color: #333;
-    margin-top: 0;
+    margin-top: 20px;
 }
 
 .button-container {
@@ -125,10 +128,169 @@ body {
     transition: outline 0.2s ease;
 }
 
+/* Decision phase styles */
+.decision-content {
+    display: none;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+}
+
+.decision-content.active {
+    display: flex;
+}
+
+.decision-title {
+    font-size: 20px;
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+    font-weight: bold;
+}
+
+.decision-instructions {
+    text-align: center;
+}
+
+.choice-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    width: 100%;
+    margin: 20px 0;
+}
+
+.choice-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+    transition: all 0.3s ease;
+}
+
+.choice-row.current {
+    border: 2px solid #007bff;
+    background: #e3f2fd;
+}
+
+.choice-row.completed {
+    border: 1px solid #dee2e6;
+    background: #f8f9fa;
+}
+
+.choice-row.invalid {
+    border: 2px solid #f8b4b4;
+    background: #fdf2f2;
+}
+
+.choice-row.hidden {
+    display: none;
+}
+
+.choice-buttons {
+    display: flex;
+    flex-direction: row;
+    gap: 6px;
+    width: 100%;
+    max-width: 300px;
+}
+
+.choice-button {
+    padding: 6px 12px;
+    font-size: 16px;
+    cursor: pointer;
+    border: none;
+    color: white;
+    border-radius: 4px;
+    transition: background-color 0.3s, transform 0.2s;
+    text-align: center;
+    flex: 1;
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+}
+
+.choice-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.choice-button.selected {
+    outline: 3px solid #007bff;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.cost-amt {
+    display: inline-block;
+    font-weight: bold;
+    color: #faeb7a;
+}
+
+.submit-container {
+    margin-top: 15px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.submit-button {
+    padding: 10px 25px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+    color: white;
+    border-radius: 4px;
+    background-color: #007bff;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.submit-button:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+}
+
+.submit-button:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.validation-message {
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 4px;
+    text-align: center;
+    font-size: 14px;
+}
+
+.validation-error {
+    background: #fdf2f2;
+    color: #9a3a3a;
+    border: 1px solid #f8b4b4;
+}
+
+.progress-indicator {
+    margin-top: 10px;
+    text-align: center;
+    font-size: 14px;
+    color: #666;
+}
+
 </style>
 </head>
 
 <body>
+    <div class="decision-title" style="display: none;">Make Your Decisions</div>
+    <div class="decision-instructions" style="display: none;">
+        Now you will make decisions for different costs. 
+    </div>
     <div id="gameContainer" class="game-container" style="display: none;">
         <div class="panels-section">
             <div id="roundDisplay" class="roundDisplay"></div>
@@ -137,10 +299,22 @@ body {
                 <div class="panel-header">
                     <div class="panel-name">You</div>
                 </div>
-                <div id="actionPrompt" class="text">Press your button?</div>
-                <div class="button-container">
+                <div id="actionPrompt" class="text" style="display: none;">Press your button?</div>
+                <div id="gameButtons" class="button-container" style="display: none;">
                     <button id="btnNo" class="actionButton red">No (free)</button>
                     <button id="btnYes" class="actionButton green">Yes (cost $0.25)</button>
+                </div>
+                
+                <!-- Decision phase content -->
+                <div id="decisionContent" class="decision-content">
+                    <div id="actionPrompt" class="text">Press your button?</div>
+                    <div id="progressIndicator" class="progress-indicator">Decision 1 of 7</div>
+                    <div id="choiceGrid" class="choice-grid"></div>
+                    <div id="validationMessage" class="validation-message" style="display: none;"></div>
+                    
+                    <div class="submit-container">
+                        <button id="submitChoices" class="submit-button" disabled>Submit All Choices</button>
+                    </div>
                 </div>
             </div>
             
@@ -149,7 +323,7 @@ body {
                     <img src="https://via.placeholder.com/40/4CAF50/FFFFFF?text=P1" class="panel-icon" alt="Player">
                     <div class="panel-name">Player A</div>
                 </div>
-                <div id="resultText" class="text">(press "space" to continue)</div>
+                <div id="resultText" class="text" style="display: none;"></div>
             </div>
         </div>
     </div>
@@ -158,7 +332,7 @@ body {
     
 /* ===================== DEFAULT CONFIGURATION ===================== */
 let gameConfig = {
-    nRounds: 20,
+    nRounds: 3, // Reduced for testing
     id: 1,
     aCost: 0.25,
     playerName1: "Player A",
@@ -166,8 +340,9 @@ let gameConfig = {
     playerIcon1: "https://via.placeholder.com/40/4CAF50/FFFFFF?text=P1",
     currentHue: 200,
     pA: 0.5, 
-    pX_A1: 0.8, // Probability X=1 when A=1
-    pX_A0: 0.2  // Probability X=1 when A=0
+    pX_A1: 0.8,
+    pX_A0: 0.2,
+    costArray: [2, 1, 0.5, 0, -0.5, -1, -2] // Costs for decision phase
 };
 
 let participantId = null;
@@ -180,6 +355,11 @@ let roundTimes = [];
 let roundStartTime = 0;
 let resultDisplayed = false;
 
+// Decision phase state
+let choices = [];
+let currentChoiceIndex = 0;
+let gameStartTime = Date.now();
+
 /* ========================== DOM ELEMENTS ========================== */
 const gameContainer = document.getElementById("gameContainer");
 const btnNo = document.getElementById("btnNo");
@@ -188,6 +368,9 @@ const panelXinfo = document.getElementById("panelXinfo");
 const panelAchoice = document.getElementById("panelAchoice");
 const resultText = document.getElementById("resultText");
 const roundDisplay = document.getElementById("roundDisplay");
+const gameButtons = document.getElementById("gameButtons");
+const decisionContent = document.getElementById("decisionContent");
+const actionPrompt = document.getElementById("actionPrompt");
 
 /* =============== QUALTRICS COMMUNICATION =============== */
 function sendDataToQualtrics(dataType, data) {
@@ -226,11 +409,14 @@ function applyGameConfiguration() {
     if (elements.playerIcon1) elements.playerIcon1.src = gameConfig.playerIcon1;
     
     document.body.style.background = `hsl(${gameConfig.currentHue} 70% 85%)`;
+    
+    // Initialize choices array
+    choices = new Array(gameConfig.costArray.length).fill(null);
 }
 
 /* ===================== GAME LOGIC ===================== */
 function handleDecision(decision) {
-    if (panelAchoice.style.display !== 'flex') return;
+    if (gameButtons.style.display === 'none') return;
     
     btnYes.disabled = btnNo.disabled = true;
     const selectedBtn = decision === 'y' ? btnYes : btnNo;
@@ -252,7 +438,6 @@ function handleDecision(decision) {
         resultText.innerHTML = X
             ? `<br>${gameConfig.playerName1} pressed ${gameConfig.playerPronoun1} button <br>(press "space" to continue)`
             : `<br>${gameConfig.playerName1} did <u>not</u> press ${gameConfig.playerPronoun1} button <br>(press "space" to continue)`;
-        panelXinfo.style.display = "flex";
         resultDisplayed = true;
     }, 200);
 }
@@ -272,35 +457,48 @@ function nextRound() {
         roundCounter++;
         roundDisplay.textContent = `Round ${roundCounter} of ${gameConfig.nRounds}`;
         
-        // Hide panels first to create refresh effect
+        // Hide entire panels during transition
         panelAchoice.style.display = "none";
         panelXinfo.style.display = "none";
         
+        // Clear all panel content
+        actionPrompt.style.display = "none";
+        actionPrompt.innerHTML = "";
+        gameButtons.style.display = "none";
+        resultText.style.display = "none";
+        resultText.innerHTML = "";
+        panelXinfo.style.backgroundColor = "white";
+        
+        // Clear button states
+        btnNo.classList.remove("grayed-out", "flash");
+        btnYes.classList.remove("grayed-out", "flash");
+        btnNo.disabled = false;
+        btnYes.disabled = false;
+        
         setTimeout(showActionPanels, 500);
     } else {
-
-        sendDataToQualtrics('FINAL_DATA', {
-            history: history,
-            roundTimes: roundTimes,
-            config: gameConfig
-        });
-        
-        sendDataToQualtrics('GAME_COMPLETE', { completed: true });
+        // Game rounds complete, show decision phase
+        showDecisionPhase();
     }
 }
 
 function showActionPanels() {
-    // Reset panels
-    Object.assign(panelAchoice.style, { display: "flex" });
-    Object.assign(panelXinfo.style, { display: "flex", backgroundColor: "white" });
+    // Show the panels first
+    panelAchoice.style.display = "flex";
+    panelXinfo.style.display = "flex";
     
-    resultText.textContent = "";
+    // Show game elements that were hidden initially
+    actionPrompt.style.display = "block";
+    gameButtons.style.display = "flex";
+    resultText.style.display = "block";
+    
+    // Reset panels
+    panelXinfo.style.backgroundColor = "white";
+
     btnYes.disabled = btnNo.disabled = false;
 
     // Determine if player is forced to press a specific button
     const forcedChoice = Math.random() < gameConfig.pA;
-    
-    btnNo.style.display = btnYes.style.display = "inline-block";
     
     if (forcedChoice) {
         // Force "Yes"
@@ -308,17 +506,271 @@ function showActionPanels() {
         btnNo.disabled = true;
         btnYes.classList.remove("grayed-out");
         btnYes.disabled = false;
-        document.getElementById("actionPrompt").innerHTML = "You must press \"Yes\" in this round. <br> Press your button? (Use your mouse)";
+        actionPrompt.innerHTML = "You must press \"Yes\" in this round. <br> Press your button? (Use your mouse)";
     } else {
         // Force "No"
         btnNo.classList.remove("grayed-out");
         btnNo.disabled = false;
         btnYes.classList.add("grayed-out");
         btnYes.disabled = true;
-        document.getElementById("actionPrompt").innerHTML = "You must press \"No\" in this round. <br> Press your button? (Use your mouse)";
+        actionPrompt.innerHTML = "You must press \"No\" in this round. <br> Press your button? (Use your mouse)";
     }
     
     roundStartTime = Date.now();
+}
+
+/* =============== DECISION PHASE LOGIC =============== */
+
+function showDecisionPhase() {
+    // Show decision title and instructions at the top of the page
+    document.querySelector('.decision-title').style.display = "block";
+    document.querySelector('.decision-instructions').style.display = "block";
+    
+    // Hide game elements
+    roundDisplay.style.display = "none";
+    gameButtons.style.display = "none";
+    actionPrompt.style.display = "none";
+    
+    // Show decision content
+    decisionContent.classList.add('active');
+    
+    // Show and update Panel X text
+    resultText.style.display = "block";
+    resultText.textContent = `${gameConfig.playerName1} will make ${gameConfig.playerPronoun1} decision.`;
+
+    // change the background color of the panel to be white
+    panelXinfo.style.backgroundColor = "white";
+
+    // Create choice rows
+    createChoiceRows();
+    
+    // Initialize decision phase
+    currentChoiceIndex = 0;
+    updateProgressIndicator();
+    updateRowStates();
+}
+
+function createChoiceRows() {
+    const choiceGrid = document.getElementById('choiceGrid');
+    choiceGrid.innerHTML = ''; // Clear any existing content
+    
+    gameConfig.costArray.forEach((cost, index) => {
+        const row = createChoiceRow(index, cost);
+        choiceGrid.appendChild(row);
+    });
+}
+
+function createChoiceRow(index, cost) {
+    const row = document.createElement('div');
+    row.className = 'choice-row';
+    row.setAttribute('data-choice', index);
+    
+    let yesText, noText;
+    
+    if (cost > 0) {
+        yesText = `Yes (<span class="cost-amt">cost $${cost.toFixed(1)}</span>)`;
+        noText = `No (<span class="cost-amt">free</span>)`;
+    } else if (cost === 0) {
+        yesText = `Yes (<span class="cost-amt">free</span>)`;
+        noText = `No (<span class="cost-amt">free</span>)`;
+    } else {
+        yesText = `Yes (<span class="cost-amt">free</span>)`;
+        noText = `No (<span class="cost-amt">cost $${Math.abs(cost).toFixed(1)}</span>)`;
+    }
+    
+    row.innerHTML = `
+        <div class="choice-buttons">
+            <button class="choice-button red no-btn" disabled>${noText}</button>
+            <button class="choice-button green yes-btn" disabled>${yesText}</button>
+        </div>
+    `;
+    
+    const yesBtn = row.querySelector('.yes-btn');
+    const noBtn = row.querySelector('.no-btn');
+    
+    yesBtn.addEventListener('click', () => handleChoice(index, 'y'));
+    noBtn.addEventListener('click', () => handleChoice(index, 'n'));
+    
+    return row;
+}
+
+function handleChoice(choiceIndex, decision) {
+    if (currentChoiceIndex >= choices.length) {
+        // Allow changing previous choices
+        choices[choiceIndex] = decision;
+        updateButtonSelection(choiceIndex, decision);
+        
+        const hasInvalidSwitch = checkForInvalidSwitch();
+        if (hasInvalidSwitch) {
+            showInvalidSwitchWarning();
+        } else {
+            hideValidationMessage();
+        }
+        return;
+    }
+    
+    if (choiceIndex < currentChoiceIndex) {
+        // Allow changing previous choices
+        choices[choiceIndex] = decision;
+        updateButtonSelection(choiceIndex, decision);
+        
+        const hasInvalidSwitch = checkForInvalidSwitch();
+        if (hasInvalidSwitch) {
+            showInvalidSwitchWarning();
+        } else {
+            hideValidationMessage();
+        }
+        return;
+    }
+    
+    if (choiceIndex !== currentChoiceIndex) {
+        return; // Ignore clicks on future choices
+    }
+    
+    // Record the choice
+    choices[choiceIndex] = decision;
+    updateButtonSelection(choiceIndex, decision);
+    
+    const hasInvalidSwitch = checkForInvalidSwitch();
+    if (hasInvalidSwitch) {
+        showInvalidSwitchWarning();
+    } else {
+        hideValidationMessage();
+    }
+    
+    // Move to next choice after a short delay
+    setTimeout(() => {
+        currentChoiceIndex++;
+        updateProgressIndicator();
+        updateRowStates();
+        
+        if (currentChoiceIndex >= choices.length) {
+            // All choices made, enable submit button
+            document.getElementById('submitChoices').disabled = false;
+            
+            // Make all rows available for editing
+            const allRows = document.querySelectorAll('.choice-row');
+            allRows.forEach((row, index) => {
+                row.classList.remove('current', 'hidden');
+                row.classList.add('completed');
+                const buttons = row.querySelectorAll('.choice-button');
+                buttons.forEach(btn => btn.disabled = false);
+            });
+        }
+    }, 500);
+}
+
+function updateButtonSelection(choiceIndex, decision) {
+    const row = document.querySelector(`[data-choice="${choiceIndex}"]`);
+    const yesBtn = row.querySelector('.yes-btn');
+    const noBtn = row.querySelector('.no-btn');
+    
+    yesBtn.classList.remove('selected');
+    noBtn.classList.remove('selected');
+    
+    if (decision === 'y') {
+        yesBtn.classList.add('selected');
+    } else {
+        noBtn.classList.add('selected');
+    }
+}
+
+function updateProgressIndicator() {
+    const completedChoices = choices.filter(choice => choice !== null).length;
+    const totalChoices = gameConfig.costArray.length;
+    const displayNumber = Math.min(completedChoices + 1, totalChoices);
+    document.getElementById('progressIndicator').textContent = `Decision ${displayNumber} of ${totalChoices}`;
+}
+
+function updateRowStates() {
+    document.querySelectorAll('.choice-row').forEach((row, index) => {
+        row.classList.remove('current', 'completed', 'hidden');
+        
+        const buttons = row.querySelectorAll('.choice-button');
+        
+        if (index < currentChoiceIndex) {
+            row.classList.add('completed');
+            buttons.forEach(btn => btn.disabled = false);
+        } else if (index === currentChoiceIndex) {
+            row.classList.add('current');
+            buttons.forEach(btn => btn.disabled = false);
+            
+            // Auto-scroll to current choice
+            setTimeout(() => {
+                row.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center',
+                    inline: 'nearest'
+                });
+            }, 100);
+        } else {
+            row.classList.add('hidden');
+            buttons.forEach(btn => btn.disabled = true);
+        }
+    });
+}
+
+function checkForInvalidSwitch() {
+    for (let i = 1; i <= currentChoiceIndex; i++) {
+        if (choices[i-1] === 'y' && choices[i] === 'n') {
+            return true;
+        }
+    }
+    return false;
+}
+
+function showInvalidSwitchWarning() {
+    const validationMessage = document.getElementById('validationMessage');
+    validationMessage.textContent = "Warning: You pressed the button when the cost was higher, but didn't press it when the cost was lower. You can change your previous choices by clicking on them.";
+    validationMessage.className = 'validation-message validation-error';
+    validationMessage.style.display = 'block';
+    
+    // Highlight invalid switches
+    document.querySelectorAll('.choice-row').forEach(row => {
+        row.classList.remove('invalid');
+    });
+    
+    for (let i = 1; i <= currentChoiceIndex; i++) {
+        if (choices[i-1] === 'y' && choices[i] === 'n') {
+            document.querySelector(`[data-choice="${i-1}"]`).classList.add('invalid');
+            document.querySelector(`[data-choice="${i}"]`).classList.add('invalid');
+        }
+    }
+}
+
+function hideValidationMessage() {
+    const validationMessage = document.getElementById('validationMessage');
+    validationMessage.style.display = 'none';
+    document.querySelectorAll('.choice-row').forEach(row => {
+        row.classList.remove('invalid');
+    });
+}
+
+function submitAllChoices() {
+    const submitButton = document.getElementById('submitChoices');
+    submitButton.disabled = true;
+    submitButton.textContent = "Choices Submitted";
+    
+    // Convert choices to binary array (0 for 'n', 1 for 'y')
+    const choicesArray = choices.map(choice => choice === 'y' ? 1 : 0);
+    
+    // Send data to Qualtrics
+    sendDataToQualtrics('FINAL_DATA', {
+        roundHistory: history,
+        roundTimes: roundTimes,
+        choices: choicesArray,
+        switchingPoint: choices.indexOf('y'),
+        totalTime: (Date.now() - gameStartTime) / 1000,
+        config: gameConfig
+    });
+    
+    sendDataToQualtrics('GAME_COMPLETE', { completed: true });
+    
+    console.log('=== FINAL DATA SENT TO QUALTRICS ===');
+    console.log('Round History:', history);
+    console.log('Decision Choices:', choicesArray);
+    console.log('Switching Point:', choices.indexOf('y'));
+    console.log('=====================================');
 }
 
 /* ===================== EVENT LISTENERS ===================== */
@@ -329,6 +781,9 @@ function handleButtonClick(decision) {
 btnYes.addEventListener("click", () => handleButtonClick('y'));
 btnNo.addEventListener("click", () => handleButtonClick('n'));
 document.addEventListener("keydown", handleKeyPress);
+
+// Add submit button event listener
+document.getElementById('submitChoices').addEventListener('click', submitAllChoices);
 
 /* ===================== INITIALIZE GAME ===================== */
 setTimeout(() => {
