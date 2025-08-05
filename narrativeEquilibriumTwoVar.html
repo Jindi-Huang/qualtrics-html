@@ -176,7 +176,6 @@ let participantId = null;
 let roundCounter = 0;
 let X, A;
 let history = [];
-let payment = [];
 let roundTimes = [];
 let roundStartTime = 0;
 let resultDisplayed = false;
@@ -245,7 +244,6 @@ function handleDecision(decision) {
     X = Math.random() < pX ? 1 : 0;
 
     history.push([A, X]);
-    payment.push(-gameConfig.aCost * A);
     
     resultDisplayed = false;
 
@@ -280,13 +278,10 @@ function nextRound() {
         
         setTimeout(showActionPanels, 500);
     } else {
-        const totalPayment = payment.reduce((sum, p) => sum + p, 0);
-        const avgDecisionTime = roundTimes.reduce((sum, t) => sum + t, 0) / roundTimes.length;
-        
+
         sendDataToQualtrics('FINAL_DATA', {
             history: history,
             roundTimes: roundTimes,
-            payment: payment,
             config: gameConfig
         });
         
