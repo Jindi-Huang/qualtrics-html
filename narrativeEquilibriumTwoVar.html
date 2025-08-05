@@ -436,8 +436,8 @@ function handleDecision(decision) {
     setTimeout(() => {
         panelXinfo.style.backgroundColor = X ? "green" : "red";
         resultText.innerHTML = X
-            ? `<br>${gameConfig.playerName1} pressed ${gameConfig.playerPronoun1} button <br>(press "space" to continue)`
-            : `<br>${gameConfig.playerName1} did <u>not</u> press ${gameConfig.playerPronoun1} button <br>(press "space" to continue)`;
+            ? `${gameConfig.playerName1} pressed ${gameConfig.playerPronoun1} button <br>(press "space" to continue)`
+            : `${gameConfig.playerName1} did <u>not</u> press ${gameConfig.playerPronoun1} button <br>(press "space" to continue)`;
         resultDisplayed = true;
     }, 200);
 }
