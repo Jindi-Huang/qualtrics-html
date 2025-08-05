@@ -756,7 +756,7 @@ function submitAllChoices() {
     
     // Send data to Qualtrics
     sendDataToQualtrics('FINAL_DATA', {
-        roundHistory: history,
+        history: history,
         roundTimes: roundTimes,
         choices: choicesArray,
         switchingPoint: choices.indexOf('y'),
