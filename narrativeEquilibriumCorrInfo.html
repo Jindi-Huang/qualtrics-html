@@ -325,6 +325,11 @@ let xReady = false;
 let colorDisplayed = false;
 let statisticsHistory = [];
 
+// Space bar delay state
+let spaceBarEnabled = false;
+let spaceBarTimeout = null;
+let spacePressedEarly = false;
+
 // Round-specific state variables
 let isPlayerChoice = false;
 let outcomesVisible = false;
@@ -340,6 +345,46 @@ const panelAchoice = document.getElementById("panelAchoice");
 const resultText = document.getElementById("resultText");
 const riskText = document.getElementById("riskText");
 const roundDisplay = document.getElementById("roundDisplay");
+
+/* =============== SPACE BAR DELAY FUNCTIONS =============== */
+
+function startSpaceBarDelay() {
+    spaceBarEnabled = false;
+    spacePressedEarly = false;
+    
+    // Clear any existing timeout
+    if (spaceBarTimeout) {
+        clearTimeout(spaceBarTimeout);
+    }
+    
+    spaceBarTimeout = setTimeout(() => {
+        spaceBarEnabled = true;
+        
+        // If space was pressed early, proceed now
+        if (spacePressedEarly) {
+            proceedToNextRound();
+        }
+    }, 500); // 0.5 second delay
+}
+
+function hideSpaceBarIndicator() {
+    if (spaceBarTimeout) {
+        clearTimeout(spaceBarTimeout);
+        spaceBarTimeout = null;
+    }
+    spaceBarEnabled = false;
+    spacePressedEarly = false;
+}
+
+function proceedToNextRound() {
+    roundTimes.push((Date.now() - roundStartTime) / 1000);
+    hideSpaceBarIndicator();
+    
+    if (roundCounter <= gameConfig.nRounds) {
+        nextRound();
+        colorDisplayed = false;
+    }
+}
 
 /* ===================== STATISTICS FUNCTIONS ===================== */
 function updateStatistics() {
@@ -573,12 +618,17 @@ function handleKeyPress(e) {
         }
         xReady = false;
         colorDisplayed = true;
+        
+        // Start the space bar delay when final results are shown
+        startSpaceBarDelay();
     }
     else if (e.key === ' ' && colorDisplayed) {
-        roundTimes.push((Date.now() - roundStartTime) / 1000);
-        if (roundCounter <= gameConfig.nRounds) {
-            nextRound();
-            colorDisplayed = false;
+        if (spaceBarEnabled) {
+            // Space bar is enabled, proceed immediately
+            proceedToNextRound();
+        } else {
+            // Space bar not yet enabled, mark as pressed early
+            spacePressedEarly = true;
         }
     }
 }

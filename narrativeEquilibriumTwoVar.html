@@ -222,7 +222,7 @@ body {
 }
 
 .choice-button.selected {
-    outline: 3px solid #007bff;
+    outline: 5px solid black;
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(0,0,0,0.2);
 }
@@ -283,6 +283,8 @@ body {
     color: #666;
 }
 
+
+
 </style>
 </head>
 
@@ -342,7 +344,8 @@ let gameConfig = {
     pA: 0.5, 
     pX_A1: 0.8,
     pX_A0: 0.2,
-    costArray: [2, 1, 0.5, 0, -0.5, -1, -2] // Costs for decision phase
+    costArray: [2, 1, 0.5, 0, -0.5, -1, -2],
+    increasingOrder: 1
 };
 
 let participantId = null;
@@ -354,6 +357,11 @@ let history = [];
 let roundTimes = [];
 let roundStartTime = 0;
 let resultDisplayed = false;
+
+// Space bar delay state
+let spaceBarEnabled = false;
+let spaceBarTimeout = null;
+let spacePressedEarly = false;
 
 // Decision phase state
 let choices = [];
@@ -414,6 +422,36 @@ function applyGameConfiguration() {
     choices = new Array(gameConfig.costArray.length).fill(null);
 }
 
+/* =============== SPACE BAR DELAY FUNCTIONS =============== */
+
+function startSpaceBarDelay() {
+    spaceBarEnabled = false;
+    spacePressedEarly = false;
+    
+    // Clear any existing timeout
+    if (spaceBarTimeout) {
+        clearTimeout(spaceBarTimeout);
+    }
+    
+    spaceBarTimeout = setTimeout(() => {
+        spaceBarEnabled = true;
+        
+        // If space was pressed early, proceed now
+        if (spacePressedEarly) {
+            proceedToNextRound();
+        }
+    }, 500); // 0.5 second delay
+}
+
+function hideSpaceBarIndicator() {
+    if (spaceBarTimeout) {
+        clearTimeout(spaceBarTimeout);
+        spaceBarTimeout = null;
+    }
+    spaceBarEnabled = false;
+    spacePressedEarly = false;
+}
+
 /* ===================== GAME LOGIC ===================== */
 function handleDecision(decision) {
     if (gameButtons.style.display === 'none') return;
@@ -439,16 +477,31 @@ function handleDecision(decision) {
             ? `${gameConfig.playerName1} pressed ${gameConfig.playerPronoun1} button <br>(press "space" to continue)`
             : `${gameConfig.playerName1} did <u>not</u> press ${gameConfig.playerPronoun1} button <br>(press "space" to continue)`;
         resultDisplayed = true;
+        
+        // Start the space bar delay
+        startSpaceBarDelay();
     }, 200);
 }
 
 function handleKeyPress(e) {
     if (e.key === ' ' && resultDisplayed) {
-        roundTimes.push((Date.now() - roundStartTime) / 1000);
-        if (roundCounter <= gameConfig.nRounds) {
-            nextRound();
-            resultDisplayed = false;
+        if (spaceBarEnabled) {
+            // Space bar is enabled, proceed immediately
+            proceedToNextRound();
+        } else {
+            // Space bar not yet enabled, mark as pressed early
+            spacePressedEarly = true;
         }
+    }
+}
+
+function proceedToNextRound() {
+    roundTimes.push((Date.now() - roundStartTime) / 1000);
+    hideSpaceBarIndicator();
+    
+    if (roundCounter <= gameConfig.nRounds) {
+        nextRound();
+        resultDisplayed = false;
     }
 }
 
@@ -522,6 +575,9 @@ function showActionPanels() {
 /* =============== DECISION PHASE LOGIC =============== */
 
 function showDecisionPhase() {
+    // Hide space bar indicator when entering decision phase
+    hideSpaceBarIndicator();
+    
     // Show decision title and instructions at the top of the page
     document.querySelector('.decision-title').style.display = "block";
     document.querySelector('.decision-instructions').style.display = "block";
@@ -567,15 +623,30 @@ function createChoiceRow(index, cost) {
     
     let yesText, noText;
     
-    if (cost > 0) {
-        yesText = `Yes (<span class="cost-amt">cost $${cost.toFixed(1)}</span>)`;
-        noText = `No (<span class="cost-amt">free</span>)`;
-    } else if (cost === 0) {
-        yesText = `Yes (<span class="cost-amt">free</span>)`;
-        noText = `No (<span class="cost-amt">free</span>)`;
+    if (gameConfig.increasingOrder === 1) {
+        // When increasingOrder = 1, swap the cost assignments
+        if (cost > 0) {
+            yesText = `Yes (<span class="cost-amt">free</span>)`;
+            noText = `No (<span class="cost-amt">cost $${cost.toFixed(1)}</span>)`;
+        } else if (cost === 0) {
+            yesText = `Yes (<span class="cost-amt">free</span>)`;
+            noText = `No (<span class="cost-amt">free</span>)`;
+        } else {
+            yesText = `Yes (<span class="cost-amt">cost $${Math.abs(cost).toFixed(1)}</span>)`;
+            noText = `No (<span class="cost-amt">free</span>)`;
+        }
     } else {
-        yesText = `Yes (<span class="cost-amt">free</span>)`;
-        noText = `No (<span class="cost-amt">cost $${Math.abs(cost).toFixed(1)}</span>)`;
+        // When increasingOrder = 0, use original cost assignments
+        if (cost > 0) {
+            yesText = `Yes (<span class="cost-amt">cost $${cost.toFixed(1)}</span>)`;
+            noText = `No (<span class="cost-amt">free</span>)`;
+        } else if (cost === 0) {
+            yesText = `Yes (<span class="cost-amt">free</span>)`;
+            noText = `No (<span class="cost-amt">free</span>)`;
+        } else {
+            yesText = `Yes (<span class="cost-amt">free</span>)`;
+            noText = `No (<span class="cost-amt">cost $${Math.abs(cost).toFixed(1)}</span>)`;
+        }
     }
     
     row.innerHTML = `
@@ -711,9 +782,19 @@ function updateRowStates() {
 }
 
 function checkForInvalidSwitch() {
-    for (let i = 1; i <= currentChoiceIndex; i++) {
-        if (choices[i-1] === 'y' && choices[i] === 'n') {
-            return true;
+    if (gameConfig.increasingOrder === 1) {
+        // When increasingOrder = 1, check for switches from left to right (n to y)
+        for (let i = 1; i <= currentChoiceIndex; i++) {
+            if (choices[i-1] === 'n' && choices[i] === 'y') {
+                return true;
+            }
+        }
+    } else {
+        // When increasingOrder = 0, check for switches from right to left (y to n)
+        for (let i = 1; i <= currentChoiceIndex; i++) {
+            if (choices[i-1] === 'y' && choices[i] === 'n') {
+                return true;
+            }
         }
     }
     return false;
@@ -721,7 +802,7 @@ function checkForInvalidSwitch() {
 
 function showInvalidSwitchWarning() {
     const validationMessage = document.getElementById('validationMessage');
-    validationMessage.textContent = "Warning: You pressed the button when the cost was higher, but didn't press it when the cost was lower. You can change your previous choices by clicking on them.";
+    validationMessage.textContent = "Warning: You chose an option when it cost more, but not when it cost less. You can still change your earlier choices by clicking on them.";
     validationMessage.className = 'validation-message validation-error';
     validationMessage.style.display = 'block';
     
@@ -730,10 +811,21 @@ function showInvalidSwitchWarning() {
         row.classList.remove('invalid');
     });
     
-    for (let i = 1; i <= currentChoiceIndex; i++) {
-        if (choices[i-1] === 'y' && choices[i] === 'n') {
-            document.querySelector(`[data-choice="${i-1}"]`).classList.add('invalid');
-            document.querySelector(`[data-choice="${i}"]`).classList.add('invalid');
+    if (gameConfig.increasingOrder === 1) {
+        // When increasingOrder = 1, highlight switches from left to right (n to y)
+        for (let i = 1; i <= currentChoiceIndex; i++) {
+            if (choices[i-1] === 'n' && choices[i] === 'y') {
+                document.querySelector(`[data-choice="${i-1}"]`).classList.add('invalid');
+                document.querySelector(`[data-choice="${i}"]`).classList.add('invalid');
+            }
+        }
+    } else {
+        // When increasingOrder = 0, highlight switches from right to left (y to n)
+        for (let i = 1; i <= currentChoiceIndex; i++) {
+            if (choices[i-1] === 'y' && choices[i] === 'n') {
+                document.querySelector(`[data-choice="${i-1}"]`).classList.add('invalid');
+                document.querySelector(`[data-choice="${i}"]`).classList.add('invalid');
+            }
         }
     }
 }

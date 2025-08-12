@@ -146,7 +146,7 @@ body {
     flex-direction: row;
     gap: 6px;
     width: 100%;
-    max-width: 300px;
+    max-width: 360px;
 }
 
 .actionButton {
@@ -176,7 +176,7 @@ body {
 .red { background-color: red; }
 
 .selected {
-    outline: 3px solid #007bff;
+    outline: 5px solid black;
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(0,0,0,0.2);
 }
@@ -449,13 +449,39 @@ body {
     margin-bottom: 8px;
 }
 
+.get-started-container {
+    text-align: center;
+    margin-left: 100px;
+    max-width: 820px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+#getStartedBtn {
+    padding: 12px 32px;
+    font-size: 14px;
+    font-weight: bold;
+    border-radius: 6px;
+    background: white;
+    color: black;
+    border: none;
+    cursor: pointer;
+    display: none;
+}
+
 
 </style>
 </head>
 <body>
 
+
 <div id="instructionTitle">
     <!-- Instruction title will be filled by JavaScript -->
+     
+</div>
+
+<div class="get-started-container">
+    <button id="getStartedBtn">Get Started</button>
 </div>
 
 <div id="gameContainer" class="game-container" style="display: none;">
@@ -563,10 +589,10 @@ body {
 let gameConfig = {
     yBonus: 1.0,
     pY: 0.5,
-    playerName1: "Player A",
-    playerName2: "Player B", 
-    playerPronoun1: "their",
-    playerPronoun2: "their",
+    playerName1: "Ann",
+    playerName2: "Bob", 
+    playerPronoun1: "her",
+    playerPronoun2: "his",
     noise: 0.1,
     causal: 1,
     playerIcon1: "https://via.placeholder.com/40/4CAF50/FFFFFF?text=P1",
@@ -580,7 +606,8 @@ let gameConfig = {
     displayText2_1: `If Player A pressed, Player B pressed 35 percentage points more often.`,
     displayText2_2: `When pressed: 9/12 (75%) <br> When not pressed: 4/10 (40%)`,
     percentageDifference1: 60,
-    percentageDifference2: 35
+    percentageDifference2: 35,
+    increasingOrder: 1
 };
 
 let participantId = null;
@@ -772,7 +799,7 @@ function applyGameConfiguration() {
     if (config.instructionTitle && config.instructionBullets) {
         const titleHtml = `
             <div class="instruction-main-title">${config.instructionTitle}</div>
-            <p style="text-align: center; margin-top: 20px; font-style: italic; color: #666;">Please read the rules carefully. The decision panel will show up soon.</p>
+            <p style="text-align: center; margin-top: 20px; font-style: italic; color: #666;">Please read the rules carefully. The decision panel will show up after you click "Get Started".</p>
             <ul class="instruction-bullets">
                 ${config.instructionBullets.map(bullet => `<li>${bullet}</li>`).join('')}
             </ul>
@@ -881,9 +908,19 @@ function updateRowStates() {
 }
 
 function checkForInvalidSwitch() {
-    for (let i = 1; i <= currentChoiceIndex; i++) {
-        if (choices[i-1] === 'y' && choices[i] === 'n') {
-            return true;
+    if (gameConfig.increasingOrder === 1) {
+        // When increasingOrder = 1, check for switches from left to right (n to y)
+        for (let i = 1; i <= currentChoiceIndex; i++) {
+            if (choices[i-1] === 'n' && choices[i] === 'y') {
+                return true;
+            }
+        }
+    } else {
+        // When increasingOrder = 0, check for switches from right to left (y to n)
+        for (let i = 1; i <= currentChoiceIndex; i++) {
+            if (choices[i-1] === 'y' && choices[i] === 'n') {
+                return true;
+            }
         }
     }
     return false;
@@ -894,10 +931,21 @@ function highlightInvalidSwitch() {
         row.classList.remove('invalid');
     });
     
-    for (let i = 1; i <= currentChoiceIndex; i++) {
-        if (choices[i-1] === 'y' && choices[i] === 'n') {
-            document.querySelector(`[data-choice="${i-1}"]`).classList.add('invalid');
-            document.querySelector(`[data-choice="${i}"]`).classList.add('invalid');
+    if (gameConfig.increasingOrder === 1) {
+        // When increasingOrder = 1, highlight switches from left to right (n to y)
+        for (let i = 1; i <= currentChoiceIndex; i++) {
+            if (choices[i-1] === 'n' && choices[i] === 'y') {
+                document.querySelector(`[data-choice="${i-1}"]`).classList.add('invalid');
+                document.querySelector(`[data-choice="${i}"]`).classList.add('invalid');
+            }
+        }
+    } else {
+        // When increasingOrder = 0, highlight switches from right to left (y to n)
+        for (let i = 1; i <= currentChoiceIndex; i++) {
+            if (choices[i-1] === 'y' && choices[i] === 'n') {
+                document.querySelector(`[data-choice="${i-1}"]`).classList.add('invalid');
+                document.querySelector(`[data-choice="${i}"]`).classList.add('invalid');
+            }
         }
     }
 }
@@ -1052,21 +1100,45 @@ function createChoiceRow(index) {
     
     let yesText, noText;
     
-    if (cost > 0) {
-        yesText = `Yes (<span class="cost-amt">cost $${cost.toFixed(1)}</span>)`;
-        noText = `No (<span class="cost-amt">free</span>)`;
-    } else if (cost === 0) {
-        yesText = `Yes (<span class="cost-amt">free</span>)`;
-        noText = `No (<span class="cost-amt">free</span>)`;
+    if (gameConfig.increasingOrder === 1) {
+        // When increasingOrder = 1, swap the cost assignments
+        if (cost > 0) {
+            yesText = `Yes (<span class="cost-amt">free</span>)`;
+            noText = `No (<span class="cost-amt">cost $${cost.toFixed(1)}</span>)`;
+        } else if (cost === 0) {
+            yesText = `Yes (<span class="cost-amt">free</span>)`;
+            noText = `No (<span class="cost-amt">free</span>)`;
+        } else {
+            yesText = `Yes (<span class="cost-amt">cost $${Math.abs(cost).toFixed(1)}</span>)`;
+            noText = `No (<span class="cost-amt">free</span>)`;
+        }
     } else {
-        yesText = `Yes (<span class="cost-amt">free</span>)`;
-        noText = `No (<span class="cost-amt">cost $${Math.abs(cost).toFixed(1)}</span>)`;
+        // When increasingOrder = 0, use original cost assignments
+        if (cost > 0) {
+            yesText = `Yes (<span class="cost-amt">cost $${cost.toFixed(1)}</span>)`;
+            noText = `No (<span class="cost-amt">free</span>)`;
+        } else if (cost === 0) {
+            yesText = `Yes (<span class="cost-amt">free</span>)`;
+            noText = `No (<span class="cost-amt">free</span>)`;
+        } else {
+            yesText = `Yes (<span class="cost-amt">free</span>)`;
+            noText = `No (<span class="cost-amt">cost $${Math.abs(cost).toFixed(1)}</span>)`;
+        }
     }
+    
+    
+    if (gameConfig.causalElicitType === "XY") {
+        yesText = `${gameConfig.playerName1}: ${yesText}`;
+        noText = `${gameConfig.playerName1}: ${noText}`;
+    }
+    
+    // Keep button order the same: No on left, Yes on right
+    const buttonsHtml = `<button class="actionButton red no-btn" disabled>${noText}</button>
+                         <button class="actionButton green yes-btn" disabled>${yesText}</button>`;
     
     row.innerHTML = `
         <div class="choice-buttons">
-            <button class="actionButton red no-btn" disabled>${noText}</button>
-            <button class="actionButton green yes-btn" disabled>${yesText}</button>
+            ${buttonsHtml}
         </div>
     `;
     
@@ -1236,14 +1308,20 @@ function showResults() {
         }
     });
     
-    options.forEach((option, index) => {
+    // Create display order based on increasingOrder config
+    const displayOrder = gameConfig.increasingOrder === 1 
+        ? options.map((_, index) => index)  // Normal order: 0, 1, 2, ..., 10
+        : options.map((_, index) => index).reverse();  // Reverse order: 10, 9, 8, ..., 0
+    
+    displayOrder.forEach((originalIndex) => {
+        const option = options[originalIndex];
         const optionDiv = document.createElement('div');
         optionDiv.className = 'option-item';
         
         const radio = document.createElement('input');
         radio.type = 'radio';
         radio.name = 'causalEffect';
-        radio.value = index;
+        radio.value = originalIndex;  // Keep original index for data consistency
         radio.className = 'option-radio';
         
         const label = document.createElement('label');
@@ -1315,23 +1393,18 @@ window.addEventListener('message', function(event) {
     }
 });
 
+
 function showInstructionsFirst() {
     console.log("Showing instructions first");
-    
     // Apply configuration to populate instruction title
     applyGameConfiguration();
-    
     // Show only the instruction title initially
     document.getElementById("instructionTitle").style.display = "block";
-    
     // Hide everything else initially
     document.getElementById("gameContainer").style.display = "none";
     document.getElementById("questionSection").style.display = "none";
-    
-    // After 10 seconds, show the rest of the page
-    setTimeout(() => {
-        initializeGame();
-    }, 10000);
+    // Show the Get Started button
+    document.getElementById("getStartedBtn").style.display = "inline-block";
 }
 
 function initializeGame() {
@@ -1356,7 +1429,19 @@ function initializeGame() {
     sendDataToQualtrics('GAME_START', { started: true });
 }
 
+
 setTimeout(showInstructionsFirst, 2000);
+
+// Add event listener for Get Started button
+document.addEventListener('DOMContentLoaded', function() {
+    var btn = document.getElementById('getStartedBtn');
+    if (btn) {
+        btn.addEventListener('click', function() {
+            btn.style.display = 'none';
+            initializeGame();
+        });
+    }
+});
 
 </script>
 </body>
