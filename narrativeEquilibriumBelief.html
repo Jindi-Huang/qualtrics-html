@@ -176,7 +176,7 @@ body {
 .red { background-color: red; }
 
 .actionButton.selected {
-    outline: 5px solid black;
+    outline: 0px solid black;
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(0,0,0,0.2);
 }
@@ -495,7 +495,7 @@ body {
             <div class="panel-content">
                 <div id="panelA-text" class="text">Press your button?</div>
                 <div class="interactive-elements" id="panelA-interactive">
-                    <div id="progressIndicator" class="progress-indicator">Decision 1 of 7</div>
+                    <div id="progressIndicator" class="progress-indicator">Decision 1 of X</div>
                     <div id="choiceGrid" class="choice-grid"></div>
                     <div id="validationMessage" class="validation-message" style="display: none;"></div>
                     <div class="submit-container">
@@ -598,22 +598,22 @@ let gameConfig = {
     playerIcon1: "https://via.placeholder.com/40/4CAF50/FFFFFF?text=P1",
     playerIcon2: "https://via.placeholder.com/40/2196F3/FFFFFF?text=P2",
     currentHue: 200,
-    causalElicitType: "XY", // Can be "AX", "AY", or "XY"
+    causalElicitType: "AX", // Can be "AX", "AY", or "XY"
     exoButton: 1,
-    costArray: [2, 1, 0.5, 0, -0.5, -1, -2],
+    costArray: [4, 2, 1, 0.5, 0, -0.5, -1, -2, -4],
     displayText1_1: `If You pressed, Player A pressed 60 percentage points more often.`,
     displayText1_2: `When pressed: 3/3 (100%) <br> When not pressed: 2/5 (40%)`,
     displayText2_1: `If Player A pressed, Player B pressed 35 percentage points more often.`,
     displayText2_2: `When pressed: 9/12 (75%) <br> When not pressed: 4/10 (40%)`,
     percentageDifference1: 60,
     percentageDifference2: 35,
-    increasingOrder: 1
+    increasingOrder: 0
 };
 
 let participantId = null;
 
 /* ========================= GAME STATE ========================= */
-let choices = new Array(7).fill(null);
+let choices = []; // Will be initialized based on costArray length
 let currentChoiceIndex = 0;
 let gameStartTime = Date.now();
 
@@ -682,7 +682,7 @@ function setPanelState(panelId, config) {
 let currentTreatmentConfig = null;
 
 function applyGameConfiguration() {    
-    document.body.style.background = `hsl(${gameConfig.currentHue} 70% 85%)`;
+    document.body.style.background = 'white';
     
     // Configure panels based on treatment
     const treatmentConfigs = {
@@ -1067,7 +1067,7 @@ function handleChoice(choiceIndex, decision) {
                 buttons.forEach(btn => btn.disabled = false);
             });
         }
-    }, 200);
+    }, 0);
 }
 
 function handleKeyPress(event) {
@@ -1409,6 +1409,9 @@ function showInstructionsFirst() {
 
 function initializeGame() {
     console.log("Initializing sequential choice game");
+    
+    // Initialize choices array based on costArray length
+    choices = new Array(gameConfig.costArray.length).fill(null);
     
     document.getElementById("gameContainer").style.display = "flex";
     

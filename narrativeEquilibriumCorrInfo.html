@@ -231,7 +231,7 @@ body {
                 <div id="actionPrompt" class="text">Press your button?</div>
                 <div class="button-container">
                     <button id="btnNo" class="actionButton red">No (free)</button>
-                    <button id="btnYes" class="actionButton green">Yes (cost $0.25)</button>
+                    <button id="btnYes" class="actionButton green"></button>
                 </div>
             </div>
             
@@ -294,8 +294,8 @@ body {
 let gameConfig = {
     nRounds: 20,
     id: 1,
-    yBonus: 1.0,
-    aCost: 0.25,
+    yBonus: 5.0,
+    aCost: 0.5,
     pY: 0.5,
     playerName1: "Player 1",
     playerName2: "Player 2", 
@@ -303,9 +303,9 @@ let gameConfig = {
     playerPronoun2: "their",
     noise: 0.1,
     causal: 0,
-    playerIcon1: "https://via.placeholder.com/40/4CAF50/FFFFFF?text=P1",
-    playerIcon2: "https://via.placeholder.com/40/2196F3/FFFFFF?text=P2",
-    currentHue: 200,
+    playerIcon1: "https://raw.githubusercontent.com/Jindi-Huang/qualtrics-html/main/graphs/user1.png",
+    playerIcon2: "https://raw.githubusercontent.com/Jindi-Huang/qualtrics-html/main/graphs/user2.png",
+    currentHue: 0,
     treatment: "exo", // "exo" or "endog"
     pA: 0.5,
     buttonConfig: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
@@ -532,7 +532,7 @@ function applyGameConfiguration() {
     if (elements.playerIcon1) elements.playerIcon1.src = gameConfig.playerIcon1;
     if (elements.playerIcon2) elements.playerIcon2.src = gameConfig.playerIcon2;
     
-    document.body.style.background = `hsl(${gameConfig.currentHue} 70% 85%)`;
+    document.body.style.background = 'white';
 }
 
 
@@ -584,12 +584,12 @@ function handleDecision(decision) {
     setTimeout(() => {
         if (!outcomesVisible) {
             panelXinfo.style.backgroundColor = "lightgray";
-            riskText.innerHTML = `<br>${gameConfig.playerName1} has made ${gameConfig.playerPronoun1} decision <br>(press "c" to continue)`;
+            riskText.innerHTML = `<br>${gameConfig.playerName1} has made ${gameConfig.playerPronoun1} decision. <br>(press "c" to continue)`;
         } else {
             panelXinfo.style.backgroundColor = X ? "green" : "red";
             riskText.innerHTML = X
-                ? `<br>${gameConfig.playerName1} pressed ${gameConfig.playerPronoun1} button <br>(press "c" to continue)`
-                : `<br>${gameConfig.playerName1} did <u>not</u> press ${gameConfig.playerPronoun1} button <br>(press "c" to continue)`;
+                ? `<br>${gameConfig.playerName1} pressed ${gameConfig.playerPronoun1} button. <br>(press "c" to continue)`
+                : `<br>${gameConfig.playerName1} did <u>not</u> press ${gameConfig.playerPronoun1} button. <br>(press "c" to continue)`;
         }
         panelYinfo.style.backgroundColor = "white";
         xReady = true;
@@ -613,8 +613,8 @@ function handleKeyPress(e) {
         else {
             panelYinfo.style.backgroundColor = Y ? "green" : "red";
             resultText.innerHTML = Y
-                ? `<br>${gameConfig.playerName2} pressed ${gameConfig.playerPronoun2} button (bonus $${gameConfig.yBonus})<br> (press 'space' to continue)`
-                : `<br>${gameConfig.playerName2} did <u>not</u> press ${gameConfig.playerPronoun2} button (no bonus)<br>(press 'space' to continue)`;
+                ? `<br>${gameConfig.playerName2} pressed ${gameConfig.playerPronoun2} button (bonus $${gameConfig.yBonus}).<br> (press 'space' to continue)`
+                : `<br>${gameConfig.playerName2} did <u>not</u> press ${gameConfig.playerPronoun2} button (no bonus).<br>(press 'space' to continue)`;
         }
         xReady = false;
         colorDisplayed = true;
