@@ -597,7 +597,7 @@ let gameConfig = {
     causal: 1,
     playerIcon1: "https://via.placeholder.com/40/4CAF50/FFFFFF?text=P1",
     playerIcon2: "https://via.placeholder.com/40/2196F3/FFFFFF?text=P2",
-    currentHue: 0,
+    currentHue: 100,
     causalElicitType: "AX", // Can be "AX", "AY", or "XY"
     exoButton: 1,
     costArray: [4, 2, 1, 0.5, 0, -0.5, -1, -2, -4],
@@ -682,7 +682,7 @@ function setPanelState(panelId, config) {
 let currentTreatmentConfig = null;
 
 function applyGameConfiguration() {    
-    document.body.style.background = `hsl(${gameConfig.currentHue}, 0%, 100%)`;
+    document.body.style.background = `hsl(${gameConfig.currentHue}, 70%, 85%)`;
     
     // Configure panels based on treatment
     const treatmentConfigs = {
