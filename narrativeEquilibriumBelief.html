@@ -495,7 +495,7 @@ body {
             <div class="panel-content">
                 <div id="panelA-text" class="text">Press your button?</div>
                 <div class="interactive-elements" id="panelA-interactive">
-                    <div id="progressIndicator" class="progress-indicator">Decision 1 of X</div>
+                    <div id="progressIndicator" class="progress-indicator">Decision 1 of 7</div>
                     <div id="choiceGrid" class="choice-grid"></div>
                     <div id="validationMessage" class="validation-message" style="display: none;"></div>
                     <div class="submit-container">
@@ -597,7 +597,7 @@ let gameConfig = {
     causal: 1,
     playerIcon1: "https://via.placeholder.com/40/4CAF50/FFFFFF?text=P1",
     playerIcon2: "https://via.placeholder.com/40/2196F3/FFFFFF?text=P2",
-    currentHue: 100,
+    currentHue: 200,
     causalElicitType: "AX", // Can be "AX", "AY", or "XY"
     exoButton: 1,
     costArray: [4, 2, 1, 0.5, 0, -0.5, -1, -2, -4],
@@ -613,7 +613,7 @@ let gameConfig = {
 let participantId = null;
 
 /* ========================= GAME STATE ========================= */
-let choices = []; // Will be initialized based on costArray length
+let choices = new Array(7).fill(null);
 let currentChoiceIndex = 0;
 let gameStartTime = Date.now();
 
@@ -952,7 +952,7 @@ function highlightInvalidSwitch() {
 
 function showInvalidSwitchWarning() {
     const validationMessage = document.getElementById('validationMessage');
-    validationMessage.textContent = "Warning: You pressed the button when the cost was higher, but didn't press it when the cost was lower. You can change your previous choices by clicking on them.";
+    validationMessage.textContent = "Warning: You chose an option when it cost more, but not when it cost less. You can still change your earlier choices by clicking on them.";
     validationMessage.className = 'validation-message validation-error';
     validationMessage.style.display = 'block';
     highlightInvalidSwitch();
@@ -1409,9 +1409,6 @@ function showInstructionsFirst() {
 
 function initializeGame() {
     console.log("Initializing sequential choice game");
-    
-    // Initialize choices array based on costArray length
-    choices = new Array(gameConfig.costArray.length).fill(null);
     
     document.getElementById("gameContainer").style.display = "flex";
     

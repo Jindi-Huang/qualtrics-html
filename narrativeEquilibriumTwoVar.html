@@ -196,7 +196,7 @@ body {
     flex-direction: row;
     gap: 6px;
     width: 100%;
-    max-width: 300px;
+    max-width: 380px;
 }
 
 .choice-button {
@@ -301,7 +301,7 @@ body {
                 <div class="panel-header">
                     <div class="panel-name">You</div>
                 </div>
-                <div id="actionPrompt" class="text" style="display: none;">Press your button?</div>
+                <div id="actionPromptGame" class="text" style="display: none; margin-top: 0;">Press your button?</div>
                 <div id="gameButtons" class="button-container" style="display: none;">
                     <button id="btnNo" class="actionButton red">No (free)</button>
                     <button id="btnYes" class="actionButton green">Yes (cost $0.25)</button>
@@ -310,7 +310,7 @@ body {
                 <!-- Decision phase content -->
                 <div id="decisionContent" class="decision-content">
                     <div id="actionPrompt" class="text">Press your button?</div>
-                    <div id="progressIndicator" class="progress-indicator">Decision 1 of 7</div>
+                    <div id="progressIndicator" class="progress-indicator">Decision 1 of 9</div>
                     <div id="choiceGrid" class="choice-grid"></div>
                     <div id="validationMessage" class="validation-message" style="display: none;"></div>
                     
@@ -334,9 +334,9 @@ body {
     
 /* ===================== DEFAULT CONFIGURATION ===================== */
 let gameConfig = {
-    nRounds: 3, // Reduced for testing
-    id: 1,
+    nRounds: 3, 
     aCost: 0.25,
+    yBonus: 2,
     playerName1: "Player A",
     playerPronoun1: "their",
     playerIcon1: "https://via.placeholder.com/40/4CAF50/FFFFFF?text=P1",
@@ -344,8 +344,8 @@ let gameConfig = {
     pA: 0.5, 
     pX_A1: 0.8,
     pX_A0: 0.2,
-    costArray: [2, 1, 0.5, 0, -0.5, -1, -2],
-    increasingOrder: 1
+    costArray: [4, 2, 1, 0.5, 0, -0.5, -1, -2, -4],
+    increasingOrder: 0
 };
 
 let participantId = null;
@@ -368,6 +368,9 @@ let choices = [];
 let currentChoiceIndex = 0;
 let gameStartTime = Date.now();
 
+// Payment tracking
+let payments = [];
+
 /* ========================== DOM ELEMENTS ========================== */
 const gameContainer = document.getElementById("gameContainer");
 const btnNo = document.getElementById("btnNo");
@@ -378,6 +381,7 @@ const resultText = document.getElementById("resultText");
 const roundDisplay = document.getElementById("roundDisplay");
 const gameButtons = document.getElementById("gameButtons");
 const decisionContent = document.getElementById("decisionContent");
+const actionPromptGame = document.getElementById("actionPromptGame");
 const actionPrompt = document.getElementById("actionPrompt");
 
 /* =============== QUALTRICS COMMUNICATION =============== */
@@ -406,6 +410,12 @@ window.addEventListener('message', function(event) {
 /* =============== HELPER FUNCTIONS =============== */
 
 function applyGameConfiguration() {
+    // Validate costArray
+    if (!gameConfig.costArray || !Array.isArray(gameConfig.costArray) || gameConfig.costArray.length === 0) {
+        console.error('Invalid or empty costArray provided. Using default.');
+        gameConfig.costArray = [4, 2, 1, 0.5, 0, -0.5, -1, -2, -4];
+    }
+    
     btnYes.textContent = `Yes (cost $${gameConfig.aCost})`;
     
     const elements = {
@@ -418,8 +428,14 @@ function applyGameConfiguration() {
     
     document.body.style.background = `hsl(${gameConfig.currentHue} 70% 85%)`;
     
-    // Initialize choices array
+    // Initialize choices array based on costArray length
     choices = new Array(gameConfig.costArray.length).fill(null);
+    
+    // Initialize payments array (will grow as rounds are played)
+    payments = [];
+    
+    // Update progress indicator with correct total
+    updateProgressIndicator();
 }
 
 /* =============== SPACE BAR DELAY FUNCTIONS =============== */
@@ -467,6 +483,16 @@ function handleDecision(decision) {
     const pX = A === 1 ? gameConfig.pX_A1 : gameConfig.pX_A0;
     X = Math.random() < pX ? 1 : 0;
 
+    // Calculate payment for this round
+    let roundPayment = 0;
+    if (A === 1) {
+        roundPayment -= gameConfig.aCost; // Pay the cost if pressed Yes
+    }
+    if (X === 1) {
+        roundPayment += gameConfig.yBonus; // Get bonus if other player pressed
+    }
+    payments.push(roundPayment);
+
     history.push([A, X]);
     
     resultDisplayed = false;
@@ -474,8 +500,8 @@ function handleDecision(decision) {
     setTimeout(() => {
         panelXinfo.style.backgroundColor = X ? "green" : "red";
         resultText.innerHTML = X
-            ? `${gameConfig.playerName1} pressed ${gameConfig.playerPronoun1} button <br>(press "space" to continue)`
-            : `${gameConfig.playerName1} did <u>not</u> press ${gameConfig.playerPronoun1} button <br>(press "space" to continue)`;
+            ? `${gameConfig.playerName1} pressed ${gameConfig.playerPronoun1} button (bonus $${gameConfig.yBonus}).<br>(press "space" to continue)`
+            : `${gameConfig.playerName1} did <u>not</u> press ${gameConfig.playerPronoun1} button (no bonus). <br>(press "space" to continue)`;
         resultDisplayed = true;
         
         // Start the space bar delay
@@ -515,8 +541,8 @@ function nextRound() {
         panelXinfo.style.display = "none";
         
         // Clear all panel content
-        actionPrompt.style.display = "none";
-        actionPrompt.innerHTML = "";
+        actionPromptGame.style.display = "none";
+        actionPromptGame.innerHTML = "";
         gameButtons.style.display = "none";
         resultText.style.display = "none";
         resultText.innerHTML = "";
@@ -541,7 +567,7 @@ function showActionPanels() {
     panelXinfo.style.display = "flex";
     
     // Show game elements that were hidden initially
-    actionPrompt.style.display = "block";
+    actionPromptGame.style.display = "block";
     gameButtons.style.display = "flex";
     resultText.style.display = "block";
     
@@ -559,14 +585,14 @@ function showActionPanels() {
         btnNo.disabled = true;
         btnYes.classList.remove("grayed-out");
         btnYes.disabled = false;
-        actionPrompt.innerHTML = "You must press \"Yes\" in this round. <br> Press your button? (Use your mouse)";
+        actionPromptGame.innerHTML = "You must press \"Yes\" in this round. <br> Press your button? (Use your mouse)";
     } else {
         // Force "No"
         btnNo.classList.remove("grayed-out");
         btnNo.disabled = false;
         btnYes.classList.add("grayed-out");
         btnYes.disabled = true;
-        actionPrompt.innerHTML = "You must press \"No\" in this round. <br> Press your button? (Use your mouse)";
+        actionPromptGame.innerHTML = "You must press \"No\" in this round. <br> Press your button? (Use your mouse)";
     }
     
     roundStartTime = Date.now();
@@ -585,7 +611,7 @@ function showDecisionPhase() {
     // Hide game elements
     roundDisplay.style.display = "none";
     gameButtons.style.display = "none";
-    actionPrompt.style.display = "none";
+    actionPromptGame.style.display = "none";
     
     // Show decision content
     decisionContent.classList.add('active');
@@ -754,7 +780,9 @@ function updateProgressIndicator() {
 }
 
 function updateRowStates() {
-    document.querySelectorAll('.choice-row').forEach((row, index) => {
+    const allRows = document.querySelectorAll('.choice-row');
+    
+    allRows.forEach((row, index) => {
         row.classList.remove('current', 'completed', 'hidden');
         
         const buttons = row.querySelectorAll('.choice-button');
@@ -782,16 +810,24 @@ function updateRowStates() {
 }
 
 function checkForInvalidSwitch() {
+    // Ensure we have valid choices and currentChoiceIndex
+    if (!choices || choices.length === 0 || currentChoiceIndex < 1) {
+        return false;
+    }
+    
+    // Ensure we don't go beyond array bounds
+    const maxIndex = Math.min(currentChoiceIndex, choices.length - 1);
+    
     if (gameConfig.increasingOrder === 1) {
         // When increasingOrder = 1, check for switches from left to right (n to y)
-        for (let i = 1; i <= currentChoiceIndex; i++) {
+        for (let i = 1; i <= maxIndex; i++) {
             if (choices[i-1] === 'n' && choices[i] === 'y') {
                 return true;
             }
         }
     } else {
         // When increasingOrder = 0, check for switches from right to left (y to n)
-        for (let i = 1; i <= currentChoiceIndex; i++) {
+        for (let i = 1; i <= maxIndex; i++) {
             if (choices[i-1] === 'y' && choices[i] === 'n') {
                 return true;
             }
@@ -806,25 +842,37 @@ function showInvalidSwitchWarning() {
     validationMessage.className = 'validation-message validation-error';
     validationMessage.style.display = 'block';
     
-    // Highlight invalid switches
+    // Clear any existing invalid highlighting
     document.querySelectorAll('.choice-row').forEach(row => {
         row.classList.remove('invalid');
     });
     
+    // Ensure we have valid choices and currentChoiceIndex
+    if (!choices || choices.length === 0 || currentChoiceIndex < 1) {
+        return;
+    }
+    
+    // Ensure we don't go beyond array bounds
+    const maxIndex = Math.min(currentChoiceIndex, choices.length - 1);
+    
     if (gameConfig.increasingOrder === 1) {
         // When increasingOrder = 1, highlight switches from left to right (n to y)
-        for (let i = 1; i <= currentChoiceIndex; i++) {
+        for (let i = 1; i <= maxIndex; i++) {
             if (choices[i-1] === 'n' && choices[i] === 'y') {
-                document.querySelector(`[data-choice="${i-1}"]`).classList.add('invalid');
-                document.querySelector(`[data-choice="${i}"]`).classList.add('invalid');
+                const prevRow = document.querySelector(`[data-choice="${i-1}"]`);
+                const currentRow = document.querySelector(`[data-choice="${i}"]`);
+                if (prevRow) prevRow.classList.add('invalid');
+                if (currentRow) currentRow.classList.add('invalid');
             }
         }
     } else {
         // When increasingOrder = 0, highlight switches from right to left (y to n)
-        for (let i = 1; i <= currentChoiceIndex; i++) {
+        for (let i = 1; i <= maxIndex; i++) {
             if (choices[i-1] === 'y' && choices[i] === 'n') {
-                document.querySelector(`[data-choice="${i-1}"]`).classList.add('invalid');
-                document.querySelector(`[data-choice="${i}"]`).classList.add('invalid');
+                const prevRow = document.querySelector(`[data-choice="${i-1}"]`);
+                const currentRow = document.querySelector(`[data-choice="${i}"]`);
+                if (prevRow) prevRow.classList.add('invalid');
+                if (currentRow) currentRow.classList.add('invalid');
             }
         }
     }
@@ -846,12 +894,17 @@ function submitAllChoices() {
     // Convert choices to binary array (0 for 'n', 1 for 'y')
     const choicesArray = choices.map(choice => choice === 'y' ? 1 : 0);
     
+    // Calculate payments for multiple price list based on one realization
+    const mplPayments = calculateMPLPayments();
+    console.log('MPL Payments:', mplPayments);
+    
     // Send data to Qualtrics
     sendDataToQualtrics('FINAL_DATA', {
         history: history,
         roundTimes: roundTimes,
+        payments: payments,
+        mplPayments: mplPayments,
         choices: choicesArray,
-        switchingPoint: choices.indexOf('y'),
         totalTime: (Date.now() - gameStartTime) / 1000,
         config: gameConfig
     });
@@ -860,9 +913,68 @@ function submitAllChoices() {
     
     console.log('=== FINAL DATA SENT TO QUALTRICS ===');
     console.log('Round History:', history);
+    console.log('Round Payments:', payments);
+    console.log('MPL Payments:', mplPayments);
     console.log('Decision Choices:', choicesArray);
-    console.log('Switching Point:', choices.indexOf('y'));
     console.log('=====================================');
+}
+
+function calculateMPLPayments() {
+    // Generate one realization of X for the multiple price list
+    // Use the same logic as the game rounds but with varying costs
+    const mplPayments = [];
+    
+    gameConfig.costArray.forEach((cost, index) => {
+        const choice = choices[index]; // 'y' or 'n'
+        const A = choice === 'y' ? 1 : 0;
+        
+        // Generate X based on A with the configured probabilities
+        const pX = A === 1 ? gameConfig.pX_A1 : gameConfig.pX_A0;
+        const X = Math.random() < pX ? 1 : 0;
+        
+        let payment = 0;
+        
+        if (choice === 'y') {
+            // Player chose "Yes" - they pay the varying cost
+            if (gameConfig.increasingOrder === 1) {
+                // When increasingOrder = 1, cost assignments are swapped
+                if (cost <= 0) {
+                    payment -= Math.abs(cost); // Pay the cost for "Yes"
+                }
+                // If cost > 0, "Yes" is free (no cost)
+            } else {
+                // When increasingOrder = 0, original cost assignments
+                if (cost > 0) {
+                    payment -= cost; // Pay the cost for "Yes"
+                }
+                // If cost <= 0, "Yes" is free (no cost)
+            }
+        } else {
+            // Player chose "No"
+            if (gameConfig.increasingOrder === 1) {
+                // When increasingOrder = 1, cost assignments are swapped
+                if (cost > 0) {
+                    payment -= cost; // Pay the cost for "No"
+                }
+                // If cost <= 0, "No" is free (no cost)
+            } else {
+                // When increasingOrder = 0, original cost assignments
+                if (cost < 0) {
+                    payment -= Math.abs(cost); // Pay the cost for "No"
+                }
+                // If cost >= 0, "No" is free (no cost)
+            }
+        }
+        
+        // Add actual bonus based on this realization
+        if (X === 1) {
+            payment += gameConfig.yBonus;
+        }
+        
+        mplPayments.push(payment);
+    });
+    
+    return mplPayments;
 }
 
 /* ===================== EVENT LISTENERS ===================== */
