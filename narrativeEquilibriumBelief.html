@@ -402,6 +402,7 @@
 <script>
 /* ===================== CONFIGURATION ===================== */
 let gameConfig = {
+    id: '1_AX',
     yBonus: 1.0,
     pY: 0.5,
     playerName1: "Ann",
@@ -801,6 +802,7 @@ function sendDataToQualtrics(dataType, data) {
             type: 'GAME_DATA',
             dataType: dataType,
             data: data,
+            gameId: gameConfig.id,
             participantId: participantId,
             timestamp: new Date().toISOString()
         }, '*');
