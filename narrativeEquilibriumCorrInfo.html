@@ -296,6 +296,7 @@ function sendDataToQualtrics(dataType, data) {
     if (window.parent !== window) {
         window.parent.postMessage({
             type: 'GAME_DATA',
+            gameId: gameConfig.id, 
             dataType: dataType,
             data: data,
             participantId: participantId,
