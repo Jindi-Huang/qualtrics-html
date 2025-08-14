@@ -162,11 +162,11 @@
 </head>
 
 <body>
-    <div id="gameContainer" class="game-container" style="display: none;">
+        <div id="gameContainer" class="game-container" style="display: none;">
         <div class="panels-section">
-            <div class="decision-title" style="display: none;">Make Your Decisions</div>
+            <div class="decision-title" style="display: none;">Make Your Decisions at Varying Button Costs!</div>
             <div class="decision-instructions" style="display: none;">
-                Now you will make decisions for different costs. <br><br>
+                <!-- Text will be set dynamically via JavaScript -->
             </div>
             <div id="roundDisplay" class="roundDisplay"></div>
             
@@ -298,7 +298,7 @@ function applyGameConfiguration() {
         playerIcon1: document.querySelector('#panelXinfo .panel-icon')
     };
     
-    if (elements.playerName1) elements.playerName1.textContent = gameConfig.playerName1;
+    if (elements.playerName1) elements.playerName1.textContent = gameConfig.playerName1 + ' (determines your bonus)';
     if (elements.playerIcon1) elements.playerIcon1.src = gameConfig.playerIcon1;
     
     document.body.style.background = `hsl(${gameConfig.currentHue} 70% 85%)`;
@@ -481,7 +481,11 @@ function showDecisionPhase() {
     
     // Show decision title and instructions at the top of the page
     document.querySelector('.decision-title').style.display = "block";
-    document.querySelector('.decision-instructions').style.display = "block";
+    
+    // Set the decision instructions text dynamically
+    const instructionsElement = document.querySelector('.decision-instructions');
+    instructionsElement.innerHTML = `<br>You will receive $${gameConfig.yBonus} if ${gameConfig.playerName1} presses ${gameConfig.playerPronoun1} button. <br><br> `;
+    instructionsElement.style.display = "block";
     
     // Hide game elements
     roundDisplay.style.display = "none";
