@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<title>Button Game</title>
+<title>Belief Elicitation</title>
 <link rel="stylesheet" href="shared-styles.css">
 <style>
 
@@ -254,12 +254,15 @@
 }
 
 .instruction-bullets {
-    margin: 0;
-    padding-left: 20px;
+    margin: 0 auto;
+    padding-left: 0;
+    display: table;
+    text-align: left;
 }
 
 .instruction-bullets li {
     margin-bottom: 8px;
+    font-size: 20px;
 }
 
 .get-started-container {
@@ -410,8 +413,8 @@ let gameConfig = {
     playerIcon1: "https://via.placeholder.com/40/4CAF50/FFFFFF?text=P1",
     playerIcon2: "https://via.placeholder.com/40/2196F3/FFFFFF?text=P2",
     currentHue: 200,
-    causalElicitType: "AX", // Can be "AX", "AY", or "XY"
-    exoButton: 1,
+    causalElicitType: "XY", // Can be "AX", "AY", or "XY"
+    exoButton: 0,
     costArray: [4, 2, 1, 0.5, 0, -0.5, -1, -2, -4],
     displayText1_1: `If You pressed, Player A pressed 60 percentage points more often.`,
     displayText1_2: `When pressed: 3/3 (100%) <br> When not pressed: 2/5 (40%)`,
@@ -502,8 +505,7 @@ function applyGameConfiguration() {
             activePanel: 'A',
             instructionTitle: `Your payoff now depends on <b>${gameConfig.playerName1}'s</b> choice!`,
             instructionBullets: [
-                `You will receive a <u>bonus of $${gameConfig.yBonus} if <b>${gameConfig.playerName1}</b> presses ${gameConfig.playerPronoun1} button.</u>`,
-                `The cost of pressing or not pressing the button will vary across decisions.`
+                `Unlike before, <b>${gameConfig.playerName1} (the player in the middle) determines your bonus</b>, it's no longer ${gameConfig.playerName2} (the player at the bottom). You will receive $${gameConfig.yBonus} if ${gameConfig.playerName1} presses ${gameConfig.playerPronoun1} button.`
             ],
             panels: {
                 A: { 
@@ -533,8 +535,7 @@ function applyGameConfiguration() {
             activePanel: 'A',
             instructionTitle: "Make Decisions at Varying Button Costs!",
             instructionBullets: [
-                `You will receive a bonus of $${gameConfig.yBonus} if <b>${gameConfig.playerName2}</b> presses ${gameConfig.playerPronoun2} button.`,
-                `The cost of pressing or not pressing the button will vary across decisions.`
+                `As before, you will receive a bonus of $${gameConfig.yBonus} if <b>${gameConfig.playerName2}</b> (the player at the bottom) presses ${gameConfig.playerPronoun2} button.`
             ],
             panels: {
                 A: { 
@@ -563,14 +564,13 @@ function applyGameConfiguration() {
         "XY": {
             activePanel: 'X',
             instructionTitle: gameConfig.exoButton == 1 
-                ? `You are forced to press your button and you can now control ${gameConfig.playerName1}'s button!`
-                : `You are forced NOT to press your button and you can now control ${gameConfig.playerName1}'s button!`,
+                ? `You control ${gameConfig.playerName1}'s button and you are forced to press your button!`
+                : `You control ${gameConfig.playerName1}'s button and you are forced NOT to press your button!`,
             instructionBullets: [
-                `You will receive a <u>bonus of $${gameConfig.yBonus} if <b>${gameConfig.playerName2}</b> presses ${gameConfig.playerPronoun2} button.</u>`,
                 gameConfig.exoButton == 1 
-                    ? `You are forced to press your button and you can control ${gameConfig.playerName1}'s button.`
-                    : `You are forced NOT to press your button and you can control ${gameConfig.playerName1}'s button.`,
-                `The cost of pressing or not pressing the button will vary across decisions.`   
+                    ? `Unlike before, <b> you control ${gameConfig.playerName1}'s button (the player in the middle)</b>. You must press your own button.`
+                    : `Unlike before, <b> you control ${gameConfig.playerName1}'s button (the player in the middle)</b>. You must NOT to press your own button.`,
+                `As before, you will receive a bonus of $${gameConfig.yBonus} if ${gameConfig.playerName2} (the player at the bottom) presses ${gameConfig.playerPronoun2} button.`,
             ],
             panels: {
                 A: { 

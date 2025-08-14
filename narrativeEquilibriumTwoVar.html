@@ -6,23 +6,14 @@
 <link rel="stylesheet" href="shared-styles.css">
 <style>
 
-/* Panels section override - different sizing and margin */
+/* Panels section override  */
 .panels-section {
     max-width: 500px;
     margin: 20px auto;
 }
 
-/* Panel override - different text margin and padding */
-.text {
-    margin-top: 20px;
-}
 
-.panel {
-    padding: 20px;
-    box-sizing: border-box;
-}
-
-/* Decision phase styles - unique to this file */
+/* Decision phase styles */
 .decision-content {
     display: none;
     width: 100%;
@@ -183,7 +174,7 @@
                 <div class="panel-header">
                     <div class="panel-name">You</div>
                 </div>
-                <div id="actionPromptGame" class="text" style="display: none; margin-top: 0;">Press your button?</div>
+                <div id="actionPromptGame" class="text" style="display: none; margin-top: 0;"></div>
                 <div id="gameButtons" class="button-container" style="display: none;">
                     <button id="btnNo" class="actionButton red">No (free)</button>
                     <button id="btnYes" class="actionButton green">Yes (cost $0.25)</button>
@@ -191,7 +182,7 @@
                 
                 <!-- Decision phase content -->
                 <div id="decisionContent" class="decision-content">
-                    <div id="actionPrompt" class="text">Press your button?</div>
+                    <div id="actionPrompt" class="text"><br>Press your button?</div>
                     <div id="progressIndicator" class="progress-indicator">Decision 1 of 9</div>
                     <div id="choiceGrid" class="choice-grid"></div>
                     <div id="validationMessage" class="validation-message" style="display: none;"></div>
@@ -382,8 +373,8 @@ function handleDecision(decision) {
     setTimeout(() => {
         panelXinfo.style.backgroundColor = X ? "green" : "red";
         resultText.innerHTML = X
-            ? `${gameConfig.playerName1} pressed ${gameConfig.playerPronoun1} button (bonus $${gameConfig.yBonus}).<br>(press "space" to continue)`
-            : `${gameConfig.playerName1} did <u>not</u> press ${gameConfig.playerPronoun1} button (no bonus). <br>(press "space" to continue)`;
+            ? `<br>${gameConfig.playerName1} pressed ${gameConfig.playerPronoun1} button (bonus $${gameConfig.yBonus}).<br>(press "space" to continue)`
+            : `<br>${gameConfig.playerName1} did <u>not</u> press ${gameConfig.playerPronoun1} button (no bonus). <br>(press "space" to continue)`;
         resultDisplayed = true;
         
         // Start the space bar delay
@@ -500,7 +491,7 @@ function showDecisionPhase() {
     
     // Show and update Panel X text
     resultText.style.display = "block";
-    resultText.textContent = `${gameConfig.playerName1} will make ${gameConfig.playerPronoun1} decision.`;
+    resultText.innerHTML = `<br>${gameConfig.playerName1} will make ${gameConfig.playerPronoun1} decision.`;
 
     // change the background color of the panel to be white
     panelXinfo.style.backgroundColor = "white";
