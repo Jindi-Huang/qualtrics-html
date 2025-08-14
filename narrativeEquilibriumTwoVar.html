@@ -207,6 +207,7 @@
     
 /* ===================== DEFAULT CONFIGURATION ===================== */
 let gameConfig = {
+    id: 7,
     nRounds: 3, 
     aCost: 0.25,
     yBonus: 2,
@@ -263,6 +264,7 @@ function sendDataToQualtrics(dataType, data) {
         window.parent.postMessage({
             type: 'GAME_DATA',
             dataType: dataType,
+            gameId: gameConfig.id,
             data: data,
             participantId: participantId,
             timestamp: new Date().toISOString()
