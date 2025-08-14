@@ -977,6 +977,13 @@ function submitAllChoices() {
     submitButton.disabled = true;
     submitButton.textContent = "Choices Submitted";
     
+    // Hide any validation warning message
+    const validationMessage = document.getElementById('validationMessage');
+    if (validationMessage) {
+        validationMessage.style.display = 'none';
+    }
+    
+    
     const allButtons = document.querySelectorAll('.actionButton');
     allButtons.forEach(button => {
         button.style.display = 'none';
