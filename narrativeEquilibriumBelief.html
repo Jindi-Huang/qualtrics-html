@@ -410,7 +410,7 @@ let gameConfig = {
     playerPronoun1: "her",
     playerPronoun2: "his",
     noise: 0.1,
-    causal: 1,
+    causal: 0,
     playerIcon1: "https://via.placeholder.com/40/4CAF50/FFFFFF?text=P1",
     playerIcon2: "https://via.placeholder.com/40/2196F3/FFFFFF?text=P2",
     currentHue: 200,
@@ -1017,10 +1017,20 @@ function submitAllChoices() {
                 Y = Math.random() < pY[X] ? 1 : 0;
             }
             
-            if (cost >= 0) {
-                payment = -X * cost + gameConfig.yBonus * Y;
+            if (gameConfig.increasingOrder === 1) {
+                // Swap the cost application when display is swapped
+                if (cost >= 0) {
+                    payment = -(1-X) * cost + gameConfig.yBonus * Y; // Apply cost to "No" instead of "Yes"
+                } else {
+                    payment = -X * cost + gameConfig.yBonus * Y; // Apply cost to "Yes" instead of "No"
+                }
             } else {
-                payment = (1-X) * cost + gameConfig.yBonus * Y;
+                // Original cost application
+                if (cost >= 0) {
+                    payment = -X * cost + gameConfig.yBonus * Y; // Apply cost to "Yes"
+                } else {
+                    payment = (1-X) * cost + gameConfig.yBonus * Y; // Apply cost to "No"
+                }
             }
         } else if (gameConfig.causalElicitType === "AX") {
             A = choice === 'y' ? 1 : 0;
@@ -1033,10 +1043,20 @@ function submitAllChoices() {
                 X = Math.random() < pX[A] ? 1 : 0;
             }
             
-            if (cost >= 0) {
-                payment = -A * cost + gameConfig.yBonus * X;
+            if (gameConfig.increasingOrder === 1) {
+                // Swap the cost application when display is swapped
+                if (cost >= 0) {
+                    payment = -(1-A) * cost + gameConfig.yBonus * X; // Apply cost to "No" instead of "Yes"
+                } else {
+                    payment = -A * cost + gameConfig.yBonus * X; // Apply cost to "Yes" instead of "No"
+                }
             } else {
-                payment = (1-A) * cost + gameConfig.yBonus * X;
+                // Original cost application
+                if (cost >= 0) {
+                    payment = -A * cost + gameConfig.yBonus * X; // Apply cost to "Yes"
+                } else {
+                    payment = (1-A) * cost + gameConfig.yBonus * X; // Apply cost to "No"
+                }
             }
         } else if (gameConfig.causalElicitType === "AY") {
             A = choice === 'y' ? 1 : 0;
@@ -1048,10 +1068,20 @@ function submitAllChoices() {
                 Y = Math.random() < pY[X] ? 1 : 0;
             }
             
-            if (cost >= 0) {
-                payment = -A * cost + gameConfig.yBonus * Y;
+            if (gameConfig.increasingOrder === 1) {
+                // Swap the cost application when display is swapped
+                if (cost >= 0) {
+                    payment = -(1-A) * cost + gameConfig.yBonus * Y; // Apply cost to "No" instead of "Yes"
+                } else {
+                    payment = -A * cost + gameConfig.yBonus * Y; // Apply cost to "Yes" instead of "No"
+                }
             } else {
-                payment = (1-A) * cost + gameConfig.yBonus * Y;
+                // Original cost application
+                if (cost >= 0) {
+                    payment = -A * cost + gameConfig.yBonus * Y; // Apply cost to "Yes"
+                } else {
+                    payment = (1-A) * cost + gameConfig.yBonus * Y; // Apply cost to "No"
+                }
             }
         }
         
