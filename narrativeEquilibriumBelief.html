@@ -423,7 +423,7 @@ let gameConfig = {
     displayText2_2: `When pressed: 9/12 (75%) <br> When not pressed: 4/10 (40%)`,
     percentageDifference1: 60,
     percentageDifference2: 35,
-    increasingOrder: 0
+    increasingOrder: 1
 };
 
 let participantId = null;
@@ -659,13 +659,30 @@ function setupStatisticsDisplay() {
     // Reset bar
     const barWidth1 = Math.abs(`${gameConfig.percentageDifference1}`) / 2;
     const barWidth2 = Math.abs(`${gameConfig.percentageDifference2}`) / 2;
+    const intensity1 = Math.min(Math.abs(gameConfig.percentageDifference1) / 80, 1); // Normalize to reach 1.0 at 80%
+    const intensity2 = Math.min(Math.abs(gameConfig.percentageDifference2) / 80, 1); // Normalize to reach 1.0 at 80%
+    
     Object.assign(barFill1.style, { left: 'auto', right: 'auto', width: '0%' });
 
     if (`${gameConfig.percentageDifference1}` >= 0) {
+        // Positive: hue from 60 to 140 (yellow to cyan)
+        const hue = 60 + (intensity1 * 80); // 60° to 140°
+        const saturation = 25 + (intensity1 * 75); // 25% to 100%
+        const lightness = 90 - (intensity1 * 60); // 90% to 30%
+        const color = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+        
         barFill1.className = 'bar-fill bar-positive';
+        barFill1.style.background = color;
         Object.assign(barFill1.style, { left: '50%', width: `${barWidth1}%` });
     } else {
+        // Negative: hue from 30 to 0 (orange to red)
+        const hue = 30 - (intensity1 * 30); // 30° to 0°
+        const saturation = 25 + (intensity1 * 75); // 25% to 100%
+        const lightness = 90 - (intensity1 * 60); // 90% to 30%
+        const color = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+        
         barFill1.className = 'bar-fill bar-negative';
+        barFill1.style.background = color;
         Object.assign(barFill1.style, { right: '50%', width: `${barWidth1}%` });
     }
 
@@ -673,10 +690,24 @@ function setupStatisticsDisplay() {
     Object.assign(barFill2.style, { left: 'auto', right: 'auto', width: '0%' });
 
     if (`${gameConfig.percentageDifference2}` >= 0) {
+        // Positive: hue from 60 to 140 (yellow to cyan)
+        const hue = 60 + (intensity2 * 80); // 60° to 140°
+        const saturation = 25 + (intensity2 * 75); // 25% to 100%
+        const lightness = 90 - (intensity2 * 60); // 90% to 30%
+        const color = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+        
         barFill2.className = 'bar-fill bar-positive';
+        barFill2.style.background = color;
         Object.assign(barFill2.style, { left: '50%', width: `${barWidth2}%` });
     } else {
+        // Negative: hue from 30 to 0 (orange to red)
+        const hue = 30 - (intensity2 * 30); // 30° to 0°
+        const saturation = 25 + (intensity2 * 75); // 25% to 100%
+        const lightness = 90 - (intensity2 * 60); // 90% to 30%
+        const color = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+        
         barFill2.className = 'bar-fill bar-negative';
+        barFill2.style.background = color;
         Object.assign(barFill2.style, { right: '50%', width: `${barWidth2}%` });
     }
 }
@@ -976,13 +1007,12 @@ function submitAllChoices() {
     const submitButton = document.getElementById('submitChoices');
     submitButton.disabled = true;
     submitButton.textContent = "Choices Submitted";
-    
+
     // Hide any validation warning message
     const validationMessage = document.getElementById('validationMessage');
     if (validationMessage) {
         validationMessage.style.display = 'none';
     }
-    
     
     const allButtons = document.querySelectorAll('.actionButton');
     allButtons.forEach(button => {

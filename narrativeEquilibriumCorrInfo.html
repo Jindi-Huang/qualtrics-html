@@ -91,11 +91,11 @@
     
 /* ===================== DEFAULT CONFIGURATION ===================== */
 let gameConfig = {
-    nRounds: 20,
+    nRounds: 100,
     id: 1,
     yBonus: 5.0,
     aCost: 0.5,
-    pY: 0.5,
+    pY: 0.3,
     playerName1: "Player 1",
     playerName2: "Player 2", 
     playerPronoun1: "their",
@@ -105,7 +105,7 @@ let gameConfig = {
     playerIcon1: "https://raw.githubusercontent.com/Jindi-Huang/qualtrics-html/main/graphs/user1.png",
     playerIcon2: "https://raw.githubusercontent.com/Jindi-Huang/qualtrics-html/main/graphs/user2.png",
     currentHue: 100,
-    treatment: "exo", // "exo" or "endog"
+    treatment: "endog", // "exo" or "endog"
     pA: 0.5,
     buttonConfig: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 };
@@ -273,15 +273,30 @@ function updateSingleStat(statNum, player1Name, player2Name) {
     barLabels.style.display = 'flex';
     
     const barWidth = absPercentage / 2;
+    const intensity = Math.min(absPercentage / 80, 1); // Normalize to reach 1.0 at 80%
     
     // Reset bar
     Object.assign(barFill.style, { left: 'auto', right: 'auto', width: '0%' });
     
     if (percentageDifference >= 0) {
+        // Positive: hue from 60 to 140 (yellow to cyan)
+        const hue = 60 + (intensity * 80); // 60° to 140°
+        const saturation = 25 + (intensity * 75); // 25% to 100%
+        const lightness = 90 - (intensity * 60); // 90% to 30%
+        const color = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+        
         barFill.className = 'bar-fill bar-positive';
+        barFill.style.background = color;
         Object.assign(barFill.style, { left: '50%', width: `${barWidth}%` });
     } else {
+        // Negative: hue from 30 to 0 (orange to red)
+        const hue = 30 - (intensity * 30); // 30° to 0°
+        const saturation = 25 + (intensity * 75); // 25% to 100%
+        const lightness = 90 - (intensity * 60); // 90% to 30%
+        const color = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+        
         barFill.className = 'bar-fill bar-negative';
+        barFill.style.background = color;
         Object.assign(barFill.style, { right: '50%', width: `${barWidth}%` });
     }
 
