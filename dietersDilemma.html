@@ -53,6 +53,9 @@
           console.log('Applied config:', CONFIG);
         }
         
+        // Mark as initialized and trigger callbacks
+        markInitialized();
+        
         sendDataToQualtrics('GAME_START', { started: true });
       }
     });
@@ -107,7 +110,25 @@
   </script>
   
   <script type="text/babel">
-    const { useState, useCallback, useRef } = React;
+    const { useState, useCallback, useRef, useEffect } = React;
+    
+    // Track if config has been received from Qualtrics
+    let isInitialized = false;
+    let initCallbacks = [];
+    
+    function onInitialized(callback) {
+      if (isInitialized) {
+        callback();
+      } else {
+        initCallbacks.push(callback);
+      }
+    }
+    
+    function markInitialized() {
+      isInitialized = true;
+      initCallbacks.forEach(cb => cb());
+      initCallbacks = [];
+    }
 
     // Simulate one round based on DGP
     // A = drink (1/0), X = chemical normal (1/0), Y = feel good (1/0)
@@ -520,6 +541,7 @@
 
     // Main experiment component
     function BeverageExperiment() {
+      const [ready, setReady] = useState(false);
       const [currentRound, setCurrentRound] = useState(1);
       const [phase, setPhase] = useState('decision');
       const [history, setHistory] = useState([]);  // [[A, X, Y], ...]
@@ -535,6 +557,25 @@
       const roundTimesRef = useRef([]);
       const roundStartTimeRef = useRef(Date.now());
       const dataSentRef = useRef(false);
+      
+      // Wait for Qualtrics config before showing game (max 3 seconds)
+      useEffect(() => {
+        const timeout = setTimeout(() => {
+          if (!ready) {
+            console.log('Timeout: starting with default config');
+            setReady(true);
+            roundStartTimeRef.current = Date.now();
+          }
+        }, 3000);
+        
+        onInitialized(() => {
+          clearTimeout(timeout);
+          setReady(true);
+          roundStartTimeRef.current = Date.now();
+        });
+        
+        return () => clearTimeout(timeout);
+      }, []);
       
       const stats = calculateStats(history);
       
@@ -590,6 +631,15 @@
           }, 1200);
         }, 800);
       }, [currentRound]);
+      
+      // Show loading screen while waiting for Qualtrics config
+      if (!ready) {
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center">
+            <div className="text-white text-xl">Loading...</div>
+          </div>
+        );
+      }
       
       // Send final data when game completes
       if (phase === 'complete' && selectedPaymentRound !== null && history.length === CONFIG.totalRounds && !dataSentRef.current) {
