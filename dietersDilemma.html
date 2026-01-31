@@ -16,72 +16,129 @@
 <body>
   <div id="root"></div>
   
-  <script type="text/babel">
-    const { useState, useCallback } = React;
-
-    // Configuration - easily adjustable
+  <script>
+    // =============== QUALTRICS COMMUNICATION ===============
+    let participantId = null;
+    let gameId = null;
+    
+    // Receive config from Qualtrics
+    window.addEventListener('message', function(event) {
+      if (event.data.type === 'INIT') {
+        console.log('Received INIT from Qualtrics:', event.data);
+        participantId = event.data.participantId;
+        gameId = event.data.gameId;
+        
+        if (event.data.gameConfig) {
+          const qConfig = event.data.gameConfig;
+          if (qConfig.nRounds) CONFIG.totalRounds = qConfig.nRounds;
+          if (qConfig.id) CONFIG.id = qConfig.id;
+          if (qConfig.yBonus !== undefined) CONFIG.yBonus = qConfig.yBonus;
+          if (qConfig.aCost !== undefined) CONFIG.aCost = qConfig.aCost;
+          if (qConfig.playerName1) CONFIG.playerName1 = qConfig.playerName1;
+          if (qConfig.playerName2) CONFIG.playerName2 = qConfig.playerName2;
+          if (qConfig.playerIcon0) CONFIG.playerIcon0 = qConfig.playerIcon0;
+          if (qConfig.pY !== undefined) CONFIG.collider.pY = qConfig.pY;
+          if (qConfig.noise !== undefined) CONFIG.collider.noise = qConfig.noise;
+          if (qConfig.qDrink !== undefined) CONFIG.collider.qDrink = qConfig.qDrink;
+          if (qConfig.qFeelGood !== undefined) CONFIG.collider.qFeelGood = qConfig.qFeelGood;
+          console.log('Applied config:', CONFIG);
+        }
+        
+        sendDataToQualtrics('GAME_START', { started: true });
+      }
+    });
+    
+    // Send data to Qualtrics
+    function sendDataToQualtrics(dataType, data) {
+      if (window.parent !== window) {
+        window.parent.postMessage({
+          type: 'GAME_DATA',
+          gameId: gameId,
+          dataType: dataType,
+          data: data,
+          participantId: participantId,
+          timestamp: new Date().toISOString()
+        }, '*');
+      }
+      console.log('Sent to Qualtrics:', dataType, data);
+    }
+    
+    // Configuration (matches Qualtrics embedded data names)
+    // A = drink decision (1=drink, 0=skip)
+    // X = chemical level (1=normal, 0=abnormal)  
+    // Y = feeling (1=headache free, 0=headache)
     const CONFIG = {
-      noHeadachePayoff: 2.00,
-      headachePayoff: -2.00,
+      yBonus: 5.00,           // Bonus when Y=1 (headache free)
+      aCost: 0.00,            // Cost of drinking (A=1)
       totalRounds: 100,
       currency: '$',
+      id: 1,
       
       collider: {
-        pFeelGood: 0.50,
-        leak: 0.05,
+        pY: 0.50,             // P(Y=1) base probability
+        noise: 0.05,          // leak parameter
         qDrink: 0.80,
         qFeelGood: 0.80,
       },
       
-      drinkName: 'Driftwell',
-      chemicalName: 'Qivaryn',
+      playerName1: 'Qivaryn',   // Chemical name (X)
+      playerName2: 'Feeling',   // Outcome name (Y)
+      playerIcon0: '🥤',        // Icon for drink action (A)
     };
+  </script>
+  
+  <script type="text/babel">
+    const { useState, useCallback, useRef } = React;
 
     // Simulate one round based on collider DGP
-    function simulateRound(drankBeverage) {
-      const { pFeelGood, leak, qDrink, qFeelGood } = CONFIG.collider;
+    // A = drink (1/0), X = chemical normal (1/0), Y = feel good (1/0)
+    function simulateRound(A) {
+      const { pY, noise, qDrink, qFeelGood } = CONFIG.collider;
       
-      const feelGood = Math.random() < pFeelGood;
+      const Y = Math.random() < pY ? 1 : 0;
       
-      let pQivarynAbnormal = (1 - leak);
-      if (drankBeverage) {
-        pQivarynAbnormal *= (1 - qDrink);
+      let pXabnormal = (1 - noise);
+      if (A === 1) {
+        pXabnormal *= (1 - qDrink);
       }
-      if (feelGood) {
-        pQivarynAbnormal *= (1 - qFeelGood);
+      if (Y === 1) {
+        pXabnormal *= (1 - qFeelGood);
       }
       
-      const chemicalNormal = Math.random() >= pQivarynAbnormal;
+      const X = Math.random() >= pXabnormal ? 1 : 0;
       
-      return { chemicalNormal, feelGood };
+      return { A, X, Y };
     }
 
     // Statistics calculator
+    // history format: [[A, X, Y], [A, X, Y], ...]
     function calculateStats(history) {
       const stats = {
-        drinkYes: { total: 0, chemNormal: 0, feelGood: 0 },
-        drinkNo: { total: 0, chemNormal: 0, feelGood: 0 },
-        chemNormal: { total: 0, feelGood: 0 },
-        chemAbnormal: { total: 0, feelGood: 0 },
+        A1: { total: 0, X1: 0, Y1: 0 },  // When A=1 (drank)
+        A0: { total: 0, X1: 0, Y1: 0 },  // When A=0 (skipped)
+        X1: { total: 0, Y1: 0 },          // When X=1 (normal)
+        X0: { total: 0, Y1: 0 },          // When X=0 (abnormal)
       };
       
       history.forEach(round => {
-        if (round.drankBeverage) {
-          stats.drinkYes.total++;
-          if (round.chemicalNormal) stats.drinkYes.chemNormal++;
-          if (round.feelGood) stats.drinkYes.feelGood++;
+        const [A, X, Y] = round;
+        
+        if (A === 1) {
+          stats.A1.total++;
+          if (X === 1) stats.A1.X1++;
+          if (Y === 1) stats.A1.Y1++;
         } else {
-          stats.drinkNo.total++;
-          if (round.chemicalNormal) stats.drinkNo.chemNormal++;
-          if (round.feelGood) stats.drinkNo.feelGood++;
+          stats.A0.total++;
+          if (X === 1) stats.A0.X1++;
+          if (Y === 1) stats.A0.Y1++;
         }
         
-        if (round.chemicalNormal) {
-          stats.chemNormal.total++;
-          if (round.feelGood) stats.chemNormal.feelGood++;
+        if (X === 1) {
+          stats.X1.total++;
+          if (Y === 1) stats.X1.Y1++;
         } else {
-          stats.chemAbnormal.total++;
-          if (round.feelGood) stats.chemAbnormal.feelGood++;
+          stats.X0.total++;
+          if (Y === 1) stats.X0.Y1++;
         }
       });
       
@@ -103,16 +160,16 @@
       );
     }
 
-    // BioClip device
-    function BioClipLarge({ status, chemicalName }) {
+    // BioClip device (shows X = chemical level)
+    function BioClipLarge({ status }) {
       const getStatusColor = () => {
         if (status === null) return '#64748b';
-        return status ? '#22c55e' : '#ef4444';
+        return status === 1 ? '#22c55e' : '#ef4444';
       };
       
       const getStatusBg = () => {
         if (status === null) return '#1e293b';
-        return status ? '#14532d' : '#7f1d1d';
+        return status === 1 ? '#14532d' : '#7f1d1d';
       };
       
       return (
@@ -126,12 +183,12 @@
                 <animate attributeName="r" values="24;28;24" dur="0.5s" repeatCount="1" />
               )}
             </circle>
-            {status === true && (
+            {status === 1 && (
               <path d="M48 55 L56 63 L72 47" stroke="white" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round">
                 <animate attributeName="stroke-dasharray" values="0,100;100,0" dur="0.3s" fill="freeze" />
               </path>
             )}
-            {status === false && (
+            {status === 0 && (
               <g stroke="white" strokeWidth="4" strokeLinecap="round">
                 <line x1="50" y1="45" x2="70" y2="65">
                   <animate attributeName="stroke-dasharray" values="0,100;100,0" dur="0.2s" fill="freeze" />
@@ -142,7 +199,7 @@
               </g>
             )}
             <text x="60" y="100" textAnchor="middle" fill={status === null ? '#64748b' : 'white'} fontSize="11" fontWeight="bold">
-              {status === null ? 'READING...' : status ? 'NORMAL' : 'ABNORMAL'}
+              {status === null ? 'READING...' : status === 1 ? 'NORMAL' : 'ABNORMAL'}
             </text>
             <rect x="30" y="126" width="60" height="18" rx="4" fill="#334155" />
             <text x="60" y="139" textAnchor="middle" fill="#94a3b8" fontSize="10" fontFamily="monospace">
@@ -150,49 +207,49 @@
             </text>
             <path d="M0 50 L10 50 L10 110 L0 110 C-4 110 -6 105 -6 100 L-6 60 C-6 55 -4 50 0 50 Z" fill="#475569" />
           </svg>
-          <div className="text-lg font-bold text-white mt-2">{chemicalName} Level</div>
+          <div className="text-lg font-bold text-white mt-2">{CONFIG.playerName1} Level</div>
         </div>
       );
     }
 
-    // Mood indicator
+    // Mood indicator (shows Y = feeling)
     function MoodLarge({ mood }) {
       return (
         <div className="flex flex-col items-center">
           <div className={`w-32 h-32 rounded-full flex items-center justify-center transition-all duration-500 ${
-            mood === null ? 'bg-slate-700' : mood ? 'bg-gradient-to-br from-emerald-400 to-green-600' : 'bg-gradient-to-br from-rose-400 to-red-600'
+            mood === null ? 'bg-slate-700' : mood === 1 ? 'bg-gradient-to-br from-emerald-400 to-green-600' : 'bg-gradient-to-br from-rose-400 to-red-600'
           }`}>
             <span className={`text-7xl transition-all duration-300 ${mood === null ? 'grayscale opacity-30' : ''}`}>
-              {mood === null ? '😐' : mood ? '😊' : '😔'}
+              {mood === null ? '😐' : mood === 1 ? '😊' : '😔'}
             </span>
           </div>
           <div className="text-lg font-bold text-white mt-3">
-            {mood === null ? 'Later this day...' : mood ? 'Headache Free!' : 'Headache'}
+            {mood === null ? 'Later this day...' : mood === 1 ? 'Headache Free!' : 'Headache'}
           </div>
           {mood !== null && (
-            <div className={`text-lg font-bold mt-1 ${mood ? 'text-green-400' : 'text-red-400'}`}>
-              {mood ? '+$2' : '-$2'}
+            <div className={`text-lg font-bold mt-1 ${mood === 1 ? 'text-green-400' : 'text-red-400'}`}>
+              {mood === 1 ? `+${CONFIG.currency}${CONFIG.yBonus}` : `${CONFIG.currency}0`}
             </div>
           )}
         </div>
       );
     }
 
-    // Connection between Qivaryn and Feeling
-    function QivarynFeelingConnection({ chemicalStatus, moodStatus, stats, hideRateBox }) {
-      const normalGoodRate = stats.chemNormal.total > 0 
-        ? Math.round((stats.chemNormal.feelGood / stats.chemNormal.total) * 100) 
+    // Connection between X (chemical) and Y (feeling)
+    function XYConnection({ X, Y, stats, hideRateBox }) {
+      const X1Y1Rate = stats.X1.total > 0 
+        ? Math.round((stats.X1.Y1 / stats.X1.total) * 100) 
         : null;
-      const abnormalGoodRate = stats.chemAbnormal.total > 0 
-        ? Math.round((stats.chemAbnormal.feelGood / stats.chemAbnormal.total) * 100) 
+      const X0Y1Rate = stats.X0.total > 0 
+        ? Math.round((stats.X0.Y1 / stats.X0.total) * 100) 
         : null;
       
-      const showConnection = chemicalStatus !== null;
-      const connectionColor = chemicalStatus === true ? '#22c55e' : '#ef4444';
+      const showConnection = X !== null;
+      const connectionColor = X === 1 ? '#22c55e' : '#ef4444';
       
       return (
         <div className="relative flex items-center justify-center gap-8 py-8">
-          <BioClipLarge status={chemicalStatus} chemicalName={CONFIG.chemicalName} />
+          <BioClipLarge status={X} />
           
           <div className="flex flex-col items-center relative">
             <svg width="180" height="80" className="absolute top-1/2 -translate-y-1/2">
@@ -221,18 +278,18 @@
             
             {!hideRateBox && (
               <div className={`bg-slate-800 border-2 rounded-xl px-4 py-3 z-10 transition-all duration-300 ${
-                showConnection ? (chemicalStatus ? 'border-green-500' : 'border-red-500') : 'border-slate-600'
+                showConnection ? (X === 1 ? 'border-green-500' : 'border-red-500') : 'border-slate-600'
               }`}>
                 <div className="text-xs text-slate-400 text-center mb-1">
-                  {chemicalStatus === null ? 'Historical Rate' : chemicalStatus ? 'When NORMAL' : 'When ABNORMAL'}
+                  {X === null ? 'Historical Rate' : X === 1 ? 'When NORMAL' : 'When ABNORMAL'}
                 </div>
                 <div className="text-3xl font-bold text-center text-white">
-                  {chemicalStatus === null ? (
+                  {X === null ? (
                     <span className="text-slate-500">—</span>
-                  ) : chemicalStatus ? (
-                    normalGoodRate !== null ? `${normalGoodRate}%` : '—'
+                  ) : X === 1 ? (
+                    X1Y1Rate !== null ? `${X1Y1Rate}%` : '—'
                   ) : (
-                    abnormalGoodRate !== null ? `${abnormalGoodRate}%` : '—'
+                    X0Y1Rate !== null ? `${X0Y1Rate}%` : '—'
                   )}
                 </div>
                 <div className="text-xs text-slate-400 text-center">
@@ -242,78 +299,78 @@
             )}
           </div>
           
-          <MoodLarge mood={moodStatus} />
+          <MoodLarge mood={Y} />
         </div>
       );
     }
 
-    // Qivaryn Statistics Panel
-    function QivarynStatsPanel({ stats, currentChemical }) {
-      const normalGoodRate = stats.chemNormal.total > 0 
-        ? (stats.chemNormal.feelGood / stats.chemNormal.total * 100).toFixed(0) 
+    // X Statistics Panel (X → Y relationship)
+    function XStatsPanel({ stats, currentX }) {
+      const X1Y1Rate = stats.X1.total > 0 
+        ? (stats.X1.Y1 / stats.X1.total * 100).toFixed(0) 
         : null;
-      const abnormalGoodRate = stats.chemAbnormal.total > 0 
-        ? (stats.chemAbnormal.feelGood / stats.chemAbnormal.total * 100).toFixed(0) 
+      const X0Y1Rate = stats.X0.total > 0 
+        ? (stats.X0.Y1 / stats.X0.total * 100).toFixed(0) 
         : null;
         
       return (
         <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-5 border-2 border-cyan-500/30">
           <h3 className="text-cyan-400 font-bold text-lg mb-4 flex items-center gap-2">
-            <span className="text-2xl">📊</span> {CONFIG.chemicalName} → Headache Free
+            <span className="text-2xl">📊</span> {CONFIG.playerName1} → Headache Free
           </h3>
           
           <div className="grid grid-cols-2 gap-4">
             <div className={`rounded-xl p-4 transition-all duration-300 ${
-              currentChemical === true ? 'bg-green-900/50 ring-2 ring-green-400' : 'bg-slate-700/50'
+              currentX === 1 ? 'bg-green-900/50 ring-2 ring-green-400' : 'bg-slate-700/50'
             }`}>
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-4 h-4 rounded-full bg-green-500" />
                 <span className="text-green-400 font-medium">Normal</span>
               </div>
               <div className="text-4xl font-bold text-white mb-1">
-                {normalGoodRate !== null ? `${normalGoodRate}%` : '—'}
+                {X1Y1Rate !== null ? `${X1Y1Rate}%` : '—'}
               </div>
               <div className="text-sm text-slate-400">
-                headache free ({stats.chemNormal.feelGood}/{stats.chemNormal.total})
+                headache free ({stats.X1.Y1}/{stats.X1.total})
               </div>
               <div className="mt-3 h-3 bg-slate-600 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all duration-500"
-                  style={{ width: normalGoodRate ? `${normalGoodRate}%` : '0%' }}
+                  style={{ width: X1Y1Rate ? `${X1Y1Rate}%` : '0%' }}
                 />
               </div>
             </div>
             
             <div className={`rounded-xl p-4 transition-all duration-300 ${
-              currentChemical === false ? 'bg-red-900/50 ring-2 ring-red-400' : 'bg-slate-700/50'
+              currentX === 0 ? 'bg-red-900/50 ring-2 ring-red-400' : 'bg-slate-700/50'
             }`}>
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-4 h-4 rounded-full bg-red-500" />
                 <span className="text-red-400 font-medium">Abnormal</span>
               </div>
               <div className="text-4xl font-bold text-white mb-1">
-                {abnormalGoodRate !== null ? `${abnormalGoodRate}%` : '—'}
+                {X0Y1Rate !== null ? `${X0Y1Rate}%` : '—'}
               </div>
               <div className="text-sm text-slate-400">
-                headache free ({stats.chemAbnormal.feelGood}/{stats.chemAbnormal.total})
+                headache free ({stats.X0.Y1}/{stats.X0.total})
               </div>
               <div className="mt-3 h-3 bg-slate-600 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-gradient-to-r from-red-500 to-rose-400 transition-all duration-500"
-                  style={{ width: abnormalGoodRate ? `${abnormalGoodRate}%` : '0%' }}
+                  style={{ width: X0Y1Rate ? `${X0Y1Rate}%` : '0%' }}
                 />
               </div>
             </div>
           </div>
           
-          {normalGoodRate !== null && abnormalGoodRate !== null && (
+          {X1Y1Rate !== null && X0Y1Rate !== null && (
             <div className="mt-4 bg-cyan-900/30 rounded-lg p-3 border border-cyan-500/30">
               <div className="text-center">
                 <span className="text-cyan-400 text-sm">Difference: </span>
                 <span className="text-white font-bold text-xl">
-                  {normalGoodRate - abnormalGoodRate > 0 ? '+' : ''}{normalGoodRate - abnormalGoodRate}%
+                  {X1Y1Rate - X0Y1Rate > 0 ? '+' : ''}{X1Y1Rate - X0Y1Rate}%
                 </span>
-                <span className="text-slate-400 text-sm"> more likely to be headache-free when {CONFIG.chemicalName} is normal</span>
+                <span className="text-slate-400 text-sm"> more likely to be headache-free when {CONFIG.playerName1} is normal</span>
               </div>
             </div>
           )}
@@ -321,13 +378,13 @@
       );
     }
 
-    // Drink decision panel
+    // Drink decision panel (A = action)
     function DrinkDecisionPanel({ onChoice, disabled, stats }) {
-      const drinkFeelGoodRate = stats.drinkYes.total > 0 
-        ? Math.round(stats.drinkYes.feelGood / stats.drinkYes.total * 100) 
+      const A1Y1Rate = stats.A1.total > 0 
+        ? Math.round(stats.A1.Y1 / stats.A1.total * 100) 
         : null;
-      const skipFeelGoodRate = stats.drinkNo.total > 0 
-        ? Math.round(stats.drinkNo.feelGood / stats.drinkNo.total * 100) 
+      const A0Y1Rate = stats.A0.total > 0 
+        ? Math.round(stats.A0.Y1 / stats.A0.total * 100) 
         : null;
         
       return (
@@ -335,7 +392,7 @@
           <h4 className="text-slate-400 text-sm font-medium mb-3 text-center">Morning Decision</h4>
           <div className="flex justify-center gap-3">
             <button
-              onClick={() => onChoice(true)}
+              onClick={() => onChoice(1)}
               disabled={disabled}
               className={`px-5 py-3 rounded-lg font-bold transition-all flex items-center gap-2 ${
                 disabled 
@@ -343,14 +400,14 @@
                   : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg hover:shadow-xl cursor-pointer'
               }`}
             >
-              <span className="text-xl">🥤</span>
+              <span className="text-xl">{CONFIG.playerIcon0}</span>
               <div className="text-left">
                 <div>Drink</div>
-                <div className="text-xs opacity-70">+$0</div>
+                <div className="text-xs opacity-70">-{CONFIG.currency}{CONFIG.aCost}</div>
               </div>
             </button>
             <button
-              onClick={() => onChoice(false)}
+              onClick={() => onChoice(0)}
               disabled={disabled}
               className={`px-5 py-3 rounded-lg font-bold transition-all flex items-center gap-2 ${
                 disabled 
@@ -361,7 +418,7 @@
               <span className="text-xl">⊘</span>
               <div className="text-left">
                 <div>Skip</div>
-                <div className="text-xs opacity-70">+$0</div>
+                <div className="text-xs opacity-70">{CONFIG.currency}0</div>
               </div>
             </button>
           </div>
@@ -369,18 +426,18 @@
           <div className="mt-3 space-y-2">
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="bg-slate-700/50 rounded p-2 text-center">
-                <div className="text-blue-400">Drink → {CONFIG.chemicalName}</div>
+                <div className="text-blue-400">Drink → {CONFIG.playerName1}</div>
                 <div className="text-white font-bold">
-                  {stats.drinkYes.total > 0 
-                    ? `${Math.round(stats.drinkYes.chemNormal / stats.drinkYes.total * 100)}% normal`
+                  {stats.A1.total > 0 
+                    ? `${Math.round(stats.A1.X1 / stats.A1.total * 100)}% normal`
                     : '—'}
                 </div>
               </div>
               <div className="bg-slate-700/50 rounded p-2 text-center">
-                <div className="text-slate-400">Skip → {CONFIG.chemicalName}</div>
+                <div className="text-slate-400">Skip → {CONFIG.playerName1}</div>
                 <div className="text-white font-bold">
-                  {stats.drinkNo.total > 0 
-                    ? `${Math.round(stats.drinkNo.chemNormal / stats.drinkNo.total * 100)}% normal`
+                  {stats.A0.total > 0 
+                    ? `${Math.round(stats.A0.X1 / stats.A0.total * 100)}% normal`
                     : '—'}
                 </div>
               </div>
@@ -389,13 +446,13 @@
               <div className="bg-slate-700/50 rounded p-2 text-center">
                 <div className="text-blue-400">Drink → Headache Free</div>
                 <div className="text-white font-bold">
-                  {drinkFeelGoodRate !== null ? `${drinkFeelGoodRate}%` : '—'}
+                  {A1Y1Rate !== null ? `${A1Y1Rate}%` : '—'}
                 </div>
               </div>
               <div className="bg-slate-700/50 rounded p-2 text-center">
                 <div className="text-slate-400">Skip → Headache Free</div>
                 <div className="text-white font-bold">
-                  {skipFeelGoodRate !== null ? `${skipFeelGoodRate}%` : '—'}
+                  {A0Y1Rate !== null ? `${A0Y1Rate}%` : '—'}
                 </div>
               </div>
             </div>
@@ -404,7 +461,7 @@
       );
     }
 
-    // Recent history
+    // Recent history - displays [[A, X, Y], ...]
     function CompactHistory({ history }) {
       const recentRounds = history.slice().reverse().slice(0, 8);
       
@@ -412,22 +469,26 @@
         <div className="bg-slate-800/50 rounded-xl p-4">
           <h4 className="text-slate-400 text-sm font-medium mb-3">All Days</h4>
           <div className="space-y-1">
-            {recentRounds.map((round) => (
-              <div key={round.roundNumber} className="flex items-center gap-2 text-sm py-1 px-2 bg-slate-700/30 rounded">
-                <span className="text-slate-500 w-6">#{round.roundNumber}</span>
-                <span className={`w-12 ${round.drankBeverage ? 'text-blue-400' : 'text-slate-500'}`}>
-                  {round.drankBeverage ? '🥤' : '⊘'}
-                </span>
-                <span className={`flex-1 font-medium ${round.chemicalNormal ? 'text-green-400' : 'text-red-400'}`}>
-                  {round.chemicalNormal ? 'Normal' : 'Abnormal'}
-                </span>
-                <span className={`text-2xl w-10 h-10 flex items-center justify-center rounded-lg ${
-                  round.feelGood ? 'bg-green-600' : 'bg-red-600'
-                }`}>
-                  {round.feelGood ? '😊' : '😔'}
-                </span>
-              </div>
-            ))}
+            {recentRounds.map((round, idx) => {
+              const [A, X, Y] = round;
+              const roundNumber = history.length - idx;
+              return (
+                <div key={roundNumber} className="flex items-center gap-2 text-sm py-1 px-2 bg-slate-700/30 rounded">
+                  <span className="text-slate-500 w-6">#{roundNumber}</span>
+                  <span className={`w-12 ${A === 1 ? 'text-blue-400' : 'text-slate-500'}`}>
+                    {A === 1 ? CONFIG.playerIcon0 : '⊘'}
+                  </span>
+                  <span className={`flex-1 font-medium ${X === 1 ? 'text-green-400' : 'text-red-400'}`}>
+                    {X === 1 ? 'Normal' : 'Abnormal'}
+                  </span>
+                  <span className={`text-2xl w-10 h-10 flex items-center justify-center rounded-lg ${
+                    Y === 1 ? 'bg-green-600' : 'bg-red-600'
+                  }`}>
+                    {Y === 1 ? '😊' : '😔'}
+                  </span>
+                </div>
+              );
+            })}
             {history.length === 0 && (
               <p className="text-slate-500 text-center py-4">No days yet</p>
             )}
@@ -440,42 +501,42 @@
     function BeverageExperiment() {
       const [currentRound, setCurrentRound] = useState(1);
       const [phase, setPhase] = useState('decision');
-      const [history, setHistory] = useState([]);
-      const [currentChoice, setCurrentChoice] = useState(null);
-      const [currentChemical, setCurrentChemical] = useState(null);
-      const [currentMood, setCurrentMood] = useState(null);
+      const [history, setHistory] = useState([]);  // [[A, X, Y], ...]
+      const [currentA, setCurrentA] = useState(null);
+      const [currentX, setCurrentX] = useState(null);
+      const [currentY, setCurrentY] = useState(null);
       const [showNewDay, setShowNewDay] = useState(false);
       const [hideRateBox, setHideRateBox] = useState(false);
       const [nextDayNumber, setNextDayNumber] = useState(2);
       const [totalEarnings, setTotalEarnings] = useState(0);
       const [selectedPaymentRound, setSelectedPaymentRound] = useState(null);
       
+      const roundTimesRef = useRef([]);
+      const roundStartTimeRef = useRef(Date.now());
+      const dataSentRef = useRef(false);
+      
       const stats = calculateStats(history);
       
-      const handleChoice = useCallback((drinkChoice) => {
-        setCurrentChoice(drinkChoice);
+      const handleChoice = useCallback((A) => {
+        roundTimesRef.current.push((Date.now() - roundStartTimeRef.current) / 1000);
+        
+        setCurrentA(A);
         setPhase('chemical');
         
-        const result = simulateRound(drinkChoice);
+        const result = simulateRound(A);
         
         setTimeout(() => {
-          setCurrentChemical(result.chemicalNormal);
+          setCurrentX(result.X);
           
           setTimeout(() => {
             setPhase('outcome');
-            setCurrentMood(result.feelGood);
+            setCurrentY(result.Y);
             
-            const earnings = result.feelGood ? CONFIG.noHeadachePayoff : CONFIG.headachePayoff;
+            // earnings = -aCost*A + yBonus*Y
+            const earnings = -CONFIG.aCost * A + CONFIG.yBonus * result.Y;
             
-            const roundData = {
-              roundNumber: currentRound,
-              drankBeverage: drinkChoice,
-              chemicalNormal: result.chemicalNormal,
-              feelGood: result.feelGood,
-              earnings: earnings,
-            };
-            
-            setHistory(prev => [...prev, roundData]);
+            // Store as [A, X, Y]
+            setHistory(prev => [...prev, [A, result.X, result.Y]]);
             setTotalEarnings(prev => prev + earnings);
             
             if (currentRound >= CONFIG.totalRounds) {
@@ -497,9 +558,10 @@
                     setHideRateBox(false);
                     setCurrentRound(prev => prev + 1);
                     setPhase('decision');
-                    setCurrentChoice(null);
-                    setCurrentChemical(null);
-                    setCurrentMood(null);
+                    setCurrentA(null);
+                    setCurrentX(null);
+                    setCurrentY(null);
+                    roundStartTimeRef.current = Date.now();
                   }, 1000);
                 }, 100);
               }, 1400);
@@ -508,20 +570,42 @@
         }, 800);
       }, [currentRound]);
       
+      // Send final data when game completes
+      if (phase === 'complete' && selectedPaymentRound !== null && history.length === CONFIG.totalRounds && !dataSentRef.current) {
+        dataSentRef.current = true;
+        const [pA, pX, pY] = history[selectedPaymentRound - 1];
+        const selectedRoundPayment = -CONFIG.aCost * pA + CONFIG.yBonus * pY;
+        
+        sendDataToQualtrics('FINAL_DATA', {
+          history: history,  // [[A, X, Y], [A, X, Y], ...]
+          roundTimes: roundTimesRef.current,
+          payment: history.map(([A, X, Y]) => -CONFIG.aCost * A + CONFIG.yBonus * Y),
+          selectedPaymentRound: selectedPaymentRound,
+          selectedRoundPayment: selectedRoundPayment,
+          totalEarnings: totalEarnings
+        });
+        
+        setTimeout(() => {
+          sendDataToQualtrics('GAME_COMPLETE', { completed: true });
+        }, 500);
+      }
+      
       // Experiment complete screen
-      if (phase === 'complete') {
-        const paymentRoundData = history[selectedPaymentRound - 1];
-        const normalGoodRate = stats.chemNormal.total > 0 
-          ? Math.round(stats.chemNormal.feelGood / stats.chemNormal.total * 100) 
+      if (phase === 'complete' && selectedPaymentRound !== null) {
+        const [pA, pX, pY] = history[selectedPaymentRound - 1];
+        const selectedRoundPayment = -CONFIG.aCost * pA + CONFIG.yBonus * pY;
+        
+        const X1Y1Rate = stats.X1.total > 0 
+          ? Math.round(stats.X1.Y1 / stats.X1.total * 100) 
           : 0;
-        const abnormalGoodRate = stats.chemAbnormal.total > 0 
-          ? Math.round(stats.chemAbnormal.feelGood / stats.chemAbnormal.total * 100) 
+        const X0Y1Rate = stats.X0.total > 0 
+          ? Math.round(stats.X0.Y1 / stats.X0.total * 100) 
           : 0;
-        const drinkGoodRate = stats.drinkYes.total > 0 
-          ? Math.round(stats.drinkYes.feelGood / stats.drinkYes.total * 100) 
+        const A1Y1Rate = stats.A1.total > 0 
+          ? Math.round(stats.A1.Y1 / stats.A1.total * 100) 
           : 0;
-        const skipGoodRate = stats.drinkNo.total > 0 
-          ? Math.round(stats.drinkNo.feelGood / stats.drinkNo.total * 100) 
+        const A0Y1Rate = stats.A0.total > 0 
+          ? Math.round(stats.A0.Y1 / stats.A0.total * 100) 
           : 0;
           
         return (
@@ -534,14 +618,14 @@
               </div>
               
               <div className="bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl p-5 text-white mb-4">
-                <h3 className="font-bold mb-3 text-lg">📊 {CONFIG.chemicalName} → Headache Free</h3>
+                <h3 className="font-bold mb-3 text-lg">📊 {CONFIG.playerName1} → Headache Free</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-white/20 rounded-lg p-3">
                     <div className="flex items-center gap-2 mb-1">
                       <div className="w-3 h-3 rounded-full bg-green-400" />
                       <span className="text-sm">When Normal</span>
                     </div>
-                    <div className="text-3xl font-bold">{normalGoodRate}%</div>
+                    <div className="text-3xl font-bold">{X1Y1Rate}%</div>
                     <div className="text-xs opacity-80">headache free</div>
                   </div>
                   <div className="bg-white/20 rounded-lg p-3">
@@ -549,24 +633,24 @@
                       <div className="w-3 h-3 rounded-full bg-red-400" />
                       <span className="text-sm">When Abnormal</span>
                     </div>
-                    <div className="text-3xl font-bold">{abnormalGoodRate}%</div>
+                    <div className="text-3xl font-bold">{X0Y1Rate}%</div>
                     <div className="text-xs opacity-80">headache free</div>
                   </div>
                 </div>
               </div>
               
               <div className="bg-gray-100 rounded-xl p-4 mb-4">
-                <h3 className="font-bold mb-3 text-gray-700">🥤 Drink → Headache Free</h3>
+                <h3 className="font-bold mb-3 text-gray-700">{CONFIG.playerIcon0} Drink → Headache Free</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-white rounded-lg p-3 border border-gray-200">
                     <div className="text-sm text-gray-500">When Drank</div>
-                    <div className="text-2xl font-bold text-gray-800">{drinkGoodRate}%</div>
-                    <div className="text-xs text-gray-500">headache free ({stats.drinkYes.feelGood}/{stats.drinkYes.total})</div>
+                    <div className="text-2xl font-bold text-gray-800">{A1Y1Rate}%</div>
+                    <div className="text-xs text-gray-500">headache free ({stats.A1.Y1}/{stats.A1.total})</div>
                   </div>
                   <div className="bg-white rounded-lg p-3 border border-gray-200">
                     <div className="text-sm text-gray-500">When Skipped</div>
-                    <div className="text-2xl font-bold text-gray-800">{skipGoodRate}%</div>
-                    <div className="text-xs text-gray-500">headache free ({stats.drinkNo.feelGood}/{stats.drinkNo.total})</div>
+                    <div className="text-2xl font-bold text-gray-800">{A0Y1Rate}%</div>
+                    <div className="text-xs text-gray-500">headache free ({stats.A0.Y1}/{stats.A0.total})</div>
                   </div>
                 </div>
               </div>
@@ -575,12 +659,12 @@
                 <p className="text-sm text-emerald-600 mb-1">Payment Round Selected</p>
                 <p className="text-2xl font-bold text-emerald-800 mb-2">Round #{selectedPaymentRound}</p>
                 <div className="text-sm text-emerald-700">
-                  {paymentRoundData.drankBeverage ? '🥤 Drank' : '⊘ Skipped'} → 
-                  {paymentRoundData.chemicalNormal ? ' Normal' : ' Abnormal'} → 
-                  {paymentRoundData.feelGood ? ' 😊 Headache Free' : ' 😔 Headache'}
+                  {pA === 1 ? `${CONFIG.playerIcon0} Drank` : '⊘ Skipped'} → 
+                  {pX === 1 ? ' Normal' : ' Abnormal'} → 
+                  {pY === 1 ? ' 😊 Headache Free' : ' 😔 Headache'}
                 </div>
                 <p className="text-3xl font-bold text-emerald-800 mt-2">
-                  {paymentRoundData.earnings >= 0 ? '+' : ''}{CONFIG.currency}{paymentRoundData.earnings.toFixed(2)}
+                  {selectedRoundPayment >= 0 ? '+' : ''}{CONFIG.currency}{selectedRoundPayment.toFixed(2)}
                 </p>
               </div>
             </div>
@@ -613,9 +697,9 @@
             <div className="bg-slate-800/50 backdrop-blur rounded-2xl p-6 mb-4 border border-slate-700 relative overflow-hidden">
               <NewDayOverlay show={showNewDay} dayNumber={nextDayNumber} />
               
-              <QivarynFeelingConnection 
-                chemicalStatus={currentChemical} 
-                moodStatus={currentMood}
+              <XYConnection 
+                X={currentX} 
+                Y={currentY}
                 stats={stats}
                 hideRateBox={hideRateBox}
               />
@@ -626,9 +710,9 @@
                   phase === 'chemical' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
                   'bg-green-500/20 text-green-300 border border-green-500/30'
                 }`}>
-                  {phase === 'decision' && `Morning: Will you drink ${CONFIG.drinkName}?`}
-                  {phase === 'chemical' && `Reading your ${CONFIG.chemicalName} level...`}
-                  {phase === 'outcome' && `Later this day: ${currentMood ? 'Headache free! 😊' : 'Headache 😔'}`}
+                  {phase === 'decision' && `Morning: Will you drink?`}
+                  {phase === 'chemical' && `Reading your ${CONFIG.playerName1} level...`}
+                  {phase === 'outcome' && `Later this day: ${currentY === 1 ? 'Headache free! 😊' : 'Headache 😔'}`}
                 </span>
               </div>
             </div>
@@ -639,7 +723,7 @@
                 disabled={phase !== 'decision'}
                 stats={stats}
               />
-              <QivarynStatsPanel stats={stats} currentChemical={currentChemical} />
+              <XStatsPanel stats={stats} currentX={currentX} />
               <CompactHistory history={history} />
             </div>
           </div>
