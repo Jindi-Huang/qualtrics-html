@@ -34,14 +34,22 @@
           if (qConfig.id) CONFIG.id = qConfig.id;
           if (qConfig.yBonus !== undefined) CONFIG.yBonus = qConfig.yBonus;
           if (qConfig.aCost !== undefined) CONFIG.aCost = qConfig.aCost;
+          if (qConfig.pY !== undefined) CONFIG.pY = qConfig.pY;
           if (qConfig.playerName0) CONFIG.playerName0 = qConfig.playerName0;
           if (qConfig.playerName1) CONFIG.playerName1 = qConfig.playerName1;
           if (qConfig.playerName2) CONFIG.playerName2 = qConfig.playerName2;
           if (qConfig.playerIcon0) CONFIG.playerIcon0 = qConfig.playerIcon0;
-          if (qConfig.pY !== undefined) CONFIG.collider.pY = qConfig.pY;
-          if (qConfig.noise !== undefined) CONFIG.collider.noise = qConfig.noise;
-          if (qConfig.qDrink !== undefined) CONFIG.collider.qDrink = qConfig.qDrink;
-          if (qConfig.qFeelGood !== undefined) CONFIG.collider.qFeelGood = qConfig.qFeelGood;
+          if (qConfig.causal !== undefined) CONFIG.causal = qConfig.causal;
+          // Collider parameters (causal=0)
+          if (qConfig.beta00 !== undefined) CONFIG.beta00 = qConfig.beta00;
+          if (qConfig.beta01 !== undefined) CONFIG.beta01 = qConfig.beta01;
+          if (qConfig.beta10 !== undefined) CONFIG.beta10 = qConfig.beta10;
+          if (qConfig.beta11 !== undefined) CONFIG.beta11 = qConfig.beta11;
+          // Causal parameters (causal=1)
+          if (qConfig.sigma0 !== undefined) CONFIG.sigma0 = qConfig.sigma0;
+          if (qConfig.sigma1 !== undefined) CONFIG.sigma1 = qConfig.sigma1;
+          if (qConfig.rho0 !== undefined) CONFIG.rho0 = qConfig.rho0;
+          if (qConfig.rho1 !== undefined) CONFIG.rho1 = qConfig.rho1;
           console.log('Applied config:', CONFIG);
         }
         
@@ -75,12 +83,21 @@
       currency: '$',
       id: 1,
       
-      collider: {
-        pY: 0.50,             // P(Y=1) base probability
-        noise: 0.05,          // leak parameter
-        qDrink: 0.80,
-        qFeelGood: 0.80,
-      },
+      // DGP parameters
+      causal: 0,              // 0 = collider, 1 = causal chain
+      pY: 0.50,               // P(Y=1) base probability (used when causal=0)
+      
+      // Collider parameters (causal=0): P(X=1) = beta[A*2 + Y]
+      beta00: 0.05,           // P(X=1 | A=0, Y=0)
+      beta01: 0.80,           // P(X=1 | A=0, Y=1)
+      beta10: 0.80,           // P(X=1 | A=1, Y=0)
+      beta11: 0.95,           // P(X=1 | A=1, Y=1)
+      
+      // Causal chain parameters (causal=1)
+      sigma0: 0.20,           // P(X=1 | A=0)
+      sigma1: 0.80,           // P(X=1 | A=1)
+      rho0: 0.20,             // P(Y=1 | X=0)
+      rho1: 0.80,             // P(Y=1 | X=1)
       
       playerName0: 'Driftwell', // Drink name (A)
       playerName1: 'Qivaryn',   // Chemical name (X)
@@ -92,22 +109,23 @@
   <script type="text/babel">
     const { useState, useCallback, useRef } = React;
 
-    // Simulate one round based on collider DGP
+    // Simulate one round based on DGP
     // A = drink (1/0), X = chemical normal (1/0), Y = feel good (1/0)
     function simulateRound(A) {
-      const { pY, noise, qDrink, qFeelGood } = CONFIG.collider;
+      let X, Y;
       
-      const Y = Math.random() < pY ? 1 : 0;
-      
-      let pXabnormal = (1 - noise);
-      if (A === 1) {
-        pXabnormal *= (1 - qDrink);
+      if (CONFIG.causal === 0) {
+        // Collider: Y is independent, X depends on both A and Y
+        const pX = [CONFIG.beta00, CONFIG.beta01, CONFIG.beta10, CONFIG.beta11];
+        Y = Math.random() < CONFIG.pY ? 1 : 0;
+        X = Math.random() < pX[A * 2 + Y] ? 1 : 0;
+      } else {
+        // Causal chain: A -> X -> Y
+        const pX = [CONFIG.sigma0, CONFIG.sigma1];
+        const pY = [CONFIG.rho0, CONFIG.rho1];
+        X = Math.random() < pX[A] ? 1 : 0;
+        Y = Math.random() < pY[X] ? 1 : 0;
       }
-      if (Y === 1) {
-        pXabnormal *= (1 - qFeelGood);
-      }
-      
-      const X = Math.random() >= pXabnormal ? 1 : 0;
       
       return { A, X, Y };
     }
@@ -591,88 +609,6 @@
         setTimeout(() => {
           sendDataToQualtrics('GAME_COMPLETE', { completed: true });
         }, 500);
-      }
-      
-      // Experiment complete screen
-      if (phase === 'complete' && selectedPaymentRound !== null) {
-        const [pA, pX, pY] = history[selectedPaymentRound - 1];
-        const selectedRoundPayment = -CONFIG.aCost * pA + CONFIG.yBonus * pY;
-        
-        const X1Y1Rate = stats.X1.total > 0 
-          ? Math.round(stats.X1.Y1 / stats.X1.total * 100) 
-          : 0;
-        const X0Y1Rate = stats.X0.total > 0 
-          ? Math.round(stats.X0.Y1 / stats.X0.total * 100) 
-          : 0;
-        const A1Y1Rate = stats.A1.total > 0 
-          ? Math.round(stats.A1.Y1 / stats.A1.total * 100) 
-          : 0;
-        const A0Y1Rate = stats.A0.total > 0 
-          ? Math.round(stats.A0.Y1 / stats.A0.total * 100) 
-          : 0;
-          
-        return (
-          <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-xl w-full">
-              <div className="text-center">
-                <div className="text-6xl mb-4">🎉</div>
-                <h1 className="text-3xl font-bold text-gray-800 mb-2">Experiment Complete!</h1>
-                <p className="text-gray-600 mb-6">Thank you for participating in all {CONFIG.totalRounds} rounds.</p>
-              </div>
-              
-              <div className="bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl p-5 text-white mb-4">
-                <h3 className="font-bold mb-3 text-lg">📊 {CONFIG.playerName1} → Headache Free</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white/20 rounded-lg p-3">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-3 h-3 rounded-full bg-green-400" />
-                      <span className="text-sm">When Normal</span>
-                    </div>
-                    <div className="text-3xl font-bold">{X1Y1Rate}%</div>
-                    <div className="text-xs opacity-80">headache free</div>
-                  </div>
-                  <div className="bg-white/20 rounded-lg p-3">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-3 h-3 rounded-full bg-red-400" />
-                      <span className="text-sm">When Abnormal</span>
-                    </div>
-                    <div className="text-3xl font-bold">{X0Y1Rate}%</div>
-                    <div className="text-xs opacity-80">headache free</div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-gray-100 rounded-xl p-4 mb-4">
-                <h3 className="font-bold mb-3 text-gray-700">{CONFIG.playerIcon0} {CONFIG.playerName0} → Headache Free</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white rounded-lg p-3 border border-gray-200">
-                    <div className="text-sm text-gray-500">When Drank {CONFIG.playerName0}</div>
-                    <div className="text-2xl font-bold text-gray-800">{A1Y1Rate}%</div>
-                    <div className="text-xs text-gray-500">headache free ({stats.A1.Y1}/{stats.A1.total})</div>
-                  </div>
-                  <div className="bg-white rounded-lg p-3 border border-gray-200">
-                    <div className="text-sm text-gray-500">When Skipped</div>
-                    <div className="text-2xl font-bold text-gray-800">{A0Y1Rate}%</div>
-                    <div className="text-xs text-gray-500">headache free ({stats.A0.Y1}/{stats.A0.total})</div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-5">
-                <p className="text-sm text-emerald-600 mb-1">Payment Round Selected</p>
-                <p className="text-2xl font-bold text-emerald-800 mb-2">Round #{selectedPaymentRound}</p>
-                <div className="text-sm text-emerald-700">
-                  {pA === 1 ? `${CONFIG.playerIcon0} Drank ${CONFIG.playerName0}` : '⊘ Skipped'} → 
-                  {pX === 1 ? ' Normal' : ' Abnormal'} → 
-                  {pY === 1 ? ' 😊 Headache Free' : ' 😔 Headache'}
-                </div>
-                <p className="text-3xl font-bold text-emerald-800 mt-2">
-                  {selectedRoundPayment >= 0 ? '+' : ''}{CONFIG.currency}{selectedRoundPayment.toFixed(2)}
-                </p>
-              </div>
-            </div>
-          </div>
-        );
       }
       
       return (
