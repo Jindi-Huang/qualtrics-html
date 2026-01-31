@@ -396,7 +396,7 @@
             <button
               onClick={() => onChoice(1)}
               disabled={disabled}
-              className={`px-5 py-3 rounded-lg font-bold transition-all flex items-center gap-2 ${
+              className={`w-32 h-20 px-4 py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 ${
                 disabled 
                   ? 'bg-slate-700 text-slate-500 cursor-not-allowed' 
                   : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg hover:shadow-xl cursor-pointer'
@@ -404,24 +404,25 @@
             >
               <span className="text-xl">{CONFIG.playerIcon0}</span>
               <div className="text-left">
-                <div>Drink {CONFIG.playerName0}</div>
+                <div>Drink</div>
+                <div>{CONFIG.playerName0}</div>
                 <div className="text-xs opacity-70">-{CONFIG.currency}{CONFIG.aCost}</div>
               </div>
             </button>
             <button
               onClick={() => onChoice(0)}
               disabled={disabled}
-              className={`px-5 py-3 rounded-lg font-bold transition-all flex items-center gap-2 ${
+              className={`w-32 h-20 px-4 py-3 rounded-lg font-bold transition-all flex flex-col items-center justify-center ${
                 disabled 
                   ? 'bg-slate-700 text-slate-500 cursor-not-allowed' 
                   : 'bg-slate-600 hover:bg-slate-500 text-white shadow-lg hover:shadow-xl cursor-pointer'
               }`}
             >
-              <span className="text-xl">⊘</span>
-              <div className="text-left">
-                <div>Skip</div>
-                <div className="text-xs opacity-70">{CONFIG.currency}0</div>
+              <div className="flex items-center gap-2">
+                <span className="text-xl">⊘</span>
+                <span>Skip</span>
               </div>
+              <div className="text-xs opacity-70">{CONFIG.currency}0</div>
             </button>
           </div>
           
