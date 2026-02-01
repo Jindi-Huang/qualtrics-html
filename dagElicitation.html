@@ -31,6 +31,7 @@
       playerName0: 'Driftwell',
       playerName1: 'Qivaryn',
       playerIcon0: '🥤',
+      noConfirmation: null,  // If 1, skip confirmation step and go directly to confidence
     };
 
     // =============== QUALTRICS/PARENT COMMUNICATION ===============
@@ -66,6 +67,7 @@
           if (qConfig.playerName0) CONFIG.playerName0 = qConfig.playerName0;
           if (qConfig.playerName1) CONFIG.playerName1 = qConfig.playerName1;
           if (qConfig.playerIcon0) CONFIG.playerIcon0 = qConfig.playerIcon0;
+          if (qConfig.noConfirmation !== undefined) CONFIG.noConfirmation = qConfig.noConfirmation;
         }
 
         // Re-render with new config
@@ -189,8 +191,15 @@
 
       const handleConfirm = () => {
         setInitialEdges([...edges]);
-        setConfirmMode(true);
-        setConfirmIndex(0);
+
+        // If noConfirmation is set, skip confirmation and go directly to confidence
+        if (CONFIG.noConfirmation === 1) {
+          setFinalEdges([...edges]);
+          setShowConfidence(true);
+        } else {
+          setConfirmMode(true);
+          setConfirmIndex(0);
+        }
       };
 
       const getCurrentPairState = (pair) => {
@@ -348,19 +357,34 @@
               )}
 
               <div className="mb-6">
-                <div className="flex justify-between text-sm text-gray-500 mb-2">
-                  <span>0%</span>
-                  <span>50%</span>
-                  <span>100%</span>
+                {/* Tick marks */}
+                <div className="flex justify-between text-xs text-gray-500 mb-1 px-1">
+                  {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(val => (
+                    <span key={val} className={val % 50 === 0 ? 'font-medium' : 'text-gray-400'}>{val}</span>
+                  ))}
                 </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={confidence || 50}
-                  onChange={(e) => setConfidence(parseInt(e.target.value))}
-                  className={`w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600 ${confidence === null ? 'slider-hidden-thumb' : ''}`}
-                />
+                {/* Grid lines */}
+                <div className="relative">
+                  <div className="absolute inset-0 flex justify-between px-1 pointer-events-none">
+                    {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(val => (
+                      <div key={val} className={`w-px ${val % 50 === 0 ? 'h-4 bg-gray-400' : 'h-2 bg-gray-300'}`} style={{marginTop: val % 50 === 0 ? '0' : '4px'}} />
+                    ))}
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={confidence !== null ? confidence : 50}
+                    onMouseDown={(e) => {
+                      const rect = e.target.getBoundingClientRect();
+                      const percent = Math.round(((e.clientX - rect.left) / rect.width) * 100);
+                      setConfidence(Math.max(0, Math.min(100, percent)));
+                    }}
+                    onChange={(e) => setConfidence(parseInt(e.target.value))}
+                    className={`w-full h-4 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600 relative z-10 ${confidence === null ? 'slider-hidden-thumb' : ''}`}
+                  />
+                </div>
                 <div className="text-center mt-3">
                   <span className="text-3xl font-bold text-blue-600">
                     {confidence !== null ? `${confidence}%` : '—'}
@@ -532,7 +556,7 @@
                               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                           }`}
                         >
-                          Confirm Choices
+                          {CONFIG.noConfirmation === 1 ? 'Continue' : 'Confirm Choices'}
                         </button>
                       </div>
                     </div>

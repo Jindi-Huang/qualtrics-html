@@ -58,6 +58,9 @@
           if (qConfig.id !== undefined) CONFIG.id = qConfig.id;
           if (qConfig.beliefPaymentMax !== undefined) CONFIG.beliefPaymentMax = qConfig.beliefPaymentMax;
           if (qConfig.beliefPaymentIncentive !== undefined) CONFIG.beliefPaymentIncentive = qConfig.beliefPaymentIncentive;
+          if (qConfig.currency) CONFIG.currency = qConfig.currency;
+          if (qConfig.nRounds !== undefined) CONFIG.nRounds = qConfig.nRounds;
+          if (qConfig.currentSymbol) CONFIG.currentSymbol = qConfig.currentSymbol;
           if (qConfig.rationalInference) CONFIG.rationalInference = qConfig.rationalInference;
 
           // Accept mainCausals as a single array OR as individual fields (mainCausal1-10)
@@ -121,6 +124,9 @@
       id: 1,                      // Participant ID for data storage
       beliefPaymentMax: 1.00,     // Max payment per question
       beliefPaymentIncentive: 0.10, // Payment reduction per step wrong
+      currency: '$',              // Currency symbol
+      nRounds: 10,                // Number of rounds played
+      currentSymbol: null,        // HTML for scenario tile display
       rationalInference: null,    // Will be set from Qualtrics
       // Default mainCausals - will be overwritten by Qualtrics
       mainCausals: [
@@ -1031,9 +1037,96 @@
       );
     }
 
+    // Intro Page Component
+    function IntroPage({ onContinue }) {
+      const [showDetails, setShowDetails] = useState(false);
+
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 p-4">
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-white rounded-xl shadow-lg p-8">
+              {/* Title */}
+              <div className="text-center mb-6">
+                <h1 className="text-2xl font-bold text-gray-800 mb-4">Your Beliefs About the Scenario</h1>
+                {CONFIG.currentSymbol && (
+                  <div
+                    className="flex justify-center mb-4"
+                    style={{ transform: 'scale(0.8)' }}
+                    dangerouslySetInnerHTML={{ __html: CONFIG.currentSymbol }}
+                  />
+                )}
+              </div>
+
+              {/* Description */}
+              <div className="text-gray-700 space-y-4 mb-6">
+                <p>
+                  Each of the next <strong>{CONFIG.mainCausals.length}</strong> decision screens show you a different scenario.
+                  Each will ask you how you believe your choices affected your {CONFIG.playerName1} level and headache status
+                  during the last <strong>{CONFIG.nRounds}</strong> days with <strong>{CONFIG.playerName0}</strong> and <strong>{CONFIG.playerName1}</strong>.
+                </p>
+
+                <p>
+                  There will be <strong>{CONFIG.mainCausals.length}</strong> different scenarios. Some scenarios will ask what would happen
+                  if certain factors were fixed by external causes. In these scenarios, <strong>it does not matter what would have happened naturally</strong>.
+                </p>
+
+                <p>
+                  This part may determine your bonus payment. Depending on the accuracy of your reports, your bonus will be between
+                  {CONFIG.currency}0 and <strong>{CONFIG.currency}{CONFIG.beliefPaymentMax}</strong>. The payment system is designed
+                  such that it is in your own interest to report your beliefs truthfully.
+                </p>
+              </div>
+
+              {/* Show Details Button */}
+              {!showDetails && (
+                <button
+                  onClick={() => setShowDetails(true)}
+                  className="text-blue-600 hover:text-blue-800 underline mb-6 block"
+                >
+                  Show details
+                </button>
+              )}
+
+              {/* Details Content */}
+              {showDetails && (
+                <div className="bg-gray-50 rounded-lg p-6 mb-6 text-sm text-gray-700">
+                  <p className="font-bold mb-3">How is my payment determined if this part counts?</p>
+
+                  <p className="mb-3">You will report your beliefs in two ways.</p>
+
+                  <p className="mb-3">
+                    In the first, you will select a probability from a pie chart (for instance, to answer how likely a certain outcome is).
+                  </p>
+
+                  <p className="mb-3">
+                    In the second, you will select a line from a list describing how much one factor affects another.
+                  </p>
+
+                  <p>
+                    You will earn <strong>{CONFIG.currency}{CONFIG.beliefPaymentMax}</strong> if you choose the segment or line that matches
+                    what actually happened. For each segment or line by which your estimate deviates from the correct answer,
+                    your bonus shrinks by <strong>{CONFIG.currency}{CONFIG.beliefPaymentIncentive}</strong>.
+                  </p>
+                </div>
+              )}
+
+              {/* Continue Button */}
+              <button
+                onClick={onContinue}
+                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     // Main App Component
     function CausalBeliefApp() {
       const [ready, setReady] = useState(false);
+      const [showIntro, setShowIntro] = useState(true);
       const [currentIndex, setCurrentIndex] = useState(0);
       const [allResponses, setAllResponses] = useState([]);
       const [completed, setCompleted] = useState(false);
@@ -1115,7 +1208,11 @@
           </div>
         );
       }
-      
+
+      if (showIntro) {
+        return <IntroPage onContinue={() => setShowIntro(false)} />;
+      }
+
       if (completed) {
         return (
           <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center p-4">
