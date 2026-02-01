@@ -82,7 +82,7 @@
     const CONFIG = {
       yBonus: 2.00,           // Bonus when Y=1 (headache free)
       aCost: 0.00,            // Cost of drinking (A=1)
-      totalRounds: 100,
+      totalRounds: 10,
       currency: '$',
       id: 1,
       
@@ -503,6 +503,520 @@
       );
     }
 
+    // DAG Drawing Component
+    function DAGDrawer({ onComplete, playerName0, playerName1, playerIcon0 }) {
+      const svgRef = useRef(null);
+      const [edges, setEdges] = useState([]);
+      const [dragging, setDragging] = useState(null);
+      const [tempLine, setTempLine] = useState(null);
+      const [confirmMode, setConfirmMode] = useState(false);
+      const [confirmIndex, setConfirmIndex] = useState(0);
+      const [initialEdges, setInitialEdges] = useState(null);
+      const [showChangeOptions, setShowChangeOptions] = useState(false);
+      const [selectedOption, setSelectedOption] = useState(null);
+      const [showConfidence, setShowConfidence] = useState(false);
+      const [confidence, setConfidence] = useState(null);
+      const [showDetails, setShowDetails] = useState(false);
+      const [finalEdges, setFinalEdges] = useState(null);
+      
+      // Node definitions
+      const nodes = [
+        { id: 'A', label: `Drink ${playerName0}`, x: 200, y: 100, icon: playerIcon0 },
+        { id: 'X', label: `${playerName1} Level`, x: 500, y: 100, icon: '🔬' },
+        { id: 'Y', label: 'Headache', x: 350, y: 300, icon: '🤕' }
+      ];
+      
+      // Node pairs for confirmation
+      const nodePairs = [
+        { nodeA: 'A', nodeB: 'X' },
+        { nodeA: 'A', nodeB: 'Y' },
+        { nodeA: 'X', nodeB: 'Y' }
+      ];
+      
+      const nodeNames = {
+        'A': `Drink ${playerName0}`,
+        'X': `${playerName1} Level`,
+        'Y': 'Headache'
+      };
+      
+      const getNode = (id) => nodes.find(n => n.id === id);
+      
+      const hasEdge = (from, to) => edges.some(e => e.from === from && e.to === to);
+      
+      const addEdge = (from, to) => {
+        if (from === to || hasEdge(from, to)) return;
+        setEdges(prev => [...prev, { from, to }]);
+      };
+      
+      const removeEdge = (from, to) => {
+        setEdges(prev => prev.filter(e => !(e.from === from && e.to === to)));
+      };
+      
+      const handleMouseDown = (nodeId, e) => {
+        if (confirmMode) return;
+        e.preventDefault();
+        setDragging(nodeId);
+      };
+      
+      const handleMouseMove = (e) => {
+        if (!dragging || !svgRef.current) return;
+        const svg = svgRef.current;
+        const rect = svg.getBoundingClientRect();
+        const x = (e.clientX - rect.left) * (700 / rect.width);
+        const y = (e.clientY - rect.top) * (400 / rect.height);
+        const startNode = getNode(dragging);
+        setTempLine({ x1: startNode.x, y1: startNode.y, x2: x, y2: y });
+      };
+      
+      const handleMouseUp = (e) => {
+        if (!dragging) return;
+        
+        // Check if we're over a node
+        const svg = svgRef.current;
+        const rect = svg.getBoundingClientRect();
+        const x = (e.clientX - rect.left) * (700 / rect.width);
+        const y = (e.clientY - rect.top) * (400 / rect.height);
+        
+        const targetNode = nodes.find(n => {
+          const dx = x - n.x;
+          const dy = y - n.y;
+          return Math.sqrt(dx*dx + dy*dy) < 50;
+        });
+        
+        if (targetNode && targetNode.id !== dragging) {
+          addEdge(dragging, targetNode.id);
+        }
+        
+        setDragging(null);
+        setTempLine(null);
+      };
+      
+      const handleEdgeDoubleClick = (from, to) => {
+        if (confirmMode) return;
+        removeEdge(from, to);
+      };
+      
+      const handleReset = () => {
+        if (confirmMode) return;
+        setEdges([]);
+      };
+      
+      const handleConfirm = () => {
+        setInitialEdges([...edges]);
+        setConfirmMode(true);
+        setConfirmIndex(0);
+      };
+      
+      const getCurrentPairState = (pair) => {
+        const hasAtoB = hasEdge(pair.nodeA, pair.nodeB);
+        const hasBtoA = hasEdge(pair.nodeB, pair.nodeA);
+        if (hasAtoB && hasBtoA) return 'both';
+        if (hasAtoB) return 'AtoB';
+        if (hasBtoA) return 'BtoA';
+        return 'none';
+      };
+      
+      const currentPair = nodePairs[confirmIndex];
+      const currentPairState = currentPair ? getCurrentPairState(currentPair) : null;
+      
+      const handleConfirmChoice = () => {
+        setShowChangeOptions(false);
+        setSelectedOption(null);
+        if (confirmIndex < nodePairs.length - 1) {
+          setConfirmIndex(prev => prev + 1);
+        } else {
+          // Finished confirmation - show confidence question
+          setFinalEdges([...edges]);
+          setShowConfidence(true);
+        }
+      };
+      
+      const handleChangeChoice = () => {
+        setShowChangeOptions(true);
+        setSelectedOption(null);
+      };
+      
+      const handleApplyChange = () => {
+        if (selectedOption === null) return;
+        
+        const pair = currentPair;
+        // Remove existing edges between this pair
+        setEdges(prev => prev.filter(e => 
+          !((e.from === pair.nodeA && e.to === pair.nodeB) || 
+            (e.from === pair.nodeB && e.to === pair.nodeA))
+        ));
+        
+        // Add new edges based on selection
+        setTimeout(() => {
+          if (selectedOption === 'AtoB' || selectedOption === 'both') {
+            setEdges(prev => [...prev, { from: pair.nodeA, to: pair.nodeB }]);
+          }
+          if (selectedOption === 'BtoA' || selectedOption === 'both') {
+            setEdges(prev => [...prev, { from: pair.nodeB, to: pair.nodeA }]);
+          }
+          
+          setShowChangeOptions(false);
+          setSelectedOption(null);
+          if (confirmIndex < nodePairs.length - 1) {
+            setConfirmIndex(prev => prev + 1);
+          } else {
+            setFinalEdges([...edges]);
+            setShowConfidence(true);
+          }
+        }, 50);
+      };
+      
+      const handleCancelChange = () => {
+        setShowChangeOptions(false);
+        setSelectedOption(null);
+      };
+      
+      const handleConfidenceSubmit = () => {
+        if (confidence === null) return;
+        onComplete(initialEdges, finalEdges || edges, confidence);
+      };
+      
+      // Draw arrow path
+      const getArrowPath = (from, to, offset = 0) => {
+        const fromNode = getNode(from);
+        const toNode = getNode(to);
+        const dx = toNode.x - fromNode.x;
+        const dy = toNode.y - fromNode.y;
+        const len = Math.sqrt(dx*dx + dy*dy);
+        const nx = dx / len;
+        const ny = dy / len;
+        
+        // Offset for bidirectional arrows
+        const perpX = -ny * offset;
+        const perpY = nx * offset;
+        
+        const startX = fromNode.x + nx * 45 + perpX;
+        const startY = fromNode.y + ny * 45 + perpY;
+        const endX = toNode.x - nx * 45 + perpX;
+        const endY = toNode.y - ny * 45 + perpY;
+        
+        return { startX, startY, endX, endY, angle: Math.atan2(dy, dx) };
+      };
+      
+      const hasAnyEdge = edges.length > 0;
+      
+      // Confidence question screen
+      if (showConfidence) {
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-4 flex items-center justify-center">
+            <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-xl w-full">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">
+                How confident are you in your diagram?
+              </h2>
+              <p className="text-gray-600 mb-2">
+                That is, what is the chance it correctly shows who can influence whom?
+              </p>
+              
+              <p className="text-sm text-gray-500 mb-4">
+                The payment mechanism is set up such that you will earn the most by answering truthfully.{' '}
+                <button 
+                  onClick={() => setShowDetails(!showDetails)}
+                  className="text-blue-600 hover:text-blue-800 underline"
+                >
+                  {showDetails ? 'Hide details' : 'Show details'}
+                </button>
+              </p>
+              
+              {showDetails && (
+                <div className="bg-gray-50 rounded-lg p-4 mb-4 text-sm text-gray-700">
+                  <p className="mb-2">Here's how the payment system works:</p>
+                  <ol className="list-decimal list-inside space-y-2">
+                    <li>After you enter your confidence, we will randomly draw a number <strong>X</strong> between 0 and 100.</li>
+                    <li>If your stated confidence is <strong>greater than X%</strong>:
+                      <ul className="list-disc list-inside ml-4 mt-1">
+                        <li>You will receive a bonus if the "who influences whom" relationship you provided is correct.</li>
+                      </ul>
+                    </li>
+                    <li>If your stated confidence is <strong>less than X</strong>:
+                      <ul className="list-disc list-inside ml-4 mt-1">
+                        <li>You will have a X% chance of receiving the bonus, regardless of whether your answer was correct.</li>
+                      </ul>
+                    </li>
+                  </ol>
+                  <p className="mt-3">
+                    This setup ensures that <strong>you maximize your expected payment by reporting your true confidence</strong>. 
+                    Overstating or understating your confidence will only reduce your chance of earning the bonus.
+                  </p>
+                </div>
+              )}
+              
+              <div className="mb-6">
+                <div className="flex justify-between text-sm text-gray-500 mb-2">
+                  <span>0%</span>
+                  <span>50%</span>
+                  <span>100%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={confidence || 50}
+                  onChange={(e) => setConfidence(parseInt(e.target.value))}
+                  className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                />
+                <div className="text-center mt-3">
+                  <span className="text-3xl font-bold text-blue-600">
+                    {confidence !== null ? `${confidence}%` : '—'}
+                  </span>
+                </div>
+              </div>
+              
+              <button
+                onClick={handleConfidenceSubmit}
+                disabled={confidence === null}
+                className={`w-full py-3 rounded-lg font-medium text-lg ${
+                  confidence !== null
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        );
+      }
+      
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-4">
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white rounded-2xl shadow-2xl p-6">
+              <div className="text-center mb-4">
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                  How do you think these factors are related?
+                </h2>
+                <p className="text-gray-600">
+                  Draw arrows to show which factors you think influence others.
+                  An arrow from A to B means A can influence B.
+                </p>
+              </div>
+              
+              <div className="flex gap-4">
+                {/* SVG Canvas */}
+                <div className="flex-1">
+                  <svg 
+                    ref={svgRef}
+                    viewBox="0 0 700 400" 
+                    className="w-full bg-gray-50 rounded-xl border-2 border-gray-200"
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
+                    onMouseLeave={() => { setDragging(null); setTempLine(null); }}
+                  >
+                    <defs>
+                      <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#dc2626" />
+                      </marker>
+                      <marker id="arrowhead-preview" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#dc2626" opacity="0.5" />
+                      </marker>
+                    </defs>
+                    
+                    {/* Edges */}
+                    {edges.map((edge, idx) => {
+                      const hasBothWays = hasEdge(edge.to, edge.from);
+                      const offset = hasBothWays ? 8 : 0;
+                      const path = getArrowPath(edge.from, edge.to, offset);
+                      const isHighlighted = confirmMode && currentPair && 
+                        ((edge.from === currentPair.nodeA && edge.to === currentPair.nodeB) ||
+                         (edge.from === currentPair.nodeB && edge.to === currentPair.nodeA));
+                      
+                      return (
+                        <line
+                          key={`${edge.from}-${edge.to}`}
+                          x1={path.startX}
+                          y1={path.startY}
+                          x2={path.endX}
+                          y2={path.endY}
+                          stroke={isHighlighted ? "#dc2626" : "#dc2626"}
+                          strokeWidth={isHighlighted ? 4 : 3}
+                          markerEnd="url(#arrowhead)"
+                          className="cursor-pointer"
+                          onDoubleClick={() => handleEdgeDoubleClick(edge.from, edge.to)}
+                          style={{ strokeDasharray: isHighlighted ? '8,4' : 'none' }}
+                        />
+                      );
+                    })}
+                    
+                    {/* Temp line while dragging */}
+                    {tempLine && (
+                      <line
+                        x1={tempLine.x1}
+                        y1={tempLine.y1}
+                        x2={tempLine.x2}
+                        y2={tempLine.y2}
+                        stroke="#dc2626"
+                        strokeWidth={2}
+                        strokeDasharray="5,5"
+                        markerEnd="url(#arrowhead-preview)"
+                      />
+                    )}
+                    
+                    {/* Nodes */}
+                    {nodes.map(node => {
+                      const isHighlighted = confirmMode && currentPair && 
+                        (node.id === currentPair.nodeA || node.id === currentPair.nodeB);
+                      
+                      return (
+                        <g key={node.id}>
+                          <circle
+                            cx={node.x}
+                            cy={node.y}
+                            r={40}
+                            fill="white"
+                            stroke={isHighlighted ? "#fbbf24" : "#374151"}
+                            strokeWidth={isHighlighted ? 4 : 2}
+                            className={confirmMode ? "" : "cursor-pointer hover:stroke-blue-500"}
+                            onMouseDown={(e) => handleMouseDown(node.id, e)}
+                          />
+                          <text
+                            x={node.x}
+                            y={node.y - 8}
+                            textAnchor="middle"
+                            className="text-2xl pointer-events-none"
+                          >
+                            {node.icon}
+                          </text>
+                          <text
+                            x={node.x}
+                            y={node.y + 60}
+                            textAnchor="middle"
+                            className="text-sm font-medium fill-gray-700 pointer-events-none"
+                          >
+                            {node.label}
+                          </text>
+                        </g>
+                      );
+                    })}
+                  </svg>
+                  
+                  {/* Controls */}
+                  {!confirmMode && (
+                    <div className="mt-4 flex justify-between items-center">
+                      <div className="text-sm text-gray-500">
+                        Drag from one circle to another to draw an arrow. Double-click an arrow to delete.
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleReset}
+                          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-700 font-medium"
+                        >
+                          Reset
+                        </button>
+                        <button
+                          onClick={handleConfirm}
+                          disabled={!hasAnyEdge}
+                          className={`px-6 py-2 rounded-lg font-medium ${
+                            hasAnyEdge 
+                              ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          }`}
+                        >
+                          Confirm Choices
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Confirmation Panel */}
+                {confirmMode && (
+                  <div className="w-80 bg-blue-50 rounded-xl p-4 border border-blue-200">
+                    <div className="text-sm text-gray-600 mb-2">
+                      Question {confirmIndex + 1} of {nodePairs.length}
+                    </div>
+                    
+                    {!showChangeOptions ? (
+                      <>
+                        <div className="text-gray-800 mb-4">
+                          You indicated: <strong>
+                            {currentPairState === 'none' && `${nodeNames[currentPair.nodeA]} and ${nodeNames[currentPair.nodeB]} cannot influence each other`}
+                            {currentPairState === 'AtoB' && `${nodeNames[currentPair.nodeA]} can influence ${nodeNames[currentPair.nodeB]}`}
+                            {currentPairState === 'BtoA' && `${nodeNames[currentPair.nodeB]} can influence ${nodeNames[currentPair.nodeA]}`}
+                            {currentPairState === 'both' && `${nodeNames[currentPair.nodeA]} and ${nodeNames[currentPair.nodeB]} can influence each other`}
+                          </strong>
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          <button
+                            onClick={handleConfirmChoice}
+                            className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium"
+                          >
+                            Confirm
+                          </button>
+                          <button
+                            onClick={handleChangeChoice}
+                            className="flex-1 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium"
+                          >
+                            Change
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-sm text-gray-600 mb-3">Select the correct relationship:</div>
+                        <div className="space-y-2 mb-4">
+                          {['none', 'AtoB', 'BtoA', 'both'].filter(opt => opt !== currentPairState).map(opt => (
+                            <label
+                              key={opt}
+                              className={`block p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                                selectedOption === opt 
+                                  ? 'bg-blue-100 border-blue-500' 
+                                  : 'bg-white border-gray-200 hover:border-gray-300'
+                              }`}
+                            >
+                              <input
+                                type="radio"
+                                name="relationship"
+                                value={opt}
+                                checked={selectedOption === opt}
+                                onChange={() => setSelectedOption(opt)}
+                                className="mr-2"
+                              />
+                              <span className="text-sm">
+                                {opt === 'none' && `No influence between them`}
+                                {opt === 'AtoB' && `${nodeNames[currentPair.nodeA]} → ${nodeNames[currentPair.nodeB]}`}
+                                {opt === 'BtoA' && `${nodeNames[currentPair.nodeB]} → ${nodeNames[currentPair.nodeA]}`}
+                                {opt === 'both' && `Both directions`}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          <button
+                            onClick={handleApplyChange}
+                            disabled={selectedOption === null}
+                            className={`flex-1 px-4 py-2 rounded-lg font-medium ${
+                              selectedOption !== null
+                                ? 'bg-green-600 hover:bg-green-700 text-white'
+                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            }`}
+                          >
+                            Apply
+                          </button>
+                          <button
+                            onClick={handleCancelChange}
+                            className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-700 font-medium"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     // Recent history - displays [[A, X, Y], ...]
     function CompactHistory({ history }) {
       const recentRounds = history.slice().reverse().slice(0, 8);
@@ -554,9 +1068,15 @@
       const [totalEarnings, setTotalEarnings] = useState(0);
       const [selectedPaymentRound, setSelectedPaymentRound] = useState(null);
       
+      // DAG-related state
+      const [showDAG, setShowDAG] = useState(false);
+      const [dagCompleted, setDagCompleted] = useState(false);
+      const [dagData, setDagData] = useState({ initial: null, final: null });
+      
       const roundTimesRef = useRef([]);
       const roundStartTimeRef = useRef(Date.now());
       const dataSentRef = useRef(false);
+      const halfwayDAGShownRef = useRef(false);
       
       // Wait for Qualtrics config before showing game (max 3 seconds)
       useEffect(() => {
@@ -608,28 +1128,73 @@
                 setPhase('complete');
               }, 2000);
             } else {
-              setTimeout(() => {
-                setHideRateBox(true);
-                setNextDayNumber(currentRound + 1);
-                
+              // Check if we're at the halfway point and haven't shown DAG yet
+              const halfwayPoint = Math.floor(CONFIG.totalRounds / 2);
+              if (currentRound === halfwayPoint && !halfwayDAGShownRef.current) {
+                halfwayDAGShownRef.current = true;
                 setTimeout(() => {
-                  setShowNewDay(true);
+                  setShowDAG(true);
+                }, 1500);
+              } else {
+                setTimeout(() => {
+                  setHideRateBox(true);
+                  setNextDayNumber(currentRound + 1);
                   
                   setTimeout(() => {
-                    setShowNewDay(false);
-                    setHideRateBox(false);
-                    setCurrentRound(prev => prev + 1);
-                    setPhase('decision');
-                    setCurrentA(null);
-                    setCurrentX(null);
-                    setCurrentY(null);
-                    roundStartTimeRef.current = Date.now();
-                  }, 1000);
-                }, 100);
-              }, 1400);
+                    setShowNewDay(true);
+                    
+                    setTimeout(() => {
+                      setShowNewDay(false);
+                      setHideRateBox(false);
+                      setCurrentRound(prev => prev + 1);
+                      setPhase('decision');
+                      setCurrentA(null);
+                      setCurrentX(null);
+                      setCurrentY(null);
+                      roundStartTimeRef.current = Date.now();
+                    }, 1000);
+                  }, 100);
+                }, 1400);
+              }
             }
           }, 1200);
         }, 800);
+      }, [currentRound]);
+      
+      // Handle DAG completion
+      const handleDAGComplete = useCallback((initialDAG, finalDAG, confidence) => {
+        setDagData({ initial: initialDAG, final: finalDAG, confidence: confidence });
+        setDagCompleted(true);
+        setShowDAG(false);
+        
+        // Send DAG data to Qualtrics
+        sendDataToQualtrics('DAG_DATA', {
+          initialDAG: initialDAG,
+          finalDAG: finalDAG,
+          confidence: confidence,
+          completedAtRound: currentRound
+        });
+        
+        // Continue to next round
+        setTimeout(() => {
+          setHideRateBox(true);
+          setNextDayNumber(currentRound + 1);
+          
+          setTimeout(() => {
+            setShowNewDay(true);
+            
+            setTimeout(() => {
+              setShowNewDay(false);
+              setHideRateBox(false);
+              setCurrentRound(prev => prev + 1);
+              setPhase('decision');
+              setCurrentA(null);
+              setCurrentX(null);
+              setCurrentY(null);
+              roundStartTimeRef.current = Date.now();
+            }, 1000);
+          }, 100);
+        }, 500);
       }, [currentRound]);
       
       // Show loading screen while waiting for Qualtrics config
@@ -653,12 +1218,27 @@
           payment: history.map(([A, X, Y]) => -CONFIG.aCost * A + CONFIG.yBonus * Y),
           selectedPaymentRound: selectedPaymentRound,
           selectedRoundPayment: selectedRoundPayment,
-          totalEarnings: totalEarnings
+          totalEarnings: totalEarnings,
+          dagInitial: dagData.initial,
+          dagFinal: dagData.final,
+          dagConfidence: dagData.confidence
         });
         
         setTimeout(() => {
           sendDataToQualtrics('GAME_COMPLETE', { completed: true });
         }, 500);
+      }
+      
+      // Show DAG drawing interface
+      if (showDAG) {
+        return (
+          <DAGDrawer 
+            onComplete={handleDAGComplete}
+            playerName0={CONFIG.playerName0}
+            playerName1={CONFIG.playerName1}
+            playerIcon0={CONFIG.playerIcon0}
+          />
+        );
       }
       
       return (

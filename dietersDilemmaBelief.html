@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Causal Belief Elicitation</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    
+    .pie-segment {
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .pie-segment:hover {
+      opacity: 0.8;
+    }
+    
+    .animate-fadeIn {
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateX(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  
+  <script>
+    // =============== QUALTRICS COMMUNICATION ===============
+    let participantId = null;
+    let gameId = null;
+    
+    window.addEventListener('message', function(event) {
+      if (event.data.type === 'INIT') {
+        console.log('Received INIT from Qualtrics:', event.data);
+        participantId = event.data.participantId;
+        gameId = event.data.gameId;
+
+        if (event.data.gameConfig) {
+          const qConfig = event.data.gameConfig;
+          if (qConfig.playerName0) CONFIG.playerName0 = qConfig.playerName0;
+          if (qConfig.playerName1) CONFIG.playerName1 = qConfig.playerName1;
+          if (qConfig.playerIcon0) CONFIG.playerIcon0 = qConfig.playerIcon0;
+          if (qConfig.id !== undefined) CONFIG.id = qConfig.id;
+          if (qConfig.beliefPaymentMax !== undefined) CONFIG.beliefPaymentMax = qConfig.beliefPaymentMax;
+          if (qConfig.beliefPaymentIncentive !== undefined) CONFIG.beliefPaymentIncentive = qConfig.beliefPaymentIncentive;
+          if (qConfig.rationalInference) CONFIG.rationalInference = qConfig.rationalInference;
+
+          // Accept mainCausals as a single array OR as individual fields (mainCausal1-10)
+          if (qConfig.mainCausals) {
+            CONFIG.mainCausals = qConfig.mainCausals;
+          } else if (qConfig.mainCausal1) {
+            // Build mainCausals from individual fields
+            const allMetaData = [];
+            for (let i = 1; i <= 10; i++) {
+              const causalData = qConfig['mainCausal' + i];
+              if (causalData) {
+                allMetaData.push(causalData);
+              }
+            }
+            if (allMetaData.length > 0) {
+              CONFIG.mainCausals = allMetaData;
+            }
+          }
+
+          console.log('Applied config:', CONFIG);
+        }
+
+        markInitialized();
+        sendDataToQualtrics('ELICIT_START', { started: true });
+      }
+    });
+    
+    function sendDataToQualtrics(dataType, data) {
+      if (window.parent !== window) {
+        window.parent.postMessage({
+          type: 'GAME_DATA',
+          gameId: gameId,
+          dataType: dataType,
+          data: data,
+          participantId: participantId,
+          timestamp: new Date().toISOString()
+        }, '*');
+      }
+      console.log('Sent to Qualtrics:', dataType, data);
+    }
+    
+    let isInitialized = false;
+    let initCallbacks = [];
+    
+    function onInitialized(callback) {
+      if (isInitialized) callback();
+      else initCallbacks.push(callback);
+    }
+    
+    function markInitialized() {
+      isInitialized = true;
+      initCallbacks.forEach(cb => cb());
+      initCallbacks = [];
+    }
+    
+    // Configuration
+    const CONFIG = {
+      playerName0: 'Driftwell',   // Drink name (A)
+      playerName1: 'Qivaryn',     // Chemical name (X)
+      playerIcon0: '🥤',
+      id: 1,                      // Participant ID for data storage
+      beliefPaymentMax: 1.00,     // Max payment per question
+      beliefPaymentIncentive: 0.10, // Payment reduction per step wrong
+      rationalInference: null,    // Will be set from Qualtrics
+      // Default mainCausals - will be overwritten by Qualtrics
+      mainCausals: [
+        { causalElicit: "AX", exoButton: 0, id: "AX0" },
+        { causalElicit: "AX", exoButton: 1, id: "AX1" },
+        { causalElicit: "AY", exoButton: 0, id: "AY0" },
+        { causalElicit: "AY", exoButton: 1, id: "AY1" },
+        { causalElicit: "AX", exoButton: null, id: "AX" },
+        { causalElicit: "AY", exoButton: null, id: "AY" },
+        { causalElicit: "XY", exoButton: 0, id: "XY0" },
+        { causalElicit: "XY", exoButton: 1, id: "XY1" },
+        { causalElicit: "YX", exoButton: 0, id: "YX0" },
+        { causalElicit: "YX", exoButton: 1, id: "YX1" }
+      ]
+    };
+
+    // Helper function to convert percentage to option index (0-10)
+    function getOptionIndex(percentage) {
+      if (percentage === null || percentage === undefined) return null;
+
+      if (percentage <= -80) return 0;
+      if (percentage <= -60) return 1;
+      if (percentage <= -40) return 2;
+      if (percentage <= -20) return 3;
+      if (percentage < 0) return 4;
+      if (percentage === 0) return 5;
+      if (percentage < 20) return 6;
+      if (percentage < 40) return 7;
+      if (percentage < 60) return 8;
+      if (percentage < 80) return 9;
+      return 10;
+    }
+
+    // Calculate payments based on responses and correct answers
+    function calculatePayments(responses) {
+      const beliefPaymentMax = CONFIG.beliefPaymentMax;
+      const beliefPaymentIncentive = CONFIG.beliefPaymentIncentive;
+      const rationalInference = CONFIG.rationalInference;
+
+      const correctAnswers = [];
+      const correctAnswersSlider1 = [];
+      const correctAnswersSlider2 = [];
+
+      // Get correct answers for each response
+      responses.forEach(r => {
+        const causalElicitID = r.id;
+        if (rationalInference) {
+          correctAnswers.push(rationalInference["causal_" + causalElicitID] ?? null);
+          correctAnswersSlider1.push(rationalInference["pNo_" + causalElicitID] ?? null);
+          correctAnswersSlider2.push(rationalInference["pYes_" + causalElicitID] ?? null);
+        } else {
+          correctAnswers.push(null);
+          correctAnswersSlider1.push(null);
+          correctAnswersSlider2.push(null);
+        }
+      });
+
+      // Calculate verbal scale payment
+      const beliefPayment = correctAnswers.map((correct, index) => {
+        if (correct === null || correct === undefined) {
+          return beliefPaymentMax;
+        }
+        const correctOptionIndex = getOptionIndex(correct);
+        const userChoice = responses[index].verbalValue;
+        const absoluteDifference = Math.abs(correctOptionIndex - userChoice);
+        return beliefPaymentMax - (absoluteDifference * beliefPaymentIncentive);
+      });
+
+      // Calculate slider 1 (pie1) payment
+      const beliefPaymentSlider1 = correctAnswersSlider1.map((correct, index) => {
+        if (correct === null || correct === undefined) {
+          return beliefPaymentMax;
+        }
+        const nearestCategory = Math.round(correct / 10) * 10;
+        const absoluteDifference = Math.abs(nearestCategory - responses[index].pie1Value) / 10;
+        return beliefPaymentMax - (absoluteDifference * beliefPaymentIncentive);
+      });
+
+      // Calculate slider 2 (pie2) payment
+      const beliefPaymentSlider2 = correctAnswersSlider2.map((correct, index) => {
+        if (correct === null || correct === undefined) {
+          return beliefPaymentMax;
+        }
+        const nearestCategory = Math.round(correct / 10) * 10;
+        const absoluteDifference = Math.abs(nearestCategory - responses[index].pie2Value) / 10;
+        return beliefPaymentMax - (absoluteDifference * beliefPaymentIncentive);
+      });
+
+      return {
+        beliefPayment,
+        beliefPaymentSlider1,
+        beliefPaymentSlider2,
+        correctAnswers,
+        correctAnswersSlider1,
+        correctAnswersSlider2
+      };
+    }
+  </script>
+  
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback } = React;
+
+    // Pie Chart Component
+    function PieChart({ value, onChange, highlightColor }) {
+      const UNFILLED_COLOR = '#e5e7eb';
+      const FILLED_COLOR = highlightColor || '#3b82f6';
+      
+      const polarToCartesian = (cx, cy, radius, angle) => {
+        const rad = (angle - 90) * Math.PI / 180;
+        return {
+          x: cx + radius * Math.cos(rad),
+          y: cy + radius * Math.sin(rad)
+        };
+      };
+      
+      const createSegmentPath = (index, innerRadius, outerRadius) => {
+        const startAngle = index * 36;
+        const endAngle = (index + 1) * 36;
+        const start = polarToCartesian(0, 0, outerRadius, startAngle);
+        const end = polarToCartesian(0, 0, outerRadius, endAngle);
+        const startInner = polarToCartesian(0, 0, innerRadius, startAngle);
+        const endInner = polarToCartesian(0, 0, innerRadius, endAngle);
+        
+        return `M ${start.x} ${start.y} A ${outerRadius} ${outerRadius} 0 0 1 ${end.x} ${end.y} L ${endInner.x} ${endInner.y} A ${innerRadius} ${innerRadius} 0 0 0 ${startInner.x} ${startInner.y} Z`;
+      };
+      
+      const handleClick = (index) => {
+        const filledCount = value !== null ? value / 10 : 0;
+        if (filledCount === 1 && index === 0) {
+          onChange(0);
+        } else {
+          onChange((index + 1) * 10);
+        }
+      };
+      
+      const filledCount = value !== null ? value / 10 : 0;
+      
+      return (
+        <div className="flex flex-col items-center">
+          <svg viewBox="-130 -130 260 260" className="w-56 h-56">
+            {[...Array(10)].map((_, i) => {
+              const midAngle = (i * 36 + 18) - 90;
+              const labelRadius = 115;
+              const labelX = Math.cos(midAngle * Math.PI / 180) * labelRadius;
+              const labelY = Math.sin(midAngle * Math.PI / 180) * labelRadius;
+              
+              return (
+                <g key={i}>
+                  <path
+                    d={createSegmentPath(i, 35, 95)}
+                    fill={i < filledCount ? FILLED_COLOR : UNFILLED_COLOR}
+                    stroke="white"
+                    strokeWidth="2"
+                    className="pie-segment"
+                    onClick={() => handleClick(i)}
+                  />
+                  <text
+                    x={labelX}
+                    y={labelY}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    className="text-xs fill-gray-500 pointer-events-none"
+                  >
+                    {(i + 1) * 10}%
+                  </text>
+                </g>
+              );
+            })}
+            <text x="0" y="8" textAnchor="middle" className="text-2xl font-bold fill-gray-700">
+              {value !== null ? `${value}%` : '?%'}
+            </text>
+          </svg>
+        </div>
+      );
+    }
+
+    // Verbal Scale Options Component
+    function VerbalScale({ value, onChange, options, increasingOrder }) {
+      const displayOptions = increasingOrder ? options : [...options].reverse();
+      
+      return (
+        <div className="space-y-2">
+          {displayOptions.map((option, displayIndex) => {
+            const actualIndex = increasingOrder ? displayIndex : (options.length - 1 - displayIndex);
+            return (
+              <label
+                key={actualIndex}
+                className={`flex items-center p-2 rounded-lg border-2 cursor-pointer transition-all text-sm ${
+                  value === actualIndex 
+                    ? 'bg-blue-50 border-blue-500' 
+                    : 'bg-white border-gray-200 hover:border-gray-300'
+                }`}
+                onClick={() => onChange(actualIndex)}
+              >
+                <input
+                  type="radio"
+                  name="causalEffect"
+                  checked={value === actualIndex}
+                  onChange={() => onChange(actualIndex)}
+                  className="mr-2"
+                />
+                <span>{option}</span>
+              </label>
+            );
+          })}
+        </div>
+      );
+    }
+
+    // Variable Panel Component - shows 3 variables with game-style visuals
+    function VariablePanel({ causalElicit, exoButton, stage, pie1Value, pie2Value, playerName0, playerName1, highlightPanel, isWalkthrough }) {
+      // Determine variable states based on causalElicit and stage
+      // A = Drink, X = Chemical (Qivaryn), Y = Headache
+
+      const getVariableStates = () => {
+        let aState = 'neutral';  // 'neutral', 'off', 'on', 'question', 'fixed-on', 'fixed-off'
+        let xState = 'neutral';
+        let yState = 'neutral';
+
+        // During walkthrough, show the final state of all panels
+        if (isWalkthrough) {
+          if (causalElicit === 'AX') {
+            aState = 'cause';
+            xState = 'question';
+            if (exoButton === 0) yState = 'fixed-off';
+            else if (exoButton === 1) yState = 'fixed-on';
+            else yState = 'neutral';
+          }
+          else if (causalElicit === 'AY') {
+            aState = 'cause';
+            yState = 'question';
+            if (exoButton === 0) xState = 'fixed-off';
+            else if (exoButton === 1) xState = 'fixed-on';
+            else xState = 'neutral';
+          }
+          else if (causalElicit === 'XY') {
+            xState = 'cause';
+            yState = 'question';
+            if (exoButton === 0) aState = 'fixed-off';
+            else if (exoButton === 1) aState = 'fixed-on';
+          }
+          else if (causalElicit === 'YX') {
+            yState = 'cause';
+            xState = 'question';
+            if (exoButton === 0) aState = 'fixed-off';
+            else if (exoButton === 1) aState = 'fixed-on';
+          }
+          return { aState, xState, yState };
+        }
+
+        if (causalElicit === 'AX') {
+          if (stage === 1) aState = 'off';
+          else if (stage === 2) aState = 'on';
+          else aState = 'cause';
+          xState = 'question';
+          if (exoButton === 0) yState = 'fixed-off';
+          else if (exoButton === 1) yState = 'fixed-on';
+          else yState = 'neutral';
+        }
+        else if (causalElicit === 'AY') {
+          if (stage === 1) aState = 'off';
+          else if (stage === 2) aState = 'on';
+          else aState = 'cause';
+          yState = 'question';
+          if (exoButton === 0) xState = 'fixed-off';
+          else if (exoButton === 1) xState = 'fixed-on';
+          else xState = 'neutral';
+        }
+        else if (causalElicit === 'XY') {
+          if (stage === 1) xState = 'off';
+          else if (stage === 2) xState = 'on';
+          else xState = 'cause';
+          yState = 'question';
+          if (exoButton === 0) aState = 'fixed-off';
+          else if (exoButton === 1) aState = 'fixed-on';
+        }
+        else if (causalElicit === 'YX') {
+          if (stage === 1) yState = 'off';
+          else if (stage === 2) yState = 'on';
+          else yState = 'cause';
+          xState = 'question';
+          if (exoButton === 0) aState = 'fixed-off';
+          else if (exoButton === 1) aState = 'fixed-on';
+        }
+
+        return { aState, xState, yState };
+      };
+
+      const { aState, xState, yState } = getVariableStates();
+
+      // Check if each panel should be highlighted
+      const isAHighlighted = highlightPanel === 'A';
+      const isXHighlighted = highlightPanel === 'X';
+      const isYHighlighted = highlightPanel === 'Y';
+      
+      // Drink buttons component (A) - matches game style
+      const DrinkPanel = ({ state }) => {
+        const isOn = state === 'on' || state === 'fixed-on';
+        const isOff = state === 'off' || state === 'fixed-off';
+        const isLocked = state === 'fixed-on' || state === 'fixed-off';
+        const isQuestion = state === 'question';
+        const isCause = state === 'cause';
+        
+        return (
+          <div className="flex flex-col items-center">
+            <div className="text-sm text-slate-400 mb-2 h-5">Morning Decision</div>
+            <div className="flex gap-2 h-32 items-center">
+              {/* Drink button */}
+              <div className={`relative flex items-center justify-center w-32 h-20 rounded-xl border-2 transition-all ${
+                isOn ? 'bg-blue-500 border-blue-400' : 
+                isCause ? 'bg-blue-500/50 border-blue-400/50' :
+                'bg-slate-700 border-slate-600'
+              }`}>
+                {isLocked && isOn && <span className="absolute -top-2 -right-2 text-sm">🔒</span>}
+                <span className="text-2xl mr-2">🥤</span>
+                <div className="flex flex-col">
+                  <span className={`text-sm font-bold ${isOn || isCause ? 'text-white' : 'text-slate-400'}`}>Drink</span>
+                  <span className={`text-sm font-bold ${isOn || isCause ? 'text-white' : 'text-slate-400'}`}>{playerName0}</span>
+                  <span className={`text-xs ${isOn || isCause ? 'text-white/70' : 'text-slate-500'}`}>-$0</span>
+                </div>
+              </div>
+              {/* Skip button */}
+              <div className={`relative flex items-center justify-center w-32 h-20 rounded-xl border-2 transition-all ${
+                isOff ? 'bg-slate-600 border-slate-500' : 
+                isCause ? 'bg-slate-600/50 border-slate-500/50' :
+                'bg-slate-700 border-slate-600'
+              }`}>
+                {isLocked && isOff && <span className="absolute -top-2 -right-2 text-sm">🔒</span>}
+                <span className={`text-2xl mr-2 ${isOff || isCause ? 'text-slate-300' : 'text-slate-500'}`}>⊘</span>
+                <div className="flex flex-col">
+                  <span className={`text-sm font-bold ${isOff || isCause ? 'text-white' : 'text-slate-400'}`}>Skip</span>
+                  <span className={`text-xs ${isOff || isCause ? 'text-slate-300' : 'text-slate-500'}`}>$0</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      };
+      
+      // BioClip machine component (X) - matches game exactly
+      const MachinePanel = ({ state }) => {
+        const isOn = state === 'on' || state === 'fixed-on';
+        const isOff = state === 'off' || state === 'fixed-off';
+        const isLocked = state === 'fixed-on' || state === 'fixed-off';
+        const isQuestion = state === 'question';
+        const isCause = state === 'cause';
+        
+        const getStatusColor = () => {
+          if (isOn) return '#22c55e';
+          if (isOff) return '#ef4444';
+          if (isQuestion || isCause) return '#64748b';
+          return '#64748b';
+        };
+        
+        const getStatusBg = () => {
+          if (isOn) return '#14532d';
+          if (isOff) return '#7f1d1d';
+          return '#1e293b';
+        };
+        
+        const getStatusText = () => {
+          if (isOn) return 'NORMAL';
+          if (isOff) return 'ABNORMAL';
+          return 'READING...';
+        };
+        
+        return (
+          <div className="flex flex-col items-center">
+            <div className="text-sm text-slate-400 mb-2 h-5">{playerName1} Level</div>
+            <div className="relative h-32 flex items-center justify-center">
+              {isLocked && <span className="absolute -top-2 -right-2 text-sm z-10">🔒</span>}
+              <svg viewBox="0 0 120 160" className="w-24 h-32">
+                {/* Main body */}
+                <rect x="10" y="10" width="100" height="140" rx="12" fill="#0f172a" stroke={isQuestion ? '#eab308' : '#334155'} strokeWidth="2" strokeDasharray={isQuestion ? '4,4' : 'none'} />
+                {/* Screen border */}
+                <rect x="18" y="20" width="84" height="100" rx="6" fill="#1e293b" />
+                {/* Screen background */}
+                <rect x="22" y="24" width="76" height="92" rx="4" fill={getStatusBg()} />
+                {/* Status circle */}
+                <circle cx="60" cy="55" r="24" fill={getStatusColor()}>
+                  {isQuestion && <animate attributeName="opacity" values="1;0.5;1" dur="1.5s" repeatCount="indefinite" />}
+                </circle>
+                {/* Checkmark for normal */}
+                {isOn && (
+                  <path d="M48 55 L56 63 L72 47" stroke="white" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                )}
+                {/* X for abnormal */}
+                {isOff && (
+                  <g stroke="white" strokeWidth="4" strokeLinecap="round">
+                    <line x1="50" y1="45" x2="70" y2="65" />
+                    <line x1="70" y1="45" x2="50" y2="65" />
+                  </g>
+                )}
+                {/* Question mark - in place of status text */}
+                {isQuestion && (
+                  <text x="60" y="62" textAnchor="middle" fill="white" fontSize="28" fontWeight="bold">?</text>
+                )}
+                {/* Status text */}
+                <text x="60" y="100" textAnchor="middle" fill={isOn || isOff ? 'white' : '#64748b'} fontSize="10" fontWeight="bold">
+                  {getStatusText()}
+                </text>
+                {/* BioClip label area */}
+                <rect x="30" y="126" width="60" height="18" rx="4" fill="#334155" />
+                <text x="60" y="139" textAnchor="middle" fill="#94a3b8" fontSize="9" fontFamily="monospace">
+                  BioClip™
+                </text>
+                {/* Arm/clip on the side */}
+                <path d="M0 50 L10 50 L10 110 L0 110 C-4 110 -6 105 -6 100 L-6 60 C-6 55 -4 50 0 50 Z" fill="#475569" />
+              </svg>
+            </div>
+          </div>
+        );
+      };
+      
+      // Outcome emoji component (Y)
+      const OutcomePanel = ({ state }) => {
+        const isOn = state === 'on' || state === 'fixed-on';
+        const isOff = state === 'off' || state === 'fixed-off';
+        const isLocked = state === 'fixed-on' || state === 'fixed-off';
+        const isQuestion = state === 'question';
+        
+        const getEmoji = () => {
+          if (isOn) return '😊';
+          if (isOff) return '😔';
+          if (isQuestion) return '😐';
+          return '😐';
+        };
+        
+        const getStatusText = () => {
+          if (isOn) return 'Headache-free';
+          if (isOff) return 'Headache';
+          if (isQuestion) return '???';
+          return '';
+        };
+        
+        const getRingColor = () => {
+          if (isOn) return 'ring-green-500 bg-green-500/20';
+          if (isOff) return 'ring-red-500 bg-red-500/20';
+          if (isQuestion) return 'ring-yellow-400 ring-dashed bg-yellow-400/10';
+          return 'ring-slate-600 bg-slate-700';
+        };
+        
+        return (
+          <div className="flex flex-col items-center">
+            <div className="text-sm text-slate-400 mb-2 h-5">Later this day...</div>
+            <div className="relative h-32 flex flex-col items-center justify-center">
+              {isLocked && <span className="absolute -top-2 -right-2 text-sm z-10">🔒</span>}
+              <div className={`w-20 h-20 rounded-full ring-4 flex items-center justify-center ${getRingColor()} ${isQuestion ? 'animate-pulse' : ''}`}>
+                <span className="text-4xl">{getEmoji()}</span>
+              </div>
+              <div className="text-center mt-2 h-4">
+                <span className="text-xs text-slate-400">{getStatusText()}</span>
+              </div>
+            </div>
+          </div>
+        );
+      };
+      
+      return (
+        <div className="bg-slate-900 rounded-xl p-4 mb-4">
+          <div className="flex justify-around items-start gap-4">
+            <div className={`rounded-xl p-2 transition-all ${isAHighlighted ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-slate-900 bg-slate-800' : ''}`}>
+              <DrinkPanel state={aState} />
+            </div>
+            <div className={`rounded-xl p-2 transition-all ${isXHighlighted ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-slate-900 bg-slate-800' : ''}`}>
+              <MachinePanel state={xState} />
+            </div>
+            <div className={`rounded-xl p-2 transition-all ${isYHighlighted ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-slate-900 bg-slate-800' : ''}`}>
+              <OutcomePanel state={yState} />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Single Belief Elicitation Component
+    function BeliefElicitation({
+      scenario,
+      questionNumber,
+      totalQuestions,
+      playerName0,
+      playerName1,
+      onComplete
+    }) {
+      // Stage 0 = walkthrough (with walkthroughStep 0, 1, 2), Stage 1-3 = questions
+      const [stage, setStage] = useState(0);
+      const [walkthroughStep, setWalkthroughStep] = useState(0); // 0 = condition, 1 = cause, 2 = effect
+      const [pie1Value, setPie1Value] = useState(null);
+      const [pie2Value, setPie2Value] = useState(null);
+      const [verbalValue, setVerbalValue] = useState(null);
+      const [startTime] = useState(Date.now());
+
+      const { causalElicit, exoButton, id } = scenario;
+
+      // Auto-advance to step 1 if there's no condition (step 0)
+      useEffect(() => {
+        if (stage === 0 && walkthroughStep === 0) {
+          // For AX/AY with no exoButton, skip to step 1
+          if ((causalElicit === 'AX' || causalElicit === 'AY') && exoButton === null) {
+            setWalkthroughStep(1);
+          }
+        }
+      }, [stage, walkthroughStep, causalElicit, exoButton]);
+      
+      // Generate questions based on causalElicit type
+      const getQuestionConfig = () => {
+        // A = Drink decision, X = Chemical level, Y = Headache (outcome)
+        
+        const instructionConfigs = {
+          AX: {
+            title: `How does <strong>your choice to drink ${playerName0}</strong> affect <strong>${playerName1} level</strong> if ...`,
+            bullet1: exoButton === null
+              ? "Your headache status is determined as before."
+              : exoButton === 1
+                ? "You are <strong>headache-free</strong>, prevented by other factors."
+                : "You <strong>have a headache</strong>, induced by other factors.",
+            bullet2: `${playerName1} level is determined as before.`,
+            conditionText: exoButton === null ? null : (exoButton === 1 ? `you are <strong>headache-free</strong>:` : `you <strong>have a headache</strong>:`),
+            // Walkthrough text for each step
+            walkthroughStep0: exoButton === null
+              ? null
+              : `In this scenario, you <strong>${exoButton === 1 ? 'are headache-free' : 'have a headache'}</strong>, induced by other factors...`,
+            walkthroughStep1: `...report how <strong>your choice to drink ${playerName0}</strong>...`,
+            walkthroughStep2: `...affects your <strong>${playerName1} level</strong>.`,
+            walkthroughHighlight: { step0: 'Y', step1: 'A', step2: 'X' },
+            pie1Question: `What is the chance that your <strong>${playerName1} level is normal</strong> if you <strong class="text-red-600">do NOT drink ${playerName0}</strong>?`,
+            pie2Question: exoButton === null
+              ? `What is the chance that your <strong>${playerName1} level is normal</strong> if you <strong class="text-green-600">drink ${playerName0}</strong>?`
+              : `What is the chance that your <strong>${playerName1} level is normal</strong> if you <strong class="text-green-600">${exoButton === 1 ? 'drink' : 'drink'} ${playerName0}</strong>?`,
+            verbalQuestion: exoButton === null
+              ? `How does <strong>drinking ${playerName0}</strong> change the chance that your <strong>${playerName1} level is normal</strong>?`
+              : `How does <strong>drinking ${playerName0}</strong> change the chance that your <strong>${playerName1} level is normal</strong>?`,
+            outcomeText: `${playerName1} level is normal`,
+            pie1Color: '#ef4444',
+            pie2Color: '#22c55e'
+          },
+          AY: {
+            title: `How does <strong>your choice to drink ${playerName0}</strong> affect your <strong>headache</strong> if ...`,
+            bullet1: exoButton === null
+              ? `${playerName1} level is determined as before.`
+              : exoButton === 1
+                ? `${playerName1} level is <strong>normal</strong>, induced by other factors.`
+                : `${playerName1} level is <strong>abnormal</strong>, induced by other factors.`,
+            bullet2: "Your headache status is determined as before.",
+            conditionText: exoButton === null ? null : `your <strong>${playerName1} level is ${exoButton === 1 ? 'normal' : 'abnormal'}</strong>:`,
+            // Walkthrough text for each step
+            walkthroughStep0: exoButton === null
+              ? null
+              : `In this scenario, your <strong>${playerName1} level is ${exoButton === 1 ? 'normal' : 'abnormal'}</strong>, induced by other factors...`,
+            walkthroughStep1: `...report how <strong>your choice to drink ${playerName0}</strong>...`,
+            walkthroughStep2: `...affects your <strong>headache</strong>.`,
+            walkthroughHighlight: { step0: 'X', step1: 'A', step2: 'Y' },
+            pie1Question: `What is the chance that you are <strong>headache-free</strong> if you <strong class="text-red-600">do NOT drink ${playerName0}</strong>?`,
+            pie2Question: `What is the chance that you are <strong>headache-free</strong> if you <strong class="text-green-600">drink ${playerName0}</strong>?`,
+            verbalQuestion: exoButton === null
+              ? `How does <strong>drinking ${playerName0}</strong> change the chance that you are <strong>headache-free</strong>?`
+              : `How does <strong>drinking ${playerName0}</strong> change the chance that you are <strong>headache-free</strong>?`,
+            outcomeText: 'headache-free',
+            pie1Color: '#ef4444',
+            pie2Color: '#22c55e'
+          },
+          XY: {
+            title: `How does <strong>${playerName1} level</strong> affect your <strong>headache</strong> if ...`,
+            bullet1: exoButton === 1
+              ? `You <strong>drink</strong> ${playerName0}.`
+              : `You <strong>do NOT drink</strong> ${playerName0}.`,
+            bullet2: "Your headache status is determined as before.",
+            conditionText: `you <strong>${exoButton === 1 ? 'drink' : 'do NOT drink'}</strong> ${playerName0}:`,
+            // Walkthrough text for each step
+            walkthroughStep0: `In this scenario, you <strong>${exoButton === 1 ? 'drink' : 'do NOT drink'}</strong> ${playerName0}...`,
+            walkthroughStep1: `...report how <strong>your ${playerName1} level</strong>...`,
+            walkthroughStep2: `...affects your <strong>headache</strong>.`,
+            walkthroughHighlight: { step0: 'A', step1: 'X', step2: 'Y' },
+            pie1Question: `What is the chance that you are <strong>headache-free</strong> if your <strong class="text-red-600">${playerName1} level is abnormal</strong>?`,
+            pie2Question: `What is the chance that you are <strong>headache-free</strong> if your <strong class="text-green-600">${playerName1} level is normal</strong>?`,
+            verbalQuestion: `How does having <strong>normal ${playerName1}</strong> (vs. abnormal) change the chance that you are <strong>headache-free</strong>?`,
+            outcomeText: 'headache-free',
+            pie1Color: '#ef4444',
+            pie2Color: '#22c55e'
+          },
+          YX: {
+            title: `How does your <strong>headache status</strong> affect <strong>${playerName1} level</strong> if ...`,
+            bullet1: exoButton === 1
+              ? `You <strong>drink</strong> ${playerName0}.`
+              : `You <strong>do NOT drink</strong> ${playerName0}.`,
+            bullet2: `${playerName1} level is determined as before.`,
+            conditionText: `you <strong>${exoButton === 1 ? 'drink' : 'do NOT drink'}</strong> ${playerName0}:`,
+            // Walkthrough text for each step
+            walkthroughStep0: `In this scenario, you <strong>${exoButton === 1 ? 'drink' : 'do NOT drink'}</strong> ${playerName0}...`,
+            walkthroughStep1: `...report how <strong>your headache status</strong>...`,
+            walkthroughStep2: `...affects your <strong>${playerName1} level</strong>.`,
+            walkthroughHighlight: { step0: 'A', step1: 'Y', step2: 'X' },
+            pie1Question: `What is the chance that your <strong>${playerName1} level is normal</strong> if you <strong class="text-red-600">have a headache</strong>?`,
+            pie2Question: `What is the chance that your <strong>${playerName1} level is normal</strong> if you are <strong class="text-green-600">headache-free</strong>?`,
+            verbalQuestion: `How does being <strong>headache-free</strong> (vs. having a headache) change the chance that your <strong>${playerName1} level is normal</strong>?`,
+            outcomeText: `${playerName1} level is normal`,
+            pie1Color: '#ef4444',
+            pie2Color: '#22c55e'
+          }
+        };
+        
+        return instructionConfigs[causalElicit];
+      };
+      
+      const config = getQuestionConfig();
+      
+      const verbalOptions = [
+        `Decreases the chance by 80-100%`,
+        `Decreases the chance by 60-79%`,
+        `Decreases the chance by 40-59%`,
+        `Decreases the chance by 20-39%`,
+        `Decreases the chance by 1-19%`,
+        `No change`,
+        `Increases the chance by 1-19%`,
+        `Increases the chance by 20-39%`,
+        `Increases the chance by 40-59%`,
+        `Increases the chance by 60-79%`,
+        `Increases the chance by 80-100%`
+      ];
+      
+      const handleSubmit = () => {
+        const roundTime = (Date.now() - startTime) / 1000;
+        onComplete({
+          id: id,
+          causalElicit: causalElicit,
+          exoButton: exoButton,
+          pie1Value: pie1Value,
+          pie2Value: pie2Value,
+          verbalValue: verbalValue,
+          verbalText: verbalOptions[verbalValue],
+          roundTime: roundTime
+        });
+      };
+      
+      const canProceedToStage2 = pie1Value !== null;
+      const canProceedToStage3 = pie2Value !== null;
+      const canSubmit = verbalValue !== null;
+
+      // Get walkthrough text and highlight based on current step
+      const getWalkthroughContent = () => {
+        if (!config.walkthroughHighlight) return { text: '', highlight: null };
+
+        const stepKey = `step${walkthroughStep}`;
+        const highlightKey = config.walkthroughHighlight[stepKey];
+
+        // For step 0, skip if there's no condition (exoButton === null for AX/AY)
+        if (walkthroughStep === 0 && !config.walkthroughStep0) {
+          return { text: config.walkthroughStep1, highlight: config.walkthroughHighlight.step1, skipToStep1: true };
+        }
+
+        const texts = {
+          0: config.walkthroughStep0,
+          1: config.walkthroughStep1,
+          2: config.walkthroughStep2
+        };
+
+        return { text: texts[walkthroughStep], highlight: highlightKey, skipToStep1: false };
+      };
+
+      const walkthroughContent = getWalkthroughContent();
+
+      // Handle walkthrough next button
+      const handleWalkthroughNext = () => {
+        // If we should skip step 0 (no condition), start from step 1
+        if (walkthroughStep === 0 && walkthroughContent.skipToStep1) {
+          setWalkthroughStep(1);
+          return;
+        }
+
+        if (walkthroughStep < 2) {
+          setWalkthroughStep(walkthroughStep + 1);
+        } else {
+          // Move to question stage
+          setStage(1);
+        }
+      };
+
+      // Determine the actual starting step for walkthrough
+      const effectiveWalkthroughStep = walkthroughContent.skipToStep1 && walkthroughStep === 0 ? 1 : walkthroughStep;
+
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 p-4">
+          <div className="max-w-3xl mx-auto">
+            {/* Progress */}
+            <div className="mb-6">
+              <div className="flex justify-between text-sm text-gray-600 mb-2">
+                <span>Question {questionNumber} of {totalQuestions}</span>
+                <span>{Math.round((questionNumber / totalQuestions) * 100)}%</span>
+              </div>
+              <div className="h-2 bg-gray-300 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-blue-500 transition-all duration-300"
+                  style={{ width: `${(questionNumber / totalQuestions) * 100}%` }}
+                />
+              </div>
+            </div>
+            
+            {/* Main Card - Contains everything */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              {/* Title and bullets - always shown */}
+              <h2 className="text-xl font-bold text-gray-800 mb-4" dangerouslySetInnerHTML={{ __html: config.title }} />
+              <ul className="list-disc list-inside space-y-2 text-gray-700 mb-4">
+                <li dangerouslySetInnerHTML={{ __html: config.bullet1 }} />
+                <li dangerouslySetInnerHTML={{ __html: config.bullet2 }} />
+              </ul>
+
+              {/* Walkthrough Stage */}
+              {stage === 0 && (
+                <div className="animate-fadeIn">
+                  <h3 className="text-lg font-semibold text-gray-700 mb-4 text-center">Let's go through this scenario</h3>
+
+                  {/* Variable Panel with highlight */}
+                  <VariablePanel
+                    causalElicit={causalElicit}
+                    exoButton={exoButton}
+                    stage={stage}
+                    pie1Value={pie1Value}
+                    pie2Value={pie2Value}
+                    playerName0={playerName0}
+                    playerName1={playerName1}
+                    highlightPanel={walkthroughContent.highlight}
+                    isWalkthrough={true}
+                  />
+
+                  {/* Walkthrough text */}
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                    <p className="text-gray-700 text-center text-lg" dangerouslySetInnerHTML={{ __html: walkthroughContent.text }} />
+                  </div>
+
+                  {/* Walkthrough step indicator */}
+                  <div className="flex justify-center mb-4">
+                    <div className="flex items-center gap-2">
+                      {(config.walkthroughStep0 ? [0, 1, 2] : [1, 2]).map((step, idx, arr) => (
+                        <React.Fragment key={step}>
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                            effectiveWalkthroughStep === step ? 'bg-yellow-500 text-white' :
+                            effectiveWalkthroughStep > step ? 'bg-green-500 text-white' :
+                            'bg-gray-300 text-gray-500'
+                          }`}>
+                            {effectiveWalkthroughStep > step ? '✓' : idx + 1}
+                          </div>
+                          {idx < arr.length - 1 && (
+                            <div className={`w-12 h-1 ${effectiveWalkthroughStep > step ? 'bg-green-500' : 'bg-gray-300'}`} />
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Next button */}
+                  <div className="flex justify-center">
+                    <button
+                      onClick={handleWalkthroughNext}
+                      className="px-8 py-3 rounded-lg font-medium text-lg transition-all bg-yellow-500 hover:bg-yellow-600 text-white"
+                    >
+                      {walkthroughStep === 2 ? 'I understand this scenario →' : 'Next →'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Questions Stage (stage >= 1) */}
+              {stage >= 1 && (
+                <>
+                  {/* Variable Panel */}
+                  <VariablePanel
+                    causalElicit={causalElicit}
+                    exoButton={exoButton}
+                    stage={stage}
+                    pie1Value={pie1Value}
+                    pie2Value={pie2Value}
+                    playerName0={playerName0}
+                    playerName1={playerName1}
+                    highlightPanel={null}
+                    isWalkthrough={false}
+                  />
+
+                  {/* Divider */}
+                  <div className="border-t border-gray-200 my-6" />
+
+                  {/* Step indicator */}
+                  <div className="flex justify-center mb-4">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                        stage === 1 ? 'bg-blue-500 text-white' : 'bg-green-500 text-white'
+                      }`}>
+                        {stage > 1 ? '✓' : '1'}
+                      </div>
+                      <div className={`w-12 h-1 ${stage > 1 ? 'bg-green-500' : 'bg-gray-300'}`} />
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                        stage === 2 ? 'bg-blue-500 text-white' : stage > 2 ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-500'
+                      }`}>
+                        {stage > 2 ? '✓' : '2'}
+                      </div>
+                      <div className={`w-12 h-1 ${stage > 2 ? 'bg-green-500' : 'bg-gray-300'}`} />
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                        stage === 3 ? 'bg-blue-500 text-white' : 'bg-gray-300 text-gray-500'
+                      }`}>
+                        3
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Question content - changes based on stage */}
+                  <div>
+                {/* Stage 1: First Pie Chart */}
+                {stage === 1 && (
+                  <div className="animate-fadeIn">
+                    {config.conditionText && (
+                      <p className="text-gray-700 text-center mb-2">
+                        <span>In the scenario in which </span>
+                        <span dangerouslySetInnerHTML={{ __html: config.conditionText }} />
+                      </p>
+                    )}
+                    <p className="text-gray-700 text-center mb-6" dangerouslySetInnerHTML={{ __html: config.pie1Question }} />
+                    <div className="flex justify-center mb-6">
+                      <PieChart 
+                        value={pie1Value} 
+                        onChange={setPie1Value}
+                        highlightColor={config.pie1Color}
+                      />
+                    </div>
+                    <div className="flex justify-center">
+                      <button
+                        onClick={() => setStage(2)}
+                        disabled={!canProceedToStage2}
+                        className={`px-8 py-3 rounded-lg font-medium text-lg transition-all ${
+                          canProceedToStage2 
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                      >
+                        Next →
+                      </button>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Stage 2: Second Pie Chart */}
+                {stage === 2 && (
+                  <div className="animate-fadeIn">
+                    {config.conditionText && (
+                      <p className="text-gray-700 text-center mb-2">
+                        <span>In the scenario in which </span>
+                        <span dangerouslySetInnerHTML={{ __html: config.conditionText }} />
+                      </p>
+                    )}
+                    <p className="text-gray-700 text-center mb-6" dangerouslySetInnerHTML={{ __html: config.pie2Question }} />
+                    <div className="flex justify-center mb-6">
+                      <PieChart 
+                        value={pie2Value} 
+                        onChange={setPie2Value}
+                        highlightColor={config.pie2Color}
+                      />
+                    </div>
+                    <div className="flex justify-center gap-4">
+                      <button
+                        onClick={() => setStage(1)}
+                        className="px-6 py-3 rounded-lg font-medium text-lg transition-all bg-gray-200 hover:bg-gray-300 text-gray-700"
+                      >
+                        ← Back
+                      </button>
+                      <button
+                        onClick={() => setStage(3)}
+                        disabled={!canProceedToStage3}
+                        className={`px-8 py-3 rounded-lg font-medium text-lg transition-all ${
+                          canProceedToStage3 
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                      >
+                        Next →
+                      </button>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Stage 3: Verbal Scale */}
+                {stage === 3 && (
+                  <div className="animate-fadeIn">
+                    {config.conditionText && (
+                      <p className="text-gray-700 text-center mb-2">
+                        <span>In the scenario in which </span>
+                        <span dangerouslySetInnerHTML={{ __html: config.conditionText }} />
+                      </p>
+                    )}
+                    <p className="text-gray-700 text-center mb-4" dangerouslySetInnerHTML={{ __html: config.verbalQuestion }} />
+                    <div className="max-w-lg mx-auto">
+                      <VerbalScale 
+                        value={verbalValue}
+                        onChange={setVerbalValue}
+                        options={verbalOptions}
+                        increasingOrder={true}
+                      />
+                    </div>
+                    <div className="flex justify-center gap-4 mt-4">
+                      <button
+                        onClick={() => setStage(2)}
+                        className="px-6 py-3 rounded-lg font-medium text-lg transition-all bg-gray-200 hover:bg-gray-300 text-gray-700"
+                      >
+                        ← Back
+                      </button>
+                      <button
+                        onClick={handleSubmit}
+                        disabled={!canSubmit}
+                        className={`px-8 py-3 rounded-lg font-medium text-lg transition-all ${
+                          canSubmit 
+                            ? 'bg-green-600 hover:bg-green-700 text-white' 
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                      >
+                        Submit & Continue
+                      </button>
+                    </div>
+                  </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Main App Component
+    function CausalBeliefApp() {
+      const [ready, setReady] = useState(false);
+      const [currentIndex, setCurrentIndex] = useState(0);
+      const [allResponses, setAllResponses] = useState([]);
+      const [completed, setCompleted] = useState(false);
+      
+      useEffect(() => {
+        const timeout = setTimeout(() => {
+          if (!ready) {
+            console.log('Timeout: starting with default config');
+            setReady(true);
+          }
+        }, 3000);
+        
+        onInitialized(() => {
+          clearTimeout(timeout);
+          setReady(true);
+        });
+        
+        return () => clearTimeout(timeout);
+      }, []);
+      
+      const handleComplete = useCallback((response) => {
+        const newResponses = [...allResponses, response];
+        setAllResponses(newResponses);
+        
+        if (currentIndex < CONFIG.mainCausals.length - 1) {
+          setCurrentIndex(prev => prev + 1);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          // All done - calculate payments and send data
+          setCompleted(true);
+
+          const payments = calculatePayments(newResponses);
+          const id = CONFIG.id;
+
+          // Prepare data in the format expected by Qualtrics
+          const beliefHistory = newResponses.map(r => ({
+            id: r.id,
+            causalElicit: r.causalElicit,
+            exoButton: r.exoButton,
+            pie1Value: r.pie1Value,
+            pie2Value: r.pie2Value,
+            verbalValue: r.verbalValue,
+            verbalText: r.verbalText
+          }));
+
+          const beliefRoundTimes = newResponses.map(r => r.roundTime);
+
+          sendDataToQualtrics('CAUSAL_BELIEFS', {
+            id: id,
+            responses: newResponses,
+            beliefHistory: beliefHistory,
+            beliefRoundTimes: beliefRoundTimes,
+            beliefPayment: payments.beliefPayment,
+            beliefPaymentSlider1: payments.beliefPaymentSlider1,
+            beliefPaymentSlider2: payments.beliefPaymentSlider2,
+            beliefCorrectAnswer: payments.correctAnswers,
+            beliefCorrectAnswerSlider1: payments.correctAnswersSlider1,
+            beliefCorrectAnswerSlider2: payments.correctAnswersSlider2,
+            // Also include raw values for convenience
+            pie1Values: newResponses.map(r => r.pie1Value),
+            pie2Values: newResponses.map(r => r.pie2Value),
+            verbalValues: newResponses.map(r => r.verbalValue)
+          });
+
+          console.log('Payments calculated:', payments);
+          console.log('beliefHistory:', beliefHistory);
+          console.log('beliefRoundTimes:', beliefRoundTimes);
+
+          setTimeout(() => {
+            sendDataToQualtrics('ELICIT_COMPLETE', { completed: true, id: id });
+          }, 500);
+        }
+      }, [allResponses, currentIndex]);
+      
+      if (!ready) {
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+            <div className="text-gray-600 text-xl">Loading...</div>
+          </div>
+        );
+      }
+      
+      if (completed) {
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl shadow-lg p-8 max-w-md text-center">
+              <div className="text-5xl mb-4">✅</div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">All Done!</h2>
+              <p className="text-gray-600">Thank you for completing all {CONFIG.mainCausals.length} questions.</p>
+            </div>
+          </div>
+        );
+      }
+      
+      const currentScenario = CONFIG.mainCausals[currentIndex];
+      
+      return (
+        <BeliefElicitation
+          key={currentIndex}
+          scenario={currentScenario}
+          questionNumber={currentIndex + 1}
+          totalQuestions={CONFIG.mainCausals.length}
+          playerName0={CONFIG.playerName0}
+          playerName1={CONFIG.playerName1}
+          onComplete={handleComplete}
+        />
+      );
+    }
+
+    // Render
+    ReactDOM.createRoot(document.getElementById('root')).render(<CausalBeliefApp />);
+  </script>
+</body>
+</html>
