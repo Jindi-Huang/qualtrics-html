@@ -488,6 +488,7 @@
 
       let currentPositions = [...positions];
       let step = 0;
+      let tileHTML = null;
 
       // Shuffle animation
       const interval = setInterval(() => {
@@ -532,7 +533,7 @@
             }, 300);
 
             // Generate HTML for the tile (self-contained with inline styles)
-            const tileHTML = generateTileHTML(chosenScenario);
+            tileHTML = generateTileHTML(chosenScenario);
 
             // Send data to Qualtrics
             sendDataToQualtrics('SCENARIO_REVEALED', {
