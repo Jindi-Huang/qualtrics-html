@@ -615,6 +615,11 @@
 
       const { causalElicit, exoButton, id } = scenario;
 
+      // Scroll to top when component mounts (new scenario starts)
+      useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, []);
+
       // Auto-advance to step 1 if there's no condition (step 0)
       useEffect(() => {
         if (stage === 0 && walkthroughStep === 0) {
@@ -848,26 +853,6 @@
                   {/* Walkthrough text */}
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
                     <p className="text-gray-700 text-center text-lg" dangerouslySetInnerHTML={{ __html: walkthroughContent.text }} />
-                  </div>
-
-                  {/* Walkthrough step indicator */}
-                  <div className="flex justify-center mb-4">
-                    <div className="flex items-center gap-2">
-                      {(config.walkthroughStep0 ? [0, 1, 2] : [1, 2]).map((step, idx, arr) => (
-                        <React.Fragment key={step}>
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                            effectiveWalkthroughStep === step ? 'bg-yellow-500 text-white' :
-                            effectiveWalkthroughStep > step ? 'bg-green-500 text-white' :
-                            'bg-gray-300 text-gray-500'
-                          }`}>
-                            {effectiveWalkthroughStep > step ? '✓' : idx + 1}
-                          </div>
-                          {idx < arr.length - 1 && (
-                            <div className={`w-12 h-1 ${effectiveWalkthroughStep > step ? 'bg-green-500' : 'bg-gray-300'}`} />
-                          )}
-                        </React.Fragment>
-                      ))}
-                    </div>
                   </div>
 
                   {/* Next button */}
