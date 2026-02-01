@@ -189,27 +189,10 @@
       min-height: 24px;
     }
 
-    .scenario-label {
-      position: absolute;
-      bottom: -30px;
-      left: 50%;
-      transform: translateX(-50%);
-      white-space: nowrap;
-      font-size: 0.75rem;
-      color: #94a3b8;
-      opacity: 0;
-      transition: opacity 0.5s ease;
-    }
-
-    .tile.chosen .scenario-label {
-      opacity: 1;
-      bottom: -40px;
-      font-size: 0.9rem;
-    }
   </style>
 </head>
 <body>
-  <h1>Your Scenario</h1>
+  <h1 id="title"></h1>
   <div id="container"></div>
   <div id="message">Shuffling scenarios...</div>
   <button id="continueBtn">Continue</button>
@@ -233,7 +216,16 @@
           if (qConfig.shownScenarios) {
             CONFIG.shownScenarios = qConfig.shownScenarios;
           }
+          if (qConfig.gameCounter !== undefined) {
+            CONFIG.gameCounter = qConfig.gameCounter;
+          }
+          if (qConfig.nSupergames !== undefined) {
+            CONFIG.nSupergames = qConfig.nSupergames;
+          }
           console.log('Applied config:', CONFIG);
+
+          // Update the title with game counter
+          updateTitle();
         }
 
         markInitialized();
@@ -271,8 +263,20 @@
     // =============== CONFIGURATION ===============
     const CONFIG = {
       scenarioIndex: null,  // Will be set randomly or from Qualtrics
-      shownScenarios: []    // Track which scenarios have been shown
+      shownScenarios: [],   // Track which scenarios have been shown
+      gameCounter: 1,       // Current game number
+      nSupergames: 1        // Total number of games
     };
+
+    function updateTitle() {
+      const titleEl = document.getElementById('title');
+      if (titleEl) {
+        titleEl.textContent = `Game ${CONFIG.gameCounter} (of ${CONFIG.nSupergames})`;
+      }
+    }
+
+    // Set initial title
+    updateTitle();
 
     const metaNameData = {
       player0Names: ['Driftwell', 'Clearhaven', 'Melloway'],
@@ -467,13 +471,6 @@
         front.appendChild(divider);
         front.appendChild(chemicalName);
 
-        if (i === chosenTileIndex) {
-          const label = document.createElement('div');
-          label.className = 'scenario-label';
-          label.textContent = 'Your scenario for this study';
-          tile.appendChild(label);
-        }
-
         inner.appendChild(back);
         inner.appendChild(front);
         tile.appendChild(inner);
@@ -525,7 +522,7 @@
           setTimeout(() => {
             // Zoom and center the chosen tile
             chosenTile.classList.add('chosen');
-            message.textContent = `You will be using ${chosenScenario.drinkName} and ${chosenScenario.chemicalName}`;
+            message.textContent = `This game is about drinking ${chosenScenario.drinkName} and ${chosenScenario.chemicalName} levels`;
 
             // Show continue button
             setTimeout(() => {
