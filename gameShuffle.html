@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scenario Reveal</title>
+  <style>
+    :root {
+      --size: 120px;
+      --gap: 20px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #e2e8f0;
+      margin-bottom: 30px;
+      font-size: 1.8rem;
+      text-align: center;
+    }
+
+    #container {
+      position: relative;
+      width: calc(var(--size) * 3 + var(--gap) * 2);
+      height: calc(var(--size) * 3 + var(--gap) * 2);
+    }
+
+    .tile {
+      position: absolute;
+      width: var(--size);
+      height: var(--size);
+      perspective: 600px;
+      transition: left 0.3s ease-in-out, top 0.3s ease-in-out, opacity 0.4s ease, transform 0.5s ease;
+      cursor: default;
+    }
+
+    .tile.faded {
+      opacity: 0.15;
+      transform: scale(0.9);
+    }
+
+    .tile.chosen {
+      z-index: 100;
+      transform: scale(1.8);
+      left: calc(50% - var(--size) / 2) !important;
+      top: calc(50% - var(--size) / 2) !important;
+    }
+
+    .inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.6s ease-in-out;
+      transform-style: preserve-3d;
+    }
+
+    .tile.flipped .inner {
+      transform: rotateY(180deg);
+    }
+
+    .face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .back {
+      background: linear-gradient(145deg,
+        hsl(var(--hue), 70%, 45%),
+        hsl(var(--hue), 60%, 35%));
+      border: 3px solid hsl(var(--hue), 80%, 60%);
+    }
+
+    .back::after {
+      content: '?';
+      font-size: 3rem;
+      color: rgba(255, 255, 255, 0.3);
+      font-weight: bold;
+    }
+
+    .front {
+      background: linear-gradient(145deg, #ffffff, #f0f4f8);
+      border: 3px solid hsl(var(--hue), 70%, 50%);
+      transform: rotateY(180deg);
+      padding: 8px;
+    }
+
+    .tile.chosen .front {
+      padding: 15px;
+    }
+
+    .drink-icon {
+      font-size: 2.2rem;
+      margin-bottom: 4px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+    }
+
+    .tile.chosen .drink-icon {
+      font-size: 3rem;
+      margin-bottom: 8px;
+    }
+
+    .drink-name {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: hsl(var(--hue), 70%, 35%);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+
+    .tile.chosen .drink-name {
+      font-size: 1rem;
+      margin-bottom: 5px;
+    }
+
+    .chemical-name {
+      font-size: 0.6rem;
+      font-weight: 600;
+      color: #64748b;
+      background: #e2e8f0;
+      padding: 2px 6px;
+      border-radius: 8px;
+    }
+
+    .tile.chosen .chemical-name {
+      font-size: 0.85rem;
+      padding: 4px 12px;
+    }
+
+    .divider {
+      width: 60%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, hsl(var(--hue), 60%, 70%), transparent);
+      margin: 4px 0;
+    }
+
+    .tile.chosen .divider {
+      margin: 8px 0;
+    }
+
+    #continueBtn {
+      display: none;
+      margin-top: 40px;
+      padding: 14px 40px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: white;
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+      transition: all 0.3s ease;
+    }
+
+    #continueBtn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+    }
+
+    #message {
+      color: #94a3b8;
+      margin-top: 20px;
+      font-size: 1rem;
+      text-align: center;
+      min-height: 24px;
+    }
+
+    .scenario-label {
+      position: absolute;
+      bottom: -30px;
+      left: 50%;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      font-size: 0.75rem;
+      color: #94a3b8;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    .tile.chosen .scenario-label {
+      opacity: 1;
+      bottom: -40px;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Your Scenario</h1>
+  <div id="container"></div>
+  <div id="message">Shuffling scenarios...</div>
+  <button id="continueBtn">Continue</button>
+
+  <script>
+    // =============== QUALTRICS COMMUNICATION ===============
+    let participantId = null;
+    let gameId = null;
+
+    window.addEventListener('message', function(event) {
+      if (event.data.type === 'INIT') {
+        console.log('Received INIT from Qualtrics:', event.data);
+        participantId = event.data.participantId;
+        gameId = event.data.gameId;
+
+        if (event.data.gameConfig) {
+          const qConfig = event.data.gameConfig;
+          if (qConfig.scenarioIndex !== undefined) {
+            CONFIG.scenarioIndex = qConfig.scenarioIndex;
+          }
+          if (qConfig.shownScenarios) {
+            CONFIG.shownScenarios = qConfig.shownScenarios;
+          }
+          console.log('Applied config:', CONFIG);
+        }
+
+        markInitialized();
+      }
+    });
+
+    function sendDataToQualtrics(dataType, data) {
+      if (window.parent !== window) {
+        window.parent.postMessage({
+          type: 'GAME_DATA',
+          gameId: gameId,
+          dataType: dataType,
+          data: data,
+          participantId: participantId,
+          timestamp: new Date().toISOString()
+        }, '*');
+      }
+      console.log('Sent to Qualtrics:', dataType, data);
+    }
+
+    let isInitialized = false;
+    let initCallbacks = [];
+
+    function onInitialized(callback) {
+      if (isInitialized) callback();
+      else initCallbacks.push(callback);
+    }
+
+    function markInitialized() {
+      isInitialized = true;
+      initCallbacks.forEach(cb => cb());
+      initCallbacks = [];
+    }
+
+    // =============== CONFIGURATION ===============
+    const CONFIG = {
+      scenarioIndex: null,  // Will be set randomly or from Qualtrics
+      shownScenarios: []    // Track which scenarios have been shown
+    };
+
+    const metaNameData = {
+      player0Names: ['Driftwell', 'Clearhaven', 'Melloway'],
+      player0Icons: ['🥤', '🧋', '🍶'],
+      player1Names: ['Qivaryn', 'Zerqalin', 'Melythor']
+    };
+
+    const defaultHue = 220; // Consistent blue color for all tiles
+
+    // =============== MAIN LOGIC ===============
+    function startReveal() {
+      const cols = 3, rows = 3;
+      const total = cols * rows;
+      const swaps = 8;
+      const fadeDelay = 150, zoomDelay = 550;
+
+      const container = document.getElementById('container');
+      const message = document.getElementById('message');
+      const continueBtn = document.getElementById('continueBtn');
+
+      if (!container) return;
+      container.textContent = "";
+
+      const size = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--size'), 10) || 120;
+      const gap = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--gap'), 10) || 20;
+
+      // Determine which scenario to show
+      let chosenIndex;
+      if (CONFIG.scenarioIndex !== null) {
+        chosenIndex = CONFIG.scenarioIndex;
+      } else {
+        // Pick a scenario that hasn't been shown yet
+        const availableIndices = [0, 1, 2].filter(i => !CONFIG.shownScenarios.includes(i));
+        if (availableIndices.length === 0) {
+          CONFIG.shownScenarios = [];
+          chosenIndex = Math.floor(Math.random() * 3);
+        } else {
+          chosenIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+        }
+      }
+
+      CONFIG.shownScenarios.push(chosenIndex);
+
+      const chosenScenario = {
+        drinkName: metaNameData.player0Names[chosenIndex],
+        drinkIcon: metaNameData.player0Icons[chosenIndex],
+        chemicalName: metaNameData.player1Names[chosenIndex]
+      };
+
+      // Create positions for 3x3 grid
+      const positions = [];
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          positions.push({ left: c * (size + gap), top: r * (size + gap) });
+        }
+      }
+
+      // Choose which tile position will have the special scenario
+      const chosenTileIndex = Math.floor(Math.random() * total);
+      let chosenTile = null;
+      const tiles = [];
+
+      // Create all tiles
+      for (let i = 0; i < total; i++) {
+        const tile = document.createElement('div');
+        tile.className = 'tile';
+
+        // Assign scenario data
+        let tileData;
+        if (i === chosenTileIndex) {
+          tileData = chosenScenario;
+        } else {
+          // Pick a random different scenario for distractor tiles
+          let otherIndex;
+          do {
+            otherIndex = Math.floor(Math.random() * 3);
+          } while (otherIndex === chosenIndex);
+
+          tileData = {
+            drinkName: metaNameData.player0Names[otherIndex],
+            drinkIcon: metaNameData.player0Icons[otherIndex],
+            chemicalName: metaNameData.player1Names[otherIndex]
+          };
+        }
+
+        tile.style.setProperty('--hue', defaultHue);
+
+        // Create tile structure
+        const inner = document.createElement('div');
+        inner.className = 'inner';
+
+        const back = document.createElement('div');
+        back.className = 'face back';
+
+        const front = document.createElement('div');
+        front.className = 'face front';
+
+        // Add content to front face
+        const drinkIcon = document.createElement('div');
+        drinkIcon.className = 'drink-icon';
+        drinkIcon.textContent = tileData.drinkIcon;
+
+        const drinkName = document.createElement('div');
+        drinkName.className = 'drink-name';
+        drinkName.textContent = tileData.drinkName;
+
+        const divider = document.createElement('div');
+        divider.className = 'divider';
+
+        const chemicalName = document.createElement('div');
+        chemicalName.className = 'chemical-name';
+        chemicalName.textContent = tileData.chemicalName;
+
+        front.appendChild(drinkIcon);
+        front.appendChild(drinkName);
+        front.appendChild(divider);
+        front.appendChild(chemicalName);
+
+        if (i === chosenTileIndex) {
+          const label = document.createElement('div');
+          label.className = 'scenario-label';
+          label.textContent = 'Your scenario for this study';
+          tile.appendChild(label);
+        }
+
+        inner.appendChild(back);
+        inner.appendChild(front);
+        tile.appendChild(inner);
+
+        tile.style.left = positions[i].left + 'px';
+        tile.style.top = positions[i].top + 'px';
+        container.appendChild(tile);
+
+        tiles.push(tile);
+        if (i === chosenTileIndex) chosenTile = tile;
+      }
+
+      let currentPositions = [...positions];
+      let step = 0;
+
+      // Shuffle animation
+      const interval = setInterval(() => {
+        // Fisher-Yates shuffle
+        for (let i = currentPositions.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [currentPositions[i], currentPositions[j]] = [currentPositions[j], currentPositions[i]];
+        }
+
+        // Apply new positions
+        tiles.forEach((tile, i) => {
+          tile.style.left = currentPositions[i].left + 'px';
+          tile.style.top = currentPositions[i].top + 'px';
+        });
+
+        if (++step >= swaps) {
+          clearInterval(interval);
+          reveal();
+        }
+      }, 280);
+
+      function reveal() {
+        message.textContent = 'Revealing your scenario...';
+
+        // Fade out other tiles
+        tiles.forEach(tile => {
+          if (tile !== chosenTile) tile.classList.add('faded');
+        });
+
+        setTimeout(() => {
+          // Flip the chosen tile
+          chosenTile.classList.add('flipped');
+
+          setTimeout(() => {
+            // Zoom and center the chosen tile
+            chosenTile.classList.add('chosen');
+            message.textContent = `You will be using ${chosenScenario.drinkName} and ${chosenScenario.chemicalName}`;
+
+            // Show continue button
+            setTimeout(() => {
+              continueBtn.style.display = 'block';
+            }, 300);
+
+            // Send data to Qualtrics
+            sendDataToQualtrics('SCENARIO_REVEALED', {
+              scenarioIndex: chosenIndex,
+              drinkName: chosenScenario.drinkName,
+              drinkIcon: chosenScenario.drinkIcon,
+              chemicalName: chosenScenario.chemicalName,
+              shownScenarios: CONFIG.shownScenarios
+            });
+
+          }, zoomDelay - fadeDelay);
+        }, fadeDelay);
+      }
+
+      // Continue button handler
+      continueBtn.addEventListener('click', () => {
+        sendDataToQualtrics('SCENARIO_COMPLETE', {
+          scenarioIndex: chosenIndex,
+          drinkName: chosenScenario.drinkName,
+          drinkIcon: chosenScenario.drinkIcon,
+          chemicalName: chosenScenario.chemicalName
+        });
+      });
+    }
+
+    // Start after initialization or timeout
+    const timeout = setTimeout(() => {
+      if (!isInitialized) {
+        console.log('Timeout: starting with default config');
+        startReveal();
+      }
+    }, 2000);
+
+    onInitialized(() => {
+      clearTimeout(timeout);
+      startReveal();
+    });
+  </script>
+</body>
+</html>
