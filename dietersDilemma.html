@@ -49,6 +49,7 @@
           if (qConfig.playerName1) CONFIG.playerName1 = qConfig.playerName1;
           if (qConfig.playerName2) CONFIG.playerName2 = qConfig.playerName2;
           if (qConfig.playerIcon0) CONFIG.playerIcon0 = qConfig.playerIcon0;
+          if (qConfig.currentSymbol) CONFIG.currentSymbol = qConfig.currentSymbol;
           if (qConfig.causal !== undefined) CONFIG.causal = qConfig.causal;
           // Collider parameters (causal=0)
           if (qConfig.beta00 !== undefined) CONFIG.beta00 = qConfig.beta00;
@@ -116,6 +117,7 @@
       playerName1: 'Qivaryn',   // Chemical name (X)
       playerName2: 'Feeling',   // Outcome name (Y)
       playerIcon0: '🥤',        // Icon for drink action (A)
+      currentSymbol: null,      // HTML for scenario tile display
     };
   </script>
   
@@ -1255,21 +1257,29 @@
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
           <div className="max-w-5xl mx-auto">
             <div className="flex items-center justify-between mb-4">
-              <div className="bg-white/10 backdrop-blur rounded-xl px-5 py-3">
-                <div className="flex items-center gap-4">
-                  <div>
-                    <span className="text-white/60 text-sm">Day</span>
-                    <div className="text-white text-3xl font-bold">{currentRound}</div>
+              <div className="flex items-center gap-4">
+                <div className="bg-white/10 backdrop-blur rounded-xl px-5 py-3">
+                  <div className="flex items-center gap-4">
+                    <div>
+                      <span className="text-white/60 text-sm">Day</span>
+                      <div className="text-white text-3xl font-bold">{currentRound}</div>
+                    </div>
+                    <div className="text-white/40 text-2xl">/</div>
+                    <div className="text-white/60 text-xl">{CONFIG.totalRounds}</div>
                   </div>
-                  <div className="text-white/40 text-2xl">/</div>
-                  <div className="text-white/60 text-xl">{CONFIG.totalRounds}</div>
+                  <div className="w-40 h-2 bg-white/20 rounded-full mt-2 overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 transition-all duration-300"
+                      style={{ width: `${(currentRound / CONFIG.totalRounds) * 100}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="w-40 h-2 bg-white/20 rounded-full mt-2 overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 transition-all duration-300"
-                    style={{ width: `${(currentRound / CONFIG.totalRounds) * 100}%` }}
+                {CONFIG.currentSymbol && (
+                  <div
+                    className="transform scale-75 origin-left"
+                    dangerouslySetInnerHTML={{ __html: CONFIG.currentSymbol }}
                   />
-                </div>
+                )}
               </div>
             </div>
             
