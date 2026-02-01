@@ -1047,32 +1047,32 @@
             <div className="bg-white rounded-xl shadow-lg p-8">
               {/* Title */}
               <div className="text-center mb-6">
-                <h1 className="text-2xl font-bold text-gray-800 mb-4">Your Beliefs About the Scenario</h1>
-                {CONFIG.currentSymbol && (
-                  <div
-                    className="flex justify-center mb-4"
-                    style={{ transform: 'scale(0.8)' }}
-                    dangerouslySetInnerHTML={{ __html: CONFIG.currentSymbol }}
-                  />
-                )}
+                <div className="flex items-center justify-center gap-3 mb-4">
+                  <h1 className="text-2xl font-bold text-gray-800">Your Beliefs About the Game</h1>
+                  {CONFIG.currentSymbol && (
+                    <div
+                      style={{ transform: 'scale(0.5)', transformOrigin: 'left center' }}
+                      dangerouslySetInnerHTML={{ __html: CONFIG.currentSymbol }}
+                    />
+                  )}
+                </div>
               </div>
 
               {/* Description */}
               <div className="text-gray-700 space-y-4 mb-6">
                 <p>
                   Each of the next <strong>{CONFIG.mainCausals.length}</strong> decision screens show you a different scenario.
-                  Each will ask you how you believe your choices affected your {CONFIG.playerName1} level and headache status
-                  during the last <strong>{CONFIG.nRounds}</strong> days with <strong>{CONFIG.playerName0}</strong> and <strong>{CONFIG.playerName1}</strong>.
+                  Each will ask you how you believe your choices to <strong>drink {CONFIG.playerName0}</strong> affected your <strong>{CONFIG.playerName1} level</strong> and <strong>headache status</strong>.
                 </p>
 
                 <p>
-                  There will be <strong>{CONFIG.mainCausals.length}</strong> different scenarios. Some scenarios will ask what would happen
-                  if certain factors were fixed by external causes. In these scenarios, <strong>it does not matter what would have happened naturally</strong>.
+                  There will be {CONFIG.mainCausals.length} different scenarios. <strong>Some scenarios will ask what would happen
+                  if certain factors were fixed by other factors.</strong> In these scenarios, it does not matter what would have happened originally.
                 </p>
 
                 <p>
                   This part may determine your bonus payment. Depending on the accuracy of your reports, your bonus will be between
-                  {CONFIG.currency}0 and <strong>{CONFIG.currency}{CONFIG.beliefPaymentMax}</strong>. The payment system is designed
+                  {CONFIG.currency}0 and {CONFIG.currency}{CONFIG.beliefPaymentMax}. The payment system is designed
                   such that it is in your own interest to report your beliefs truthfully.
                 </p>
               </div>
