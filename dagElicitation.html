@@ -247,18 +247,28 @@
         const nx = dx / len;
         const ny = dy / len;
 
-        // Perpendicular vector for curve
-        const perpX = -ny;
-        const perpY = nx;
-
         // Start and end points (on circle edge)
         const startX = fromNode.x + nx * 45;
         const startY = fromNode.y + ny * 45;
         const endX = toNode.x - nx * 45;
         const endY = toNode.y - ny * 45;
 
+        // Use a FIXED perpendicular direction based on sorted node IDs
+        // This ensures both arrows in a bidirectional pair use the same perpendicular reference
+        const sortedIds = [from, to].sort();
+        const refFrom = getNode(sortedIds[0]);
+        const refTo = getNode(sortedIds[1]);
+        const refDx = refTo.x - refFrom.x;
+        const refDy = refTo.y - refFrom.y;
+        const refLen = Math.sqrt(refDx*refDx + refDy*refDy);
+        const refNy = refDy / refLen;
+        const refNx = refDx / refLen;
+        const perpX = -refNy;
+        const perpY = refNx;
+
         // Control point for quadratic bezier - always curved
-        const curveAmount = len * 0.35 * curveDirection;
+        // curveDirection determines which side of the line to curve
+        const curveAmount = len * 0.15 * curveDirection;
         const midX = (startX + endX) / 2 + perpX * curveAmount;
         const midY = (startY + endY) / 2 + perpY * curveAmount;
 
@@ -426,7 +436,7 @@
                       const len = Math.sqrt(dx*dx + dy*dy) || 1;
                       const perpX = -dy / len;
                       const perpY = dx / len;
-                      const curveAmount = len * 0.35;
+                      const curveAmount = len * 0.15;
                       const midX = (tempLine.x1 + tempLine.x2) / 2 + perpX * curveAmount;
                       const midY = (tempLine.y1 + tempLine.y2) / 2 + perpY * curveAmount;
                       const pathD = `M ${tempLine.x1} ${tempLine.y1} Q ${midX} ${midY} ${tempLine.x2} ${tempLine.y2}`;
