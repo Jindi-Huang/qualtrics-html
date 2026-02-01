@@ -36,6 +36,27 @@
     // =============== QUALTRICS/PARENT COMMUNICATION ===============
     let parentOrigin = '*';
 
+    // Report iframe height to parent for responsive sizing
+    function reportHeight() {
+      if (window.parent !== window) {
+        const height = document.body.scrollHeight || document.documentElement.scrollHeight;
+        window.parent.postMessage({ iframeHeight: height }, '*');
+      }
+    }
+
+    // Report height on load and resize
+    window.addEventListener('load', () => {
+      reportHeight();
+      // Also report after a short delay to catch any late renders
+      setTimeout(reportHeight, 500);
+      setTimeout(reportHeight, 1000);
+    });
+    window.addEventListener('resize', reportHeight);
+
+    // Use MutationObserver to detect DOM changes and report height
+    const observer = new MutationObserver(reportHeight);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+
     window.addEventListener('message', function(event) {
       if (event.data.type === 'INIT') {
         console.log('Received INIT:', event.data);
@@ -49,6 +70,7 @@
 
         // Re-render with new config
         renderApp();
+        setTimeout(reportHeight, 100);
       }
     });
 
