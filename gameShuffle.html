@@ -282,6 +282,82 @@
 
     const defaultHue = 220; // Consistent blue color for all tiles
 
+    // =============== GENERATE TILE HTML ===============
+    function generateTileHTML(scenario, size = 'default') {
+      const hue = 220;
+
+      // Size configurations
+      const sizes = {
+        small: {
+          width: 100, height: 100, padding: 8, borderWidth: 2, borderRadius: 12,
+          iconSize: '1.5rem', iconMargin: 4,
+          nameSize: '0.6rem', nameMargin: 3,
+          dividerMargin: 3,
+          chemSize: '0.55rem', chemPadding: '2px 6px'
+        },
+        default: {
+          width: 160, height: 160, padding: 15, borderWidth: 3, borderRadius: 16,
+          iconSize: '2.5rem', iconMargin: 8,
+          nameSize: '0.9rem', nameMargin: 6,
+          dividerMargin: 6,
+          chemSize: '0.8rem', chemPadding: '4px 12px'
+        },
+        large: {
+          width: 220, height: 220, padding: 20, borderWidth: 4, borderRadius: 20,
+          iconSize: '3.5rem', iconMargin: 12,
+          nameSize: '1.1rem', nameMargin: 8,
+          dividerMargin: 10,
+          chemSize: '0.95rem', chemPadding: '6px 16px'
+        }
+      };
+
+      const s = sizes[size] || sizes.default;
+
+      return `<div style="
+        width: ${s.width}px;
+        height: ${s.height}px;
+        background: linear-gradient(145deg, #ffffff, #f0f4f8);
+        border: ${s.borderWidth}px solid hsl(${hue}, 70%, 50%);
+        border-radius: ${s.borderRadius}px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: ${s.padding}px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        box-sizing: border-box;
+      ">
+        <div style="
+          font-size: ${s.iconSize};
+          margin-bottom: ${s.iconMargin}px;
+          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+        ">${scenario.drinkIcon}</div>
+        <div style="
+          font-size: ${s.nameSize};
+          font-weight: 700;
+          color: hsl(${hue}, 70%, 35%);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: ${s.nameMargin}px;
+        ">${scenario.drinkName.toUpperCase()}</div>
+        <div style="
+          width: 70%;
+          height: 2px;
+          background: linear-gradient(90deg, transparent, hsl(${hue}, 60%, 70%), transparent);
+          margin: ${s.dividerMargin}px 0;
+        "></div>
+        <div style="
+          font-size: ${s.chemSize};
+          font-weight: 600;
+          color: #64748b;
+          background: #e2e8f0;
+          padding: ${s.chemPadding};
+          border-radius: 10px;
+        ">${scenario.chemicalName}</div>
+      </div>`;
+    }
+
     // =============== MAIN LOGIC ===============
     function startReveal() {
       const cols = 3, rows = 3;
@@ -455,13 +531,17 @@
               continueBtn.style.display = 'block';
             }, 300);
 
+            // Generate HTML for the tile (self-contained with inline styles)
+            const tileHTML = generateTileHTML(chosenScenario);
+
             // Send data to Qualtrics
             sendDataToQualtrics('SCENARIO_REVEALED', {
               scenarioIndex: chosenIndex,
               drinkName: chosenScenario.drinkName,
               drinkIcon: chosenScenario.drinkIcon,
               chemicalName: chosenScenario.chemicalName,
-              shownScenarios: CONFIG.shownScenarios
+              shownScenarios: CONFIG.shownScenarios,
+              tileHTML: tileHTML
             });
 
           }, zoomDelay - fadeDelay);
@@ -474,7 +554,8 @@
           scenarioIndex: chosenIndex,
           drinkName: chosenScenario.drinkName,
           drinkIcon: chosenScenario.drinkIcon,
-          chemicalName: chosenScenario.chemicalName
+          chemicalName: chosenScenario.chemicalName,
+          tileHTML: tileHTML
         });
       });
     }
