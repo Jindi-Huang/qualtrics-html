@@ -448,9 +448,9 @@
               onClick={() => onChoice(1)}
               disabled={disabled}
               className={`w-32 h-20 px-4 py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 ${
-                disabled 
-                  ? 'bg-slate-700 text-slate-500 cursor-not-allowed' 
-                  : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg hover:shadow-xl cursor-pointer'
+                disabled
+                  ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                  : 'bg-green-600 hover:bg-green-500 text-white shadow-lg hover:shadow-xl cursor-pointer'
               }`}
             >
               <span className="text-xl">{CONFIG.playerIcon0}</span>
@@ -464,9 +464,9 @@
               onClick={() => onChoice(0)}
               disabled={disabled}
               className={`w-32 h-20 px-4 py-3 rounded-lg font-bold transition-all flex flex-col items-center justify-center ${
-                disabled 
-                  ? 'bg-slate-700 text-slate-500 cursor-not-allowed' 
-                  : 'bg-slate-600 hover:bg-slate-500 text-white shadow-lg hover:shadow-xl cursor-pointer'
+                disabled
+                  ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                  : 'bg-red-600 hover:bg-red-500 text-white shadow-lg hover:shadow-xl cursor-pointer'
               }`}
             >
               <div className="flex items-center gap-2">
@@ -480,15 +480,15 @@
           <div className="mt-3 space-y-2">
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="bg-slate-700/50 rounded p-2 text-center">
-                <div className="text-blue-400">{CONFIG.playerName0} → {CONFIG.playerName1}</div>
+                <div className="text-green-400">{CONFIG.playerName0} → {CONFIG.playerName1}</div>
                 <div className="text-white font-bold">
-                  {stats.A1.total > 0 
+                  {stats.A1.total > 0
                     ? `${Math.round(stats.A1.X1 / stats.A1.total * 100)}% normal`
                     : '—'}
                 </div>
               </div>
               <div className="bg-slate-700/50 rounded p-2 text-center">
-                <div className="text-slate-400">Skip → {CONFIG.playerName1}</div>
+                <div className="text-red-400">Skip → {CONFIG.playerName1}</div>
                 <div className="text-white font-bold">
                   {stats.A0.total > 0 
                     ? `${Math.round(stats.A0.X1 / stats.A0.total * 100)}% normal`
@@ -498,13 +498,13 @@
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="bg-slate-700/50 rounded p-2 text-center">
-                <div className="text-blue-400">{CONFIG.playerName0} → Headache Free</div>
+                <div className="text-green-400">{CONFIG.playerName0} → Headache Free</div>
                 <div className="text-white font-bold">
                   {A1Y1Rate !== null ? `${A1Y1Rate}%` : '—'}
                 </div>
               </div>
               <div className="bg-slate-700/50 rounded p-2 text-center">
-                <div className="text-slate-400">Skip → Headache Free</div>
+                <div className="text-red-400">Skip → Headache Free</div>
                 <div className="text-white font-bold">
                   {A0Y1Rate !== null ? `${A0Y1Rate}%` : '—'}
                 </div>

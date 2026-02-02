@@ -365,7 +365,7 @@
     }
 
     // Variable Panel Component - shows 3 variables with game-style visuals
-    function VariablePanel({ causalElicit, exoButton, stage, pie1Value, pie2Value, playerName0, playerName1, highlightPanel, isWalkthrough }) {
+    function VariablePanel({ causalElicit, exoButton, stage, pie1Value, pie2Value, playerName0, playerName1, highlightPanel, isWalkthrough, highlightButton }) {
       // Determine variable states based on causalElicit and stage
       // A = Drink, X = Chemical (Qivaryn), Y = Headache
 
@@ -451,23 +451,26 @@
       const isYHighlighted = highlightPanel === 'Y';
       
       // Drink buttons component (A) - matches game style
-      const DrinkPanel = ({ state }) => {
+      const DrinkPanel = ({ state, highlightButton }) => {
         const isOn = state === 'on' || state === 'fixed-on';
         const isOff = state === 'off' || state === 'fixed-off';
         const isLocked = state === 'fixed-on' || state === 'fixed-off';
         const isQuestion = state === 'question';
         const isCause = state === 'cause';
-        
+
+        const drinkHighlight = (highlightButton === 'drink' || highlightButton === 'both') ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-slate-900' : '';
+        const skipHighlight = (highlightButton === 'skip' || highlightButton === 'both') ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-slate-900' : '';
+
         return (
           <div className="flex flex-col items-center">
             <div className="text-sm text-slate-400 mb-2 h-5">Morning Decision</div>
             <div className="flex gap-2 h-32 items-center">
               {/* Drink button */}
               <div className={`relative flex items-center justify-center w-32 h-20 rounded-xl border-2 transition-all ${
-                isOn ? 'bg-blue-500 border-blue-400' : 
-                isCause ? 'bg-blue-500/50 border-blue-400/50' :
+                isOn ? 'bg-green-600 border-green-500' :
+                isCause ? 'bg-green-600/50 border-green-500/50' :
                 'bg-slate-700 border-slate-600'
-              }`}>
+              } ${drinkHighlight}`}>
                 {isLocked && isOn && <span className="absolute -top-2 -right-2 text-sm">🔒</span>}
                 <span className="text-2xl mr-2">🥤</span>
                 <div className="flex flex-col">
@@ -478,15 +481,15 @@
               </div>
               {/* Skip button */}
               <div className={`relative flex items-center justify-center w-32 h-20 rounded-xl border-2 transition-all ${
-                isOff ? 'bg-slate-600 border-slate-500' : 
-                isCause ? 'bg-slate-600/50 border-slate-500/50' :
+                isOff ? 'bg-red-600 border-red-500' :
+                isCause ? 'bg-red-600/50 border-red-500/50' :
                 'bg-slate-700 border-slate-600'
-              }`}>
+              } ${skipHighlight}`}>
                 {isLocked && isOff && <span className="absolute -top-2 -right-2 text-sm">🔒</span>}
-                <span className={`text-2xl mr-2 ${isOff || isCause ? 'text-slate-300' : 'text-slate-500'}`}>⊘</span>
+                <span className={`text-2xl mr-2 ${isOff || isCause ? 'text-white' : 'text-slate-500'}`}>⊘</span>
                 <div className="flex flex-col">
                   <span className={`text-sm font-bold ${isOff || isCause ? 'text-white' : 'text-slate-400'}`}>Skip</span>
-                  <span className={`text-xs ${isOff || isCause ? 'text-slate-300' : 'text-slate-500'}`}>$0</span>
+                  <span className={`text-xs ${isOff || isCause ? 'text-white/70' : 'text-slate-500'}`}>$0</span>
                 </div>
               </div>
             </div>
@@ -616,8 +619,8 @@
       return (
         <div className="bg-slate-900 rounded-xl p-4 mb-4">
           <div className="flex justify-around items-start gap-4">
-            <div className={`rounded-xl p-2 transition-all ${isAHighlighted ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-slate-900 bg-slate-800' : ''}`}>
-              <DrinkPanel state={aState} />
+            <div className={`rounded-xl p-2 transition-all ${isAHighlighted && !highlightButton ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-slate-900 bg-slate-800' : ''}`}>
+              <DrinkPanel state={aState} highlightButton={highlightButton} />
             </div>
             <div className={`rounded-xl p-2 transition-all ${isXHighlighted ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-slate-900 bg-slate-800' : ''}`}>
               <MachinePanel state={xState} />
@@ -689,6 +692,8 @@
             walkthroughStep1: `...report how <strong>your choice to drink ${playerName0}</strong>...`,
             walkthroughStep2: `...affects your <strong>${playerName1} level</strong>.`,
             walkthroughHighlight: { step0: 'Y', step1: 'A', step2: 'X' },
+            causePanel: 'A',
+            outcomePanel: 'X',
             pie1Question: `What is the chance that your <strong>${playerName1} level is normal</strong> if you <strong class="text-red-600">do NOT drink ${playerName0}</strong>?`,
             pie2Question: exoButton === null
               ? `What is the chance that your <strong>${playerName1} level is normal</strong> if you <strong class="text-green-600">drink ${playerName0}</strong>?`
@@ -716,6 +721,8 @@
             walkthroughStep1: `...report how <strong>your choice to drink ${playerName0}</strong>...`,
             walkthroughStep2: `...affects your <strong>headache</strong>.`,
             walkthroughHighlight: { step0: 'X', step1: 'A', step2: 'Y' },
+            causePanel: 'A',
+            outcomePanel: 'Y',
             pie1Question: `What is the chance that you are <strong>headache-free</strong> if you <strong class="text-red-600">do NOT drink ${playerName0}</strong>?`,
             pie2Question: `What is the chance that you are <strong>headache-free</strong> if you <strong class="text-green-600">drink ${playerName0}</strong>?`,
             verbalQuestion: exoButton === null
@@ -737,6 +744,8 @@
             walkthroughStep1: `...report how <strong>your ${playerName1} level</strong>...`,
             walkthroughStep2: `...affects your <strong>headache</strong>.`,
             walkthroughHighlight: { step0: 'A', step1: 'X', step2: 'Y' },
+            causePanel: 'X',
+            outcomePanel: 'Y',
             pie1Question: `What is the chance that you are <strong>headache-free</strong> if your <strong class="text-red-600">${playerName1} level is abnormal</strong>?`,
             pie2Question: `What is the chance that you are <strong>headache-free</strong> if your <strong class="text-green-600">${playerName1} level is normal</strong>?`,
             verbalQuestion: `How does having <strong>normal ${playerName1}</strong> (vs. abnormal) change the chance that you are <strong>headache-free</strong>?`,
@@ -756,6 +765,8 @@
             walkthroughStep1: `...report how <strong>your headache status</strong>...`,
             walkthroughStep2: `...affects your <strong>${playerName1} level</strong>.`,
             walkthroughHighlight: { step0: 'A', step1: 'Y', step2: 'X' },
+            causePanel: 'Y',
+            outcomePanel: 'X',
             pie1Question: `What is the chance that your <strong>${playerName1} level is normal</strong> if you <strong class="text-red-600">have a headache</strong>?`,
             pie2Question: `What is the chance that your <strong>${playerName1} level is normal</strong> if you are <strong class="text-green-600">headache-free</strong>?`,
             verbalQuestion: `How does being <strong>headache-free</strong> (vs. having a headache) change the chance that your <strong>${playerName1} level is normal</strong>?`,
@@ -882,6 +893,7 @@
                     playerName1={playerName1}
                     highlightPanel={walkthroughContent.highlight}
                     isWalkthrough={true}
+                    highlightButton={null}
                   />
 
                   {/* Next button */}
@@ -908,8 +920,9 @@
                     pie2Value={pie2Value}
                     playerName0={playerName0}
                     playerName1={playerName1}
-                    highlightPanel={null}
+                    highlightPanel={(stage === 1 || stage === 2 || stage === 3) ? config.outcomePanel : null}
                     isWalkthrough={false}
+                    highlightButton={config.causePanel === 'A' ? (stage === 1 ? 'skip' : stage === 2 ? 'drink' : stage === 3 ? 'both' : null) : null}
                   />
 
                   {/* Divider */}
