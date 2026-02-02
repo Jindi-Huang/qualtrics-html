@@ -223,9 +223,6 @@
             CONFIG.nSupergames = qConfig.nSupergames;
           }
           console.log('Applied config:', CONFIG);
-
-          // Update the title with game counter
-          updateTitle();
         }
 
         markInitialized();
@@ -274,9 +271,6 @@
         titleEl.textContent = `Game ${CONFIG.gameCounter} (of ${CONFIG.nSupergames})`;
       }
     }
-
-    // Set initial title
-    updateTitle();
 
     const metaNameData = {
       player0Names: ['Driftwell', 'Clearhaven', 'Melloway'],
@@ -364,6 +358,9 @@
 
     // =============== MAIN LOGIC ===============
     function startReveal() {
+      // Update title now that config is ready
+      updateTitle();
+
       const cols = 3, rows = 3;
       const total = cols * rows;
       const swaps = 8;

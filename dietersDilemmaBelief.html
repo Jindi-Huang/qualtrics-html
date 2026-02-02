@@ -650,14 +650,14 @@
             bullet1: exoButton === null
               ? "Your headache status is determined as before."
               : exoButton === 1
-                ? "You are <strong>headache-free</strong>, prevented by other factors."
-                : "You <strong>have a headache</strong>, induced by other factors.",
+                ? "You are <strong>headache-free</strong>, due to other factors."
+                : "You <strong>have a headache</strong>, due to other factors.",
             bullet2: `${playerName1} level is determined as before.`,
             conditionText: exoButton === null ? null : (exoButton === 1 ? `you are <strong>headache-free</strong>:` : `you <strong>have a headache</strong>:`),
             // Walkthrough text for each step
             walkthroughStep0: exoButton === null
               ? null
-              : `In this scenario, you <strong>${exoButton === 1 ? 'are headache-free' : 'have a headache'}</strong>, induced by other factors...`,
+              : `In this scenario, you <strong>${exoButton === 1 ? 'are headache-free' : 'have a headache'}</strong>, due to other factors...`,
             walkthroughStep1: `...report how <strong>your choice to drink ${playerName0}</strong>...`,
             walkthroughStep2: `...affects your <strong>${playerName1} level</strong>.`,
             walkthroughHighlight: { step0: 'Y', step1: 'A', step2: 'X' },
@@ -675,16 +675,16 @@
           AY: {
             title: `How does <strong>your choice to drink ${playerName0}</strong> affect your <strong>headache</strong> if ...`,
             bullet1: exoButton === null
-              ? `${playerName1} level is determined as before.`
+              ? `Your ${playerName1} level is determined as before.`
               : exoButton === 1
-                ? `${playerName1} level is <strong>normal</strong>, induced by other factors.`
-                : `${playerName1} level is <strong>abnormal</strong>, induced by other factors.`,
+                ? `Your ${playerName1} level is <strong>normal</strong>, due to other factors.`
+                : `Your ${playerName1} level is <strong>abnormal</strong>, due to other factors.`,
             bullet2: "Your headache status is determined as before.",
             conditionText: exoButton === null ? null : `your <strong>${playerName1} level is ${exoButton === 1 ? 'normal' : 'abnormal'}</strong>:`,
             // Walkthrough text for each step
             walkthroughStep0: exoButton === null
               ? null
-              : `In this scenario, your <strong>${playerName1} level is ${exoButton === 1 ? 'normal' : 'abnormal'}</strong>, induced by other factors...`,
+              : `In this scenario, your <strong>${playerName1} level is ${exoButton === 1 ? 'normal' : 'abnormal'}</strong>, due to other factors...`,
             walkthroughStep1: `...report how <strong>your choice to drink ${playerName0}</strong>...`,
             walkthroughStep2: `...affects your <strong>headache</strong>.`,
             walkthroughHighlight: { step0: 'X', step1: 'A', step2: 'Y' },
@@ -818,7 +818,7 @@
 
       return (
         <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 p-4">
-          <div className="max-w-3xl mx-auto">
+          <div className="max-w-5xl mx-auto">
             {/* Progress */}
             <div className="mb-6">
               <div className="flex justify-between text-sm text-gray-600 mb-2">
@@ -924,27 +924,33 @@
                 {/* Stage 1: First Pie Chart */}
                 {stage === 1 && (
                   <div className="animate-fadeIn">
-                    {config.conditionText && (
-                      <p className="text-gray-700 text-center mb-2">
-                        <span>In the scenario in which </span>
-                        <span dangerouslySetInnerHTML={{ __html: config.conditionText }} />
-                      </p>
-                    )}
-                    <p className="text-gray-700 text-center mb-6" dangerouslySetInnerHTML={{ __html: config.pie1Question }} />
-                    <div className="flex justify-center mb-6">
-                      <PieChart 
-                        value={pie1Value} 
-                        onChange={setPie1Value}
-                        highlightColor={config.pie1Color}
-                      />
+                    <div className="flex items-center gap-8">
+                      {/* Question on the left */}
+                      <div className="flex-1">
+                        {config.conditionText && (
+                          <p className="text-gray-700 text-lg mb-2">
+                            <span>In the scenario in which </span>
+                            <span dangerouslySetInnerHTML={{ __html: config.conditionText }} />
+                          </p>
+                        )}
+                        <p className="text-gray-700 text-lg" dangerouslySetInnerHTML={{ __html: config.pie1Question }} />
+                      </div>
+                      {/* Pie chart on the right */}
+                      <div className="flex-shrink-0">
+                        <PieChart
+                          value={pie1Value}
+                          onChange={setPie1Value}
+                          highlightColor={config.pie1Color}
+                        />
+                      </div>
                     </div>
-                    <div className="flex justify-center">
+                    <div className="flex justify-center mt-6">
                       <button
                         onClick={() => setStage(2)}
                         disabled={!canProceedToStage2}
                         className={`px-8 py-3 rounded-lg font-medium text-lg transition-all ${
-                          canProceedToStage2 
-                            ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                          canProceedToStage2
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white'
                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         }`}
                       >
@@ -957,21 +963,27 @@
                 {/* Stage 2: Second Pie Chart */}
                 {stage === 2 && (
                   <div className="animate-fadeIn">
-                    {config.conditionText && (
-                      <p className="text-gray-700 text-center mb-2">
-                        <span>In the scenario in which </span>
-                        <span dangerouslySetInnerHTML={{ __html: config.conditionText }} />
-                      </p>
-                    )}
-                    <p className="text-gray-700 text-center mb-6" dangerouslySetInnerHTML={{ __html: config.pie2Question }} />
-                    <div className="flex justify-center mb-6">
-                      <PieChart 
-                        value={pie2Value} 
-                        onChange={setPie2Value}
-                        highlightColor={config.pie2Color}
-                      />
+                    <div className="flex items-center gap-8">
+                      {/* Question on the left */}
+                      <div className="flex-1">
+                        {config.conditionText && (
+                          <p className="text-gray-700 text-lg mb-2">
+                            <span>In the scenario in which </span>
+                            <span dangerouslySetInnerHTML={{ __html: config.conditionText }} />
+                          </p>
+                        )}
+                        <p className="text-gray-700 text-lg" dangerouslySetInnerHTML={{ __html: config.pie2Question }} />
+                      </div>
+                      {/* Pie chart on the right */}
+                      <div className="flex-shrink-0">
+                        <PieChart
+                          value={pie2Value}
+                          onChange={setPie2Value}
+                          highlightColor={config.pie2Color}
+                        />
+                      </div>
                     </div>
-                    <div className="flex justify-center gap-4">
+                    <div className="flex justify-center gap-4 mt-6">
                       <button
                         onClick={() => setStage(1)}
                         className="px-6 py-3 rounded-lg font-medium text-lg transition-all bg-gray-200 hover:bg-gray-300 text-gray-700"
@@ -982,8 +994,8 @@
                         onClick={() => setStage(3)}
                         disabled={!canProceedToStage3}
                         className={`px-8 py-3 rounded-lg font-medium text-lg transition-all ${
-                          canProceedToStage3 
-                            ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                          canProceedToStage3
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white'
                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         }`}
                       >
@@ -1004,7 +1016,7 @@
                     )}
                     <p className="text-gray-700 text-center mb-4" dangerouslySetInnerHTML={{ __html: config.verbalQuestion }} />
                     <div className="max-w-lg mx-auto">
-                      <VerbalScale 
+                      <VerbalScale
                         value={verbalValue}
                         onChange={setVerbalValue}
                         options={verbalOptions}
@@ -1022,8 +1034,8 @@
                         onClick={handleSubmit}
                         disabled={!canSubmit}
                         className={`px-8 py-3 rounded-lg font-medium text-lg transition-all ${
-                          canSubmit 
-                            ? 'bg-green-600 hover:bg-green-700 text-white' 
+                          canSubmit
+                            ? 'bg-green-600 hover:bg-green-700 text-white'
                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         }`}
                       >
@@ -1047,7 +1059,7 @@
 
       return (
         <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 p-4">
-          <div className="max-w-3xl mx-auto">
+          <div className="max-w-5xl mx-auto">
             <div className="bg-white rounded-xl shadow-lg p-8">
               {/* Title */}
               <div className="text-center mb-6">
