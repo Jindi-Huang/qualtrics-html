@@ -624,6 +624,10 @@
       // Scroll to top when component mounts (new scenario starts)
       useEffect(() => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        // Also tell parent window to scroll (for iframe embedding)
+        if (window.parent !== window) {
+          window.parent.postMessage({ type: 'SCROLL_TO_TOP' }, '*');
+        }
       }, []);
 
       // Auto-advance to step 1 if there's no condition (step 0)
@@ -1154,6 +1158,10 @@
         if (currentIndex < CONFIG.mainCausals.length - 1) {
           setCurrentIndex(prev => prev + 1);
           window.scrollTo({ top: 0, behavior: 'smooth' });
+          // Also tell parent window to scroll (for iframe embedding)
+          if (window.parent !== window) {
+            window.parent.postMessage({ type: 'SCROLL_TO_TOP' }, '*');
+          }
         } else {
           // All done - calculate payments and send data
           setCompleted(true);
