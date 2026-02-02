@@ -203,11 +203,11 @@
       if (!show) return null;
       
       return (
-        <div className="absolute inset-0 bg-slate-900/95 flex items-center justify-center z-20 rounded-2xl">
+        <div className="absolute inset-0 bg-slate-900 flex items-center justify-center z-20 rounded-2xl">
           <div className="text-center">
             <div className="text-6xl mb-4">🌅</div>
-            <div className="text-3xl font-bold text-white">New Day</div>
-            <div className="text-xl text-slate-400 mt-2">Day {dayNumber}</div>
+            <div className="text-3xl font-bold text-white">New Week</div>
+            <div className="text-xl text-slate-400 mt-2">Monday, Week {dayNumber}</div>
           </div>
         </div>
       );
@@ -579,7 +579,7 @@
       
       return (
         <div className="bg-slate-800/50 rounded-xl p-4">
-          <h4 className="text-slate-400 text-sm font-medium mb-3">All Days</h4>
+          <h4 className="text-slate-400 text-sm font-medium mb-3">All Weeks</h4>
           <div className="space-y-1">
             {recentRounds.map((round, idx) => {
               const [A, X, Y] = round;
@@ -619,7 +619,6 @@
       const [currentX, setCurrentX] = useState(null);
       const [currentY, setCurrentY] = useState(null);
       const [showNewDay, setShowNewDay] = useState(false);
-      const [hideRateBox, setHideRateBox] = useState(false);
       const [nextDayNumber, setNextDayNumber] = useState(2);
       const [totalEarnings, setTotalEarnings] = useState(0);
       const [selectedPaymentRound, setSelectedPaymentRound] = useState(null);
@@ -693,23 +692,24 @@
                 }, 1500);
               } else {
                 setTimeout(() => {
-                  setHideRateBox(true);
+                  // Show overlay immediately, reset values while overlay is visible
                   setNextDayNumber(currentRound + 1);
-                  
+                  setShowNewDay(true);
+
+                  // Reset values while overlay is covering (users won't see the change)
                   setTimeout(() => {
-                    setShowNewDay(true);
-                    
-                    setTimeout(() => {
-                      setShowNewDay(false);
-                      setHideRateBox(false);
-                      setCurrentRound(prev => prev + 1);
-                      setPhase('decision');
-                      setCurrentA(null);
-                      setCurrentX(null);
-                      setCurrentY(null);
-                      roundStartTimeRef.current = Date.now();
-                    }, 1000);
-                  }, 100);
+                    setCurrentA(null);
+                    setCurrentX(null);
+                    setCurrentY(null);
+                  }, 200);
+
+                  // Hide overlay and advance to next round
+                  setTimeout(() => {
+                    setShowNewDay(false);
+                    setCurrentRound(prev => prev + 1);
+                    setPhase('decision');
+                    roundStartTimeRef.current = Date.now();
+                  }, 1200);
                 }, 1400);
               }
             }
@@ -803,9 +803,10 @@
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-4">
                 <div className="bg-white/10 backdrop-blur rounded-xl px-5 py-3">
+                  <div className="text-white font-medium text-sm mb-1">Monday</div>
                   <div className="flex items-center gap-4">
                     <div>
-                      <span className="text-white/60 text-sm">Day</span>
+                      <span className="text-white/60 text-sm">Week</span>
                       <div className="text-white text-3xl font-bold">{currentRound}</div>
                     </div>
                     <div className="text-white/40 text-2xl">/</div>
@@ -830,11 +831,11 @@
             <div className="bg-slate-800/50 backdrop-blur rounded-2xl p-6 mb-4 border border-slate-700 relative overflow-hidden">
               <NewDayOverlay show={showNewDay} dayNumber={nextDayNumber} />
               
-              <XYConnection 
-                X={currentX} 
+              <XYConnection
+                X={currentX}
                 Y={currentY}
                 stats={stats}
-                hideRateBox={hideRateBox}
+                hideRateBox={false}
               />
               
               <div className="text-center mt-4">

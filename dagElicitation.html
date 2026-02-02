@@ -20,6 +20,22 @@
     .slider-hidden-thumb::-moz-range-thumb {
       opacity: 0;
     }
+
+    .pulse-highlight {
+      animation: pulseHighlight 1s ease-in-out infinite;
+      transform-origin: center;
+    }
+
+    @keyframes pulseHighlight {
+      0%, 100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.8));
+      }
+      50% {
+        transform: scale(1.08);
+        filter: drop-shadow(0 0 16px rgba(251, 191, 36, 1));
+      }
+    }
   </style>
 </head>
 <body>
@@ -318,13 +334,13 @@
 
         return (
           <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-4">
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-5xl mx-auto">
               <div className="bg-white rounded-2xl shadow-2xl p-6">
                 {/* Display the final DAG */}
-                <div className="mb-6">
+                <div className="mb-6 flex justify-center">
                   <svg
                     viewBox="0 0 700 400"
-                    className="w-full bg-gray-50 rounded-xl border-2 border-gray-200"
+                    className="w-full max-w-xl bg-gray-50 rounded-xl border-2 border-gray-200"
                   >
                     <defs>
                       <marker id="arrowhead-final" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
@@ -371,7 +387,7 @@
                           y={node.y}
                           textAnchor="middle"
                           dominantBaseline="central"
-                          className="text-2xl pointer-events-none"
+                          className="text-4xl pointer-events-none"
                         >
                           {node.icon}
                         </text>
@@ -489,7 +505,7 @@
 
       return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-4">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-5xl mx-auto">
             <div className="bg-white rounded-2xl shadow-2xl p-6">
               <div className="mb-4">
                 <h2 className="text-2xl font-bold text-gray-800 mb-3 text-center">
@@ -502,9 +518,9 @@
                 </ul>
               </div>
 
-              <div className="flex gap-4">
+              <div className="flex gap-4 justify-center">
                 {/* SVG Canvas */}
-                <div className="flex-1">
+                <div className="flex-1 max-w-xl">
                   <svg
                     ref={svgRef}
                     viewBox="0 0 700 400"
@@ -519,6 +535,9 @@
                       </marker>
                       <marker id="arrowhead-preview" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
                         <polygon points="0 0, 10 3.5, 0 7" fill="#dc2626" opacity="0.5" />
+                      </marker>
+                      <marker id="arrowhead-new" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#dc2626" />
                       </marker>
                     </defs>
 
@@ -549,7 +568,7 @@
                           markerEnd="url(#arrowhead)"
                           className="cursor-pointer"
                           onDoubleClick={() => handleEdgeDoubleClick(edge.from, edge.to)}
-                          style={{ strokeDasharray: isHighlighted ? '8,4' : 'none' }}
+                          style={{ strokeDasharray: 'none' }}
                         />
                       );
                     })}
@@ -577,6 +596,98 @@
                       );
                     })()}
 
+                    {/* Preview of selected change option */}
+                    {showChangeOptions && selectedOption && currentPair && (() => {
+                      const nodeA = getNode(currentPair.nodeA);
+                      const nodeB = getNode(currentPair.nodeB);
+                      const midX = (nodeA.x + nodeB.x) / 2;
+                      const midY = (nodeA.y + nodeB.y) / 2;
+
+                      // Check which edges currently exist for this pair
+                      const hasAtoB = hasEdge(currentPair.nodeA, currentPair.nodeB);
+                      const hasBtoA = hasEdge(currentPair.nodeB, currentPair.nodeA);
+
+                      const previewElements = [];
+
+                      // If "none" selected, show X over existing edges
+                      if (selectedOption === 'none') {
+                        if (hasAtoB || hasBtoA) {
+                          previewElements.push(
+                            <g key="cross">
+                              <line x1={midX - 20} y1={midY - 20} x2={midX + 20} y2={midY + 20} stroke="#dc2626" strokeWidth={4} strokeDasharray="6,4" />
+                              <line x1={midX + 20} y1={midY - 20} x2={midX - 20} y2={midY + 20} stroke="#dc2626" strokeWidth={4} strokeDasharray="6,4" />
+                            </g>
+                          );
+                        }
+                      }
+
+                      // Show dashed preview for new edges
+                      // Curve direction rules to match existing edge rendering:
+                      // - Single edges always use curveDir = 1
+                      // - When adding a second edge (opposite exists), use curveDir = -1
+                      // - When adding both edges at once, use sorted-based directions
+
+                      if (selectedOption === 'AtoB' || selectedOption === 'both') {
+                        if (!hasAtoB) {
+                          let curveDir;
+                          if (hasBtoA) {
+                            // Opposite direction exists with curveDir=1, so use -1
+                            curveDir = -1;
+                          } else if (selectedOption === 'both') {
+                            // Adding both at once - use sorted-based direction
+                            const sortedNodes = [currentPair.nodeA, currentPair.nodeB].sort();
+                            curveDir = currentPair.nodeA === sortedNodes[0] ? 1 : -1;
+                          } else {
+                            // Adding single edge, no opposite exists
+                            curveDir = 1;
+                          }
+                          const path = getArrowPath(currentPair.nodeA, currentPair.nodeB, curveDir);
+                          previewElements.push(
+                            <path
+                              key="preview-AtoB"
+                              d={path.pathD}
+                              fill="none"
+                              stroke="#dc2626"
+                              strokeWidth={3}
+                              strokeDasharray="8,4"
+                              markerEnd="url(#arrowhead-new)"
+                            />
+                          );
+                        }
+                      }
+
+                      if (selectedOption === 'BtoA' || selectedOption === 'both') {
+                        if (!hasBtoA) {
+                          let curveDir;
+                          if (hasAtoB) {
+                            // Opposite direction exists with curveDir=1, so use -1
+                            curveDir = -1;
+                          } else if (selectedOption === 'both') {
+                            // Adding both at once - use sorted-based direction
+                            const sortedNodes = [currentPair.nodeA, currentPair.nodeB].sort();
+                            curveDir = currentPair.nodeB === sortedNodes[0] ? 1 : -1;
+                          } else {
+                            // Adding single edge, no opposite exists
+                            curveDir = 1;
+                          }
+                          const path = getArrowPath(currentPair.nodeB, currentPair.nodeA, curveDir);
+                          previewElements.push(
+                            <path
+                              key="preview-BtoA"
+                              d={path.pathD}
+                              fill="none"
+                              stroke="#dc2626"
+                              strokeWidth={3}
+                              strokeDasharray="8,4"
+                              markerEnd="url(#arrowhead-new)"
+                            />
+                          );
+                        }
+                      }
+
+                      return previewElements;
+                    })()}
+
                     {/* Nodes */}
                     {nodes.map(node => {
                       const isHighlighted = confirmMode && currentPair &&
@@ -584,25 +695,29 @@
 
                       return (
                         <g key={node.id}>
-                          <circle
-                            cx={node.x}
-                            cy={node.y}
-                            r={40}
-                            fill="white"
-                            stroke={isHighlighted ? "#fbbf24" : "#374151"}
-                            strokeWidth={isHighlighted ? 4 : 2}
-                            className={confirmMode ? "" : "cursor-pointer hover:stroke-blue-500"}
-                            onMouseDown={(e) => handleMouseDown(node.id, e)}
-                          />
-                          <text
-                            x={node.x}
-                            y={node.y}
-                            textAnchor="middle"
-                            dominantBaseline="central"
-                            className="text-2xl pointer-events-none"
-                          >
-                            {node.icon}
-                          </text>
+                          {/* Circle and icon - animated when highlighted */}
+                          <g key={isHighlighted ? `pulse-${confirmIndex}` : 'static'} className={isHighlighted ? "pulse-highlight" : ""} style={isHighlighted ? { transformOrigin: `${node.x}px ${node.y}px` } : {}}>
+                            <circle
+                              cx={node.x}
+                              cy={node.y}
+                              r={40}
+                              fill="white"
+                              stroke={isHighlighted ? "#fbbf24" : "#374151"}
+                              strokeWidth={isHighlighted ? 4 : 2}
+                              className={confirmMode ? "" : "cursor-pointer hover:stroke-blue-500"}
+                              onMouseDown={(e) => handleMouseDown(node.id, e)}
+                            />
+                            <text
+                              x={node.x}
+                              y={node.y}
+                              textAnchor="middle"
+                              dominantBaseline="central"
+                              className="text-4xl pointer-events-none"
+                            >
+                              {node.icon}
+                            </text>
+                          </g>
+                          {/* Label - not animated */}
                           <text
                             x={node.x}
                             y={node.y + 60}
@@ -652,12 +767,11 @@
                     {!showChangeOptions ? (
                       <>
                         <div className="text-gray-800 mb-4">
-                          You indicated: <strong>
-                            {currentPairState === 'none' && `${nodeNames[currentPair.nodeA]} and ${nodeNames[currentPair.nodeB]} cannot influence each other`}
-                            {currentPairState === 'AtoB' && `${nodeNames[currentPair.nodeA]} can influence ${nodeNames[currentPair.nodeB]}`}
-                            {currentPairState === 'BtoA' && `${nodeNames[currentPair.nodeB]} can influence ${nodeNames[currentPair.nodeA]}`}
-                            {currentPairState === 'both' && `${nodeNames[currentPair.nodeA]} and ${nodeNames[currentPair.nodeB]} can influence each other`}
-                          </strong>
+                          You indicated:{' '}
+                          {currentPairState === 'none' && <><strong>{nodeNames[currentPair.nodeA]} and {nodeNames[currentPair.nodeB]} cannot influence each other</strong> (no arrows).</>}
+                          {currentPairState === 'AtoB' && <><strong>{nodeNames[currentPair.nodeA]} can influence {nodeNames[currentPair.nodeB]}</strong> (arrow: {nodeNames[currentPair.nodeA]} → {nodeNames[currentPair.nodeB]}).</>}
+                          {currentPairState === 'BtoA' && <><strong>{nodeNames[currentPair.nodeB]} can influence {nodeNames[currentPair.nodeA]}</strong> (arrow: {nodeNames[currentPair.nodeB]} → {nodeNames[currentPair.nodeA]}).</>}
+                          {currentPairState === 'both' && <><strong>{nodeNames[currentPair.nodeA]} and {nodeNames[currentPair.nodeB]} can influence each other</strong> (arrows in both directions).</>}
                         </div>
 
                         <div className="flex gap-2">
@@ -697,10 +811,10 @@
                                 className="mr-2"
                               />
                               <span className="text-sm">
-                                {opt === 'none' && `No influence between them`}
-                                {opt === 'AtoB' && `${nodeNames[currentPair.nodeA]} → ${nodeNames[currentPair.nodeB]}`}
-                                {opt === 'BtoA' && `${nodeNames[currentPair.nodeB]} → ${nodeNames[currentPair.nodeA]}`}
-                                {opt === 'both' && `Both directions`}
+                                {opt === 'none' && <><strong>{nodeNames[currentPair.nodeA]} and {nodeNames[currentPair.nodeB]} cannot influence each other</strong> (no arrows)</>}
+                                {opt === 'AtoB' && <><strong>{nodeNames[currentPair.nodeA]} can influence {nodeNames[currentPair.nodeB]}</strong> (arrow: {nodeNames[currentPair.nodeA]} → {nodeNames[currentPair.nodeB]})</>}
+                                {opt === 'BtoA' && <><strong>{nodeNames[currentPair.nodeB]} can influence {nodeNames[currentPair.nodeA]}</strong> (arrow: {nodeNames[currentPair.nodeB]} → {nodeNames[currentPair.nodeA]})</>}
+                                {opt === 'both' && <><strong>{nodeNames[currentPair.nodeA]} and {nodeNames[currentPair.nodeB]} can influence each other</strong> (arrows in both directions)</>}
                               </span>
                             </label>
                           ))}

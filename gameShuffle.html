@@ -194,7 +194,7 @@
 <body>
   <h1 id="title"></h1>
   <div id="container"></div>
-  <div id="message">Shuffling scenarios...</div>
+  <div id="message"></div>
   <button id="continueBtn">Continue</button>
 
   <script>
@@ -265,10 +265,10 @@
       nSupergames: 1        // Total number of games
     };
 
-    function updateTitle() {
+    function updateTitle(scenario) {
       const titleEl = document.getElementById('title');
-      if (titleEl) {
-        titleEl.textContent = `Game ${CONFIG.gameCounter} (of ${CONFIG.nSupergames})`;
+      if (titleEl && scenario) {
+        titleEl.textContent = `This game is about drinking ${scenario.drinkName}, your ${scenario.chemicalName} levels and your headache status`;
       }
     }
 
@@ -358,23 +358,12 @@
 
     // =============== MAIN LOGIC ===============
     function startReveal() {
-      // Update title now that config is ready
-      updateTitle();
-
-      const cols = 3, rows = 3;
-      const total = cols * rows;
-      const swaps = 8;
-      const fadeDelay = 150, zoomDelay = 550;
-
       const container = document.getElementById('container');
       const message = document.getElementById('message');
       const continueBtn = document.getElementById('continueBtn');
 
       if (!container) return;
       container.textContent = "";
-
-      const size = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--size'), 10) || 120;
-      const gap = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--gap'), 10) || 20;
 
       // Determine which scenario to show
       let chosenIndex;
@@ -399,149 +388,74 @@
         chemicalName: metaNameData.player1Names[chosenIndex]
       };
 
-      // Create positions for 3x3 grid
-      const positions = [];
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          positions.push({ left: c * (size + gap), top: r * (size + gap) });
-        }
-      }
+      // Update title with scenario info
+      updateTitle(chosenScenario);
 
-      // Choose which tile position will have the special scenario
-      const chosenTileIndex = Math.floor(Math.random() * total);
-      let chosenTile = null;
-      const tiles = [];
+      // Create single tile for the chosen scenario - centered
+      const tile = document.createElement('div');
+      tile.className = 'tile flipped';
+      tile.style.setProperty('--hue', defaultHue);
+      tile.style.position = 'absolute';
+      tile.style.left = '50%';
+      tile.style.top = '50%';
+      tile.style.transform = 'translate(-50%, -50%) scale(1.8)';
 
-      // Create all tiles
-      for (let i = 0; i < total; i++) {
-        const tile = document.createElement('div');
-        tile.className = 'tile';
+      // Create tile structure
+      const inner = document.createElement('div');
+      inner.className = 'inner';
+      inner.style.transform = 'rotateY(180deg)';
 
-        // Assign scenario data
-        let tileData;
-        if (i === chosenTileIndex) {
-          tileData = chosenScenario;
-        } else {
-          // Pick a random different scenario for distractor tiles
-          let otherIndex;
-          do {
-            otherIndex = Math.floor(Math.random() * 3);
-          } while (otherIndex === chosenIndex);
+      const front = document.createElement('div');
+      front.className = 'face front';
 
-          tileData = {
-            drinkName: metaNameData.player0Names[otherIndex],
-            drinkIcon: metaNameData.player0Icons[otherIndex],
-            chemicalName: metaNameData.player1Names[otherIndex]
-          };
-        }
+      // Add content to front face
+      const drinkIcon = document.createElement('div');
+      drinkIcon.className = 'drink-icon';
+      drinkIcon.textContent = chosenScenario.drinkIcon;
 
-        tile.style.setProperty('--hue', defaultHue);
+      const drinkName = document.createElement('div');
+      drinkName.className = 'drink-name';
+      drinkName.textContent = chosenScenario.drinkName;
 
-        // Create tile structure
-        const inner = document.createElement('div');
-        inner.className = 'inner';
+      const divider = document.createElement('div');
+      divider.className = 'divider';
 
-        const back = document.createElement('div');
-        back.className = 'face back';
+      const chemicalName = document.createElement('div');
+      chemicalName.className = 'chemical-name';
+      chemicalName.textContent = chosenScenario.chemicalName;
 
-        const front = document.createElement('div');
-        front.className = 'face front';
+      front.appendChild(drinkIcon);
+      front.appendChild(drinkName);
+      front.appendChild(divider);
+      front.appendChild(chemicalName);
 
-        // Add content to front face
-        const drinkIcon = document.createElement('div');
-        drinkIcon.className = 'drink-icon';
-        drinkIcon.textContent = tileData.drinkIcon;
+      inner.appendChild(front);
+      tile.appendChild(inner);
 
-        const drinkName = document.createElement('div');
-        drinkName.className = 'drink-name';
-        drinkName.textContent = tileData.drinkName;
+      // Keep container size for centering
+      container.style.position = 'relative';
+      container.style.width = '300px';
+      container.style.height = '300px';
+      container.appendChild(tile);
 
-        const divider = document.createElement('div');
-        divider.className = 'divider';
+      // Hide the message
+      message.textContent = '';
 
-        const chemicalName = document.createElement('div');
-        chemicalName.className = 'chemical-name';
-        chemicalName.textContent = tileData.chemicalName;
+      // Generate HTML for the tile (self-contained with inline styles)
+      const tileHTML = generateTileHTML(chosenScenario);
 
-        front.appendChild(drinkIcon);
-        front.appendChild(drinkName);
-        front.appendChild(divider);
-        front.appendChild(chemicalName);
+      // Show continue button immediately
+      continueBtn.style.display = 'block';
 
-        inner.appendChild(back);
-        inner.appendChild(front);
-        tile.appendChild(inner);
-
-        tile.style.left = positions[i].left + 'px';
-        tile.style.top = positions[i].top + 'px';
-        container.appendChild(tile);
-
-        tiles.push(tile);
-        if (i === chosenTileIndex) chosenTile = tile;
-      }
-
-      let currentPositions = [...positions];
-      let step = 0;
-      let tileHTML = null;
-
-      // Shuffle animation
-      const interval = setInterval(() => {
-        // Fisher-Yates shuffle
-        for (let i = currentPositions.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [currentPositions[i], currentPositions[j]] = [currentPositions[j], currentPositions[i]];
-        }
-
-        // Apply new positions
-        tiles.forEach((tile, i) => {
-          tile.style.left = currentPositions[i].left + 'px';
-          tile.style.top = currentPositions[i].top + 'px';
-        });
-
-        if (++step >= swaps) {
-          clearInterval(interval);
-          reveal();
-        }
-      }, 280);
-
-      function reveal() {
-        message.textContent = 'Revealing your scenario...';
-
-        // Fade out other tiles
-        tiles.forEach(tile => {
-          if (tile !== chosenTile) tile.classList.add('faded');
-        });
-
-        setTimeout(() => {
-          // Flip the chosen tile
-          chosenTile.classList.add('flipped');
-
-          setTimeout(() => {
-            // Zoom and center the chosen tile
-            chosenTile.classList.add('chosen');
-            message.textContent = `This game is about drinking ${chosenScenario.drinkName} and ${chosenScenario.chemicalName} levels`;
-
-            // Show continue button
-            setTimeout(() => {
-              continueBtn.style.display = 'block';
-            }, 300);
-
-            // Generate HTML for the tile (self-contained with inline styles)
-            tileHTML = generateTileHTML(chosenScenario);
-
-            // Send data to Qualtrics
-            sendDataToQualtrics('SCENARIO_REVEALED', {
-              scenarioIndex: chosenIndex,
-              drinkName: chosenScenario.drinkName,
-              drinkIcon: chosenScenario.drinkIcon,
-              chemicalName: chosenScenario.chemicalName,
-              shownScenarios: CONFIG.shownScenarios,
-              tileHTML: tileHTML
-            });
-
-          }, zoomDelay - fadeDelay);
-        }, fadeDelay);
-      }
+      // Send data to Qualtrics
+      sendDataToQualtrics('SCENARIO_REVEALED', {
+        scenarioIndex: chosenIndex,
+        drinkName: chosenScenario.drinkName,
+        drinkIcon: chosenScenario.drinkIcon,
+        chemicalName: chosenScenario.chemicalName,
+        shownScenarios: CONFIG.shownScenarios,
+        tileHTML: tileHTML
+      });
 
       // Continue button handler
       continueBtn.addEventListener('click', () => {
