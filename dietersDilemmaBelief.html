@@ -1098,7 +1098,7 @@
               <div className="text-gray-700 space-y-4 mb-6">
                 <p>
                   Each of the next <strong>{CONFIG.mainCausals.length}</strong> decision screens show you a different scenario.
-                  Each will ask you how you believe your choices to <strong>drink {CONFIG.playerName0}</strong> affected your <strong>{CONFIG.playerName1} level</strong> and <strong>headache status</strong>.
+                  Each will ask about how your decision to drink <strong>{CONFIG.playerName0}</strong>, your <strong>{CONFIG.playerName1} level</strong>, and your <strong>headache status</strong> are related.
                 </p>
 
                 <p>
@@ -1107,8 +1107,7 @@
                 </p>
 
                 <p>
-                  This part may determine your bonus payment. Depending on the accuracy of your reports, your bonus will be between
-                  {CONFIG.currency}0 and {CONFIG.currency}{CONFIG.beliefPaymentMax}. The payment system is designed
+                  This part may determine your bonus payment. If your reports are accurate, you will receive {CONFIG.currency}{CONFIG.beliefPaymentMax}. The less accurate your reports, the lower this bonus will be. The payment system is designed
                   such that it is in your own interest to report your beliefs truthfully.
                 </p>
               </div>
