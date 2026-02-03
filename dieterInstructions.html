@@ -10,7 +10,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     * { box-sizing: border-box; }
-    body { margin: 0; padding: 0; }
+    body { margin: 0; padding: 0; background: #ffffff; }
   </style>
 </head>
 <body>
@@ -136,9 +136,9 @@
     function MoodMini({ mood }) {
       return (
         <div className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-500 ${
-          mood === null ? 'bg-slate-700' : mood === 1 ? 'bg-gradient-to-br from-emerald-400 to-green-600' : 'bg-gradient-to-br from-rose-400 to-red-600'
+          mood === null ? 'bg-gray-200' : mood === 1 ? 'bg-gradient-to-br from-emerald-400 to-green-600' : 'bg-gradient-to-br from-rose-400 to-red-600'
         }`}>
-          <span className={`text-5xl ${mood === null ? 'grayscale opacity-30' : ''}`}>
+          <span className={`text-5xl ${mood === null ? 'grayscale opacity-40' : ''}`}>
             {mood === null ? '😶' : mood === 1 ? '😊' : '😔'}
           </span>
         </div>
@@ -161,7 +161,8 @@
       const [ready, setReady] = useState(false);
       const [currentPage, setCurrentPage] = useState(0);
       const [attentionCheck, setAttentionCheck] = useState(0);
-      const totalPages = 6;
+      const [comprehension, setComprehension] = useState({});
+      const totalPages = 7;
 
       useEffect(() => {
         const timeout = setTimeout(() => {
@@ -180,13 +181,13 @@
       }, []);
 
       const handleContinue = () => {
-        sendDataToQualtrics('INSTRUCTIONS_COMPLETE', { completed: true, attentionCheck: attentionCheck });
+        sendDataToQualtrics('INSTRUCTIONS_COMPLETE', { completed: true, attentionCheck: attentionCheck, comprehension: comprehension });
       };
 
       if (!ready) {
         return (
-          <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
-            <div className="text-white text-xl">Loading...</div>
+          <div className="min-h-screen bg-white flex items-center justify-center">
+            <div className="text-gray-700 text-xl">Loading...</div>
           </div>
         );
       }
@@ -194,33 +195,33 @@
       const pages = [
         // Page 1: The Setup
         <section>
-          <h2 className="text-xl font-bold text-cyan-400 mb-4 flex items-center gap-2">
-            <span className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-white text-sm">1</span>
+          <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
+            <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">1</span>
             The Setup
           </h2>
-          <div className="bg-slate-700/50 rounded-xl p-4 space-y-4">
-            <p className="text-slate-200">
+          <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+            <p className="text-gray-700">
               For this study, imagine the following:
             </p>
-            <p className="text-slate-200">
+            <p className="text-gray-700">
               There are new products of two kinds:
             </p>
-            <ul className="list-disc list-inside space-y-2 text-slate-300 ml-4">
-              <li><strong className="text-white">New functional beverages.</strong> These are drinks that have some effect on you, such as altering certain blood chemicals.</li>
-              <li><strong className="text-white">A new smartphone extension called BioClip</strong> that measures these blood chemicals.</li>
+            <ul className="list-disc list-inside space-y-2 text-gray-600 ml-4">
+              <li><strong className="text-gray-900">New functional beverages.</strong> These are drinks that have some effect on you, such as altering certain blood chemicals.</li>
+              <li><strong className="text-gray-900">A new smartphone extension called BioClip</strong> that measures these blood chemicals.</li>
             </ul>
-            <p className="text-slate-200 mt-4">
+            <p className="text-gray-700 mt-4">
               It is known that each of the drinks affect one blood chemical. For instance,
             </p>
 
-            <div className="bg-slate-800 rounded-xl p-4 mt-4">
+            <div className="bg-gray-100 rounded-xl p-4 mt-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {EXAMPLES.map((ex, i) => (
-                  <div key={i} className="bg-slate-700 rounded-lg p-3 flex items-center gap-3">
+                  <div key={i} className="bg-gray-100 rounded-lg p-3 flex items-center gap-3">
                     <span className="text-2xl">{ex.icon}</span>
                     <div>
-                      <div className="text-white font-medium">{ex.drink}</div>
-                      <div className="text-slate-400 text-sm">affects {ex.chemical}</div>
+                      <div className="text-gray-900 font-medium">{ex.drink}</div>
+                      <div className="text-gray-500 text-sm">affects {ex.chemical}</div>
                     </div>
                   </div>
                 ))}
@@ -231,20 +232,20 @@
 
         // Page 2: What Happens Each Week
         <section>
-          <h2 className="text-xl font-bold text-cyan-400 mb-4 flex items-center gap-2">
-            <span className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-white text-sm">2</span>
+          <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
+            <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">2</span>
             What Happens Each Week
           </h2>
-          <div className="bg-slate-700/50 rounded-xl p-4">
-            <p className="text-slate-200 mb-4">
-              Each <span onClick={() => setAttentionCheck(1)} className={`cursor-pointer ${attentionCheck === 1 ? 'text-green-400' : ''}`}>Monday</span> morning, when you get up, you decide whether to consume the drink. Shortly after, your BioClip tells you whether your blood chemical level is normal. What you care about is whether you will feel good or bad later in the day.
+          <div className="bg-gray-50 rounded-xl p-4">
+            <p className="text-gray-700 mb-4">
+              Each <span onClick={() => setAttentionCheck(1)} className={`cursor-pointer ${attentionCheck === 1 ? 'text-green-600' : ''}`}>Monday</span> morning, when you get up, you decide whether to consume the drink. Shortly after, your BioClip tells you whether your blood chemical level is normal. What you care about is whether you will feel good or bad later in the day.
             </p>
             <div className="flex flex-col md:flex-row items-stretch justify-around gap-6 py-4">
               {/* Step 1: Decision */}
               <div className="text-center flex flex-col items-center">
                 <div className="h-12 flex flex-col justify-start">
-                  <div className="text-white font-medium">Morning</div>
-                  <div className="text-slate-400 text-sm">You decide: Drink or Skip?</div>
+                  <div className="text-gray-900 font-medium">Morning</div>
+                  <div className="text-gray-500 text-sm">You decide: Drink or Skip?</div>
                 </div>
                 <div className="flex-1 flex items-center">
                   <div className="flex gap-2 justify-center">
@@ -254,60 +255,63 @@
                 </div>
               </div>
 
-              <div className="text-slate-500 text-2xl flex items-center">→</div>
+              <div className="text-gray-400 text-2xl flex items-center">→</div>
 
               {/* Step 2: BioClip Reading */}
               <div className="text-center flex flex-col items-center">
                 <div className="h-12 flex flex-col justify-start">
-                  <div className="text-white font-medium">Shortly After</div>
-                  <div className="text-slate-400 text-sm">BioClip shows chemical level</div>
+                  <div className="text-gray-900 font-medium">Shortly After</div>
+                  <div className="text-gray-500 text-sm">BioClip shows chemical level</div>
                 </div>
                 <div className="flex-1 flex items-center">
                   <BioClipMini status={null} />
                 </div>
               </div>
 
-              <div className="text-slate-500 text-2xl flex items-center">→</div>
+              <div className="text-gray-400 text-2xl flex items-center">→</div>
 
               {/* Step 3: Outcome */}
               <div className="text-center flex flex-col items-center">
                 <div className="h-12 flex flex-col justify-start">
-                  <div className="text-white font-medium">Later That Day</div>
-                  <div className="text-slate-400 text-sm">How do you feel?</div>
+                  <div className="text-gray-900 font-medium">Later That Day</div>
+                  <div className="text-gray-500 text-sm">How do you feel?</div>
                 </div>
                 <div className="flex-1 flex items-center">
                   <MoodMini mood={null} />
                 </div>
               </div>
             </div>
-            <p className="text-slate-300 mt-4">
+            <p className="text-gray-700 mt-4">
+              You make decisions only on Mondays. Because there's a whole week in between, what happens on one Monday does not affect what happens the next Monday..
+            </p>
+            <p className="text-gray-600 mt-4">
               To show you are following this, click the word "Monday" in the first sentence above. If you do not, the survey will terminate.
-              {attentionCheck === 1 && <span className="text-green-400 ml-2">✓</span>}
+              {attentionCheck === 1 && <span className="text-green-600 ml-2">✓</span>}
             </p>
           </div>
         </section>,
 
         // Page 3: What You Know
         <section>
-          <h2 className="text-xl font-bold text-cyan-400 mb-4 flex items-center gap-2">
-            <span className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-white text-sm">3</span>
+          <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
+            <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">3</span>
             What You Know vs. Don't Know
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-green-900/30 border border-green-700 rounded-xl p-4">
-              <h3 className="text-green-400 font-bold mb-2 flex items-center gap-2">
+            <div className="bg-green-50 border border-green-300 rounded-xl p-4">
+              <h3 className="text-green-600 font-bold mb-2 flex items-center gap-2">
                 <span>✓</span> What You Know
               </h3>
-              <p className="text-slate-300">
-                Consuming a drink makes it <strong className="text-white">more likely</strong> that your blood chemical level will be <strong className="text-green-400">normal</strong>.
+              <p className="text-gray-600">
+                Consuming a drink makes it <strong className="text-gray-900">more likely</strong> that your blood chemical level will be <strong className="text-green-600">normal</strong>.
               </p>
             </div>
-            <div className="bg-amber-900/30 border border-amber-700 rounded-xl p-4">
-              <h3 className="text-amber-400 font-bold mb-2 flex items-center gap-2">
+            <div className="bg-amber-50 border border-amber-300 rounded-xl p-4">
+              <h3 className="text-amber-600 font-bold mb-2 flex items-center gap-2">
                 <span>?</span> What You Don't Know
               </h3>
-              <p className="text-slate-300">
-                Whether having a normal or abnormal chemical level affects how you <strong className="text-white">feel later that day</strong>.
+              <p className="text-gray-600">
+                Whether having a normal or abnormal chemical level affects how you <strong className="text-gray-900">feel later that day</strong>.
               </p>
             </div>
           </div>
@@ -315,22 +319,22 @@
 
         // Page 4: Two Possibilities
         <section>
-          <h2 className="text-xl font-bold text-cyan-400 mb-4 flex items-center gap-2">
-            <span className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-white text-sm">4</span>
+          <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
+            <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">4</span>
             Two Possibilities
           </h2>
           <div className="space-y-4">
-            <p className="text-slate-200">For each blood chemical in this study, there are two possibilities:</p>
-            <div className="bg-slate-700/50 rounded-xl p-4 border-l-4 border-cyan-500">
-              <h3 className="text-cyan-400 font-bold mb-2">Possibility 1: The chemical level <span className="underline">is a cause</span> of how you feel.</h3>
-              <p className="text-slate-300">
-                Hence, normalizing your chemical level (by consuming the drink) <strong className="text-white">raises the chance that you will feel good</strong> later that day.
+            <p className="text-gray-700">For each blood chemical in this study, there are two possibilities:</p>
+            <div className="bg-gray-50 rounded-xl p-4 border-l-4 border-blue-400">
+              <h3 className="text-blue-600 font-bold mb-2">Possibility 1: The chemical level <span className="underline">is a cause</span> of how you feel.</h3>
+              <p className="text-gray-600">
+                Hence, normalizing your chemical level (by consuming the drink) <strong className="text-gray-900">raises the chance that you will feel good</strong> later that day.
               </p>
             </div>
-            <div className="bg-slate-700/50 rounded-xl p-4 border-l-4 border-cyan-500">
-              <h3 className="text-cyan-400 font-bold mb-2">Possibility 2: The chemical level <span className="underline">is a response to</span> how you feel, but <span className="underline">not a cause</span>.</h3>
-              <p className="text-slate-300">
-                In this case, drinking the beverage will still make a normal chemical level more likely, but this <strong className="text-white">will not affect how you feel</strong>.
+            <div className="bg-gray-50 rounded-xl p-4 border-l-4 border-blue-400">
+              <h3 className="text-blue-600 font-bold mb-2">Possibility 2: The chemical level <span className="underline">is a response to</span> how you feel, but <span className="underline">not a cause</span>.</h3>
+              <p className="text-gray-600">
+                In this case, drinking the beverage will still make a normal chemical level more likely, but this <strong className="text-gray-900">will not affect how you feel</strong>.
               </p>
             </div>
           </div>
@@ -338,68 +342,124 @@
 
         // Page 5: Note
         <section>
-          <h2 className="text-xl font-bold text-cyan-400 mb-4 flex items-center gap-2">
-            <span className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-white text-sm">5</span>
+          <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
+            <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">5</span>
             Note
           </h2>
-          <div className="bg-slate-700/50 rounded-xl p-4">
-            <p className="text-slate-300">
-              Because many things are going on in your body at any time, <strong className="text-white">even effective decisions will not work 100% of the time</strong>. For instance, even though the beverage usually affects your blood chemical level:
+          <div className="bg-gray-50 rounded-xl p-4">
+            <p className="text-gray-600">
+              Because many things are going on in your body at any time, <strong className="text-gray-900">even effective decisions will not work 100% of the time</strong>. For instance, even though the beverage usually affects your blood chemical level:
             </p>
-            <ul className="list-disc list-inside space-y-2 text-slate-300 mt-3 ml-4">
+            <ul className="list-disc list-inside space-y-2 text-gray-600 mt-3 ml-4">
               <li>Sometimes it will be normal even if you don't drink the beverage</li>
               <li>Sometimes it will be abnormal even if you drink the beverage</li>
             </ul>
-            <p className="text-slate-300 mt-3">
-              Therefore, even effective decisions won't give you 100% control, they will only <strong className="text-white">change the chance</strong> with which you feel a certain way.
+            <p className="text-gray-600 mt-3">
+              Therefore, even effective decisions won't give you 100% control, they will only <strong className="text-gray-900">change the chance</strong> with which you feel a certain way.
             </p>
           </div>
         </section>,
 
         // Page 6: Payment
         <section>
-          <h2 className="text-xl font-bold text-cyan-400 mb-4 flex items-center gap-2">
-            <span className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-white text-sm">6</span>
+          <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
+            <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">6</span>
             Payment
           </h2>
-          <div className="bg-slate-700/50 rounded-xl p-4">
+          <div className="bg-gray-50 rounded-xl p-4">
             <div className="space-y-3">
-              <div className="flex items-center gap-3 bg-slate-800 rounded-lg p-3">
+              <div className="flex items-center gap-3 bg-gray-100 rounded-lg p-3">
                 <span className="text-2xl">💰</span>
                 <div>
-                  <div className="text-white font-medium">Baseline Bonus</div>
-                  <div className="text-slate-400">You begin each round with a baseline bonus of {CONFIG.currency}{CONFIG.basePay}.</div>
+                  <div className="text-gray-900 font-medium">Baseline Bonus</div>
+                  <div className="text-gray-500">You begin each round with a baseline bonus of {CONFIG.currency}{CONFIG.basePay}.</div>
                 </div>
               </div>
-              <div className="flex items-center gap-3 bg-slate-800 rounded-lg p-3">
+              <div className="flex items-center gap-3 bg-gray-100 rounded-lg p-3">
                 <span className="text-2xl">🥤</span>
                 <div>
-                  <div className="text-white font-medium">Drink Cost</div>
-                  <div className="text-slate-400">If you consume the drink, you pay {CONFIG.currency}{CONFIG.aCost} for it (deducted from your baseline bonus).</div>
+                  <div className="text-gray-900 font-medium">Drink Cost</div>
+                  <div className="text-gray-500">If you consume the drink, you pay {CONFIG.currency}{CONFIG.aCost} for it (deducted from your baseline bonus).</div>
                 </div>
               </div>
-              <div className="flex items-center gap-3 bg-slate-800 rounded-lg p-3">
+              <div className="flex items-center gap-3 bg-gray-100 rounded-lg p-3">
                 <span className="text-2xl">😊</span>
                 <div>
-                  <div className="text-white font-medium">Feeling Good Bonus</div>
-                  <div className="text-slate-400">If you feel good at the end of the day, you receive an additional {CONFIG.currency}{CONFIG.yBonus} bonus, if you feel bad, you don't.</div>
+                  <div className="text-gray-900 font-medium">Feeling Good Bonus</div>
+                  <div className="text-gray-500">If you feel good at the end of the day, you receive an additional {CONFIG.currency}{CONFIG.yBonus} bonus, if you feel bad, you don't.</div>
                 </div>
               </div>
-              <div className="flex items-center gap-3 bg-slate-800 rounded-lg p-3">
+              <div className="flex items-center gap-3 bg-gray-100 rounded-lg p-3">
                 <span className="text-2xl">📟</span>
                 <div>
-                  <div className="text-white font-medium">BioClip Reading</div>
-                  <div className="text-slate-400">The BioClip's reading of your blood chemicals does not directly affect your payment.</div>
+                  <div className="text-gray-900 font-medium">BioClip Reading</div>
+                  <div className="text-gray-500">The BioClip's reading of your blood chemicals does not directly affect your payment.</div>
                 </div>
               </div>
             </div>
 
-            <p className="text-slate-300 mt-4">
-              <strong className="text-white">There will be {CONFIG.nRounds} rounds.</strong> This may sound like a lot, but because each round only takes a few seconds, this is quite manageable.
+            <p className="text-gray-600 mt-4">
+              <strong className="text-gray-900">There will be {CONFIG.nRounds} rounds.</strong> This may sound like a lot, but because each round only takes a few seconds, this is quite manageable.
             </p>
-            <p className="text-slate-300 mt-2">
-              <strong className="text-white">You will be paid for one round,</strong> selected at random at the end of the study.
+            <p className="text-gray-600 mt-2">
+              <strong className="text-gray-900">You will be paid for one round,</strong> selected at random at the end of the study.
             </p>
+          </div>
+        </section>,
+
+        // Page 7: Comprehension Check
+        <section>
+          <div className="bg-gray-50 rounded-xl p-4">
+            <p className="text-gray-900 font-bold mb-4">
+              Which of the following statements about your payment are correct? <span className="font-normal text-gray-600">Select all that apply.</span>
+            </p>
+            <div className="space-y-3">
+              {[
+                { id: 'drinkNoPay', text: `Whether I drink the beverage or not does${'\u00A0'}`, underline: 'not', after: ` affect my payment.` },
+                { id: 'drinkCost', text: `Drinking the beverage will cost ${CONFIG.currency}${CONFIG.aCost.toFixed(2)}.` },
+                { id: 'feelGoodBonus', text: `If I feel good at the end of the day, I'll receive an additional ${CONFIG.currency}${CONFIG.yBonus.toFixed(2)} bonus.` },
+                { id: 'oneRound', text: 'My overall payment will be determined by one round randomly selected from throughout the study.' },
+                { id: 'sumAll', text: 'My overall payment will be the sum of all the payments I collect over all rounds I play.' },
+                { id: 'bioClipPay', text: 'The BioClip reading of my blood chemicals directly affects my payment.' }
+              ].map(item => (
+                <label key={item.id} className="flex items-start gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={!!comprehension[item.id]}
+                    onChange={() => setComprehension(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                    className="mt-1 w-5 h-5 rounded border-gray-300 bg-white text-blue-600 cursor-pointer flex-shrink-0"
+                  />
+                  <span className="text-gray-600 group-hover:text-gray-900 transition-colors">
+                    {item.underline ? (<>{item.text}<span className="underline">{item.underline}</span>{item.after}</>) : item.text}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-gray-50 rounded-xl p-4 mt-6">
+            <p className="text-gray-900 font-bold mb-4">
+              Which of the following statements about the game versions and the display order are correct? <span className="font-normal text-gray-600">Select all that apply.</span>
+            </p>
+            <div className="space-y-3">
+              {[
+                { id: 'normalCausesGood', text: `If my BioClip shows a normal chemical level and I later feel good, this means that the normal chemical level caused me to feel good.` },
+                { id: 'normalNotCausesGood', text: `If my BioClip shows a normal chemical level and I later feel good, this does `, underline: 'not', after: ` mean that the normal chemical level caused me to feel good.` },
+                { id: 'twoVersions', text: `Each study can be one of two versions. The version will be determined at the beginning of a study, and will stay fixed for all ${CONFIG.nRounds} rounds of that study. The next study may be the same or a different version.` }
+              ].map(item => (
+                <label key={item.id} className="flex items-start gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={!!comprehension[item.id]}
+                    onChange={() => setComprehension(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                    className="mt-1 w-5 h-5 rounded border-gray-300 bg-white text-blue-600 cursor-pointer flex-shrink-0"
+                  />
+                  <span className="text-gray-600 group-hover:text-gray-900 transition-colors">
+                    {item.underline ? (<>{item.text}<span className="underline">{item.underline}</span>{item.after}</>) : item.text}
+                  </span>
+                </label>
+              ))}
+            </div>
           </div>
         </section>
       ];
@@ -407,34 +467,46 @@
       const isLastPage = currentPage === totalPages - 1;
 
       return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
+        <div className="min-h-screen bg-white p-4">
           <div className="max-w-5xl mx-auto">
-            {/* Warning Banner */}
-            <div className="bg-amber-500/20 border border-amber-500 rounded-xl p-4 mb-6">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">⚠️</span>
-                <p className="text-amber-200 font-medium">
-                  Do NOT click Next on any instructions page without having read all of it carefully. Otherwise, you will fail the attention check!
-                </p>
+            {/* Warning Banner - only on instruction pages */}
+            {currentPage < 6 && (
+              <div className="bg-amber-50 border border-amber-400 rounded-xl p-4 mb-6">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">⚠️</span>
+                  <p className="text-amber-700 font-medium">
+                    Do NOT click Next on any instructions page without having read all of it carefully. Otherwise, you will fail the attention check!
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Main Content Card */}
-            <div className="bg-slate-800/50 backdrop-blur rounded-2xl p-6 border border-slate-700">
-              <h1 className="text-3xl font-bold text-white mb-2 text-center">Instructions</h1>
+            <div className="bg-white rounded-2xl p-6 border border-gray-200">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2 text-center">
+                {currentPage < 6 ? 'Instructions' : 'Comprehension Check'}
+              </h1>
 
-              {/* Page indicator */}
-              <div className="flex items-center justify-center gap-2 mb-6">
-                {Array.from({ length: totalPages }, (_, i) => (
-                  <div
-                    key={i}
-                    className={`w-3 h-3 rounded-full transition-all ${
-                      i === currentPage ? 'bg-cyan-400 scale-125' : i < currentPage ? 'bg-cyan-700' : 'bg-slate-600'
-                    }`}
-                  />
-                ))}
-                <span className="text-slate-400 text-sm ml-2">Page {currentPage + 1} of {totalPages}</span>
-              </div>
+              {currentPage >= 6 && (
+                <p className="text-gray-600 italic text-center mb-4">
+                  To make sure you have understood these instructions, please answer the following questions.
+                </p>
+              )}
+
+              {/* Page indicator - only on instruction pages */}
+              {currentPage < 6 && (
+                <div className="flex items-center justify-center gap-2 mb-6">
+                  {Array.from({ length: 6 }, (_, i) => (
+                    <div
+                      key={i}
+                      className={`w-3 h-3 rounded-full transition-all ${
+                        i === currentPage ? 'bg-blue-400 scale-125' : i < currentPage ? 'bg-blue-300' : 'bg-gray-200'
+                      }`}
+                    />
+                  ))}
+                  <span className="text-gray-500 text-sm ml-2">Page {currentPage + 1} of 6</span>
+                </div>
+              )}
 
               {/* Current page content */}
               {pages[currentPage]}
@@ -446,8 +518,8 @@
                   disabled={currentPage === 0}
                   className={`px-6 py-3 rounded-xl font-bold transition-all ${
                     currentPage === 0
-                      ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                      : 'bg-slate-600 hover:bg-slate-500 text-white'
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
                   }`}
                 >
                   Back
@@ -456,14 +528,14 @@
                 {isLastPage ? (
                   <button
                     onClick={handleContinue}
-                    className="px-8 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all"
+                    className="px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all"
                   >
-                    I Have Read the Instructions — Continue
+                    Submit
                   </button>
                 ) : (
                   <button
                     onClick={() => setCurrentPage(p => p + 1)}
-                    className="px-8 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
+                    className="px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
                   >
                     Next
                   </button>
