@@ -445,18 +445,15 @@
             <button
               onClick={() => onChoice(1)}
               disabled={disabled}
-              className={`w-32 h-20 px-4 py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 ${
+              className={`w-32 h-20 px-4 py-3 rounded-lg font-bold transition-all flex flex-col items-center justify-center ${
                 disabled
                   ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
                   : 'bg-green-600 hover:bg-green-500 text-white shadow-lg hover:shadow-xl cursor-pointer'
               }`}
             >
-              <span className="text-xl">{CONFIG.playerIcon0}</span>
-              <div className="text-left">
-                <div>Drink</div>
-                <div>{CONFIG.playerName0}</div>
-                <div className="text-xs opacity-70">-{CONFIG.currency}{CONFIG.aCost}</div>
-              </div>
+              <div>Drink</div>
+              <div>{CONFIG.playerName0}</div>
+              <div className="text-xs opacity-70">-{CONFIG.currency}{CONFIG.aCost}</div>
             </button>
             <button
               onClick={() => onChoice(0)}
@@ -585,8 +582,8 @@
               return (
                 <div key={roundNumber} className="flex items-center gap-2 text-sm py-1 px-2 bg-slate-700/30 rounded">
                   <span className="text-slate-500 w-6">#{roundNumber}</span>
-                  <span className={`w-12 ${A === 1 ? 'text-blue-400' : 'text-slate-500'}`}>
-                    {A === 1 ? CONFIG.playerIcon0 : '⊘'}
+                  <span className={`w-12 ${A === 1 ? 'text-green-400' : 'text-red-400'}`}>
+                    {A === 1 ? 'Drink' : 'Skip'}
                   </span>
                   <span className={`flex-1 font-medium ${X === 1 ? 'text-green-400' : 'text-red-400'}`}>
                     {X === 1 ? 'Normal' : 'Abnormal'}
