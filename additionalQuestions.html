@@ -266,18 +266,18 @@
               <div style="color: #4b5563;">In this case, drinking the beverage will still make a normal chemical level more likely, but this <strong style="color: #111827;">will not affect how you feel</strong>.</div>
             </div>
           </div>`,
-        text: `Which one is the case for your <strong>${CONFIG.playerName1} level</strong> and you feel <strong>${CONFIG.playerName2Pos}</strong> in this study?`,
+        text: `Which one is the case for your <strong>${CONFIG.playerName1} level</strong> and <strong>how you feel</strong> in this study?`,
         options: [
           { value: 'cause_90_100', label: `My ${CONFIG.playerName1} level could almost certainly cause me feeling ${CONFIG.playerName2Pos} (90-100% chance of possibility 1)` },
-          { value: 'cause_80_90', label: `My ${CONFIG.playerName1} level could almost certainly cause me feeling ${CONFIG.playerName2Pos} (80-90% chance of possibility 1)` },
-          { value: 'react_70_80', label: `${CONFIG.playerName2} could likely react to ${CONFIG.playerName1} and/or me (70-80% chance of possibility 1)` },
-          { value: 'react_60_70', label: `${CONFIG.playerName2} could somewhat likely react to ${CONFIG.playerName1} and/or me (60-70% chance of possibility 1)` },
-          { value: 'react_50_60', label: `Unsure. Slightly more likely that ${CONFIG.playerName2} could react to ${CONFIG.playerName1} and/or me than that ${CONFIG.playerPronoun2} could <u>not</u> (50-60% chance of possibility 1)` },
-          { value: 'notreact_50_60', label: `Unsure. Slightly more likely that ${CONFIG.playerName2} could <u>not</u> react to ${CONFIG.playerName1} than that ${CONFIG.playerPronoun2} could (50-60% chance of possibility 2)` },
-          { value: 'notreact_60_70', label: `${CONFIG.playerName2} somewhat likely could <u>not</u> react to ${CONFIG.playerName1} (60-70% chance of possibility 2)` },
-          { value: 'notreact_70_80', label: `${CONFIG.playerName2} likely could <u>not</u> react to ${CONFIG.playerName1} (70-80% chance of possibility 2)` },
-          { value: 'notreact_80_90', label: `${CONFIG.playerName2} very likely could <u>not</u> react to ${CONFIG.playerName1} (80-90% chance of possibility 2)` },
-          { value: 'notreact_90_100', label: `${CONFIG.playerName2} almost certainly could <u>not</u> react to ${CONFIG.playerName1} (90-100% chance of possibility 2)` }
+          { value: 'cause_80_90', label: `My ${CONFIG.playerName1} level could very likely cause me feeling ${CONFIG.playerName2Pos} (80-90% chance of possibility 1)` },
+          { value: 'cause_70_80', label: `My ${CONFIG.playerName1} level could likely cause me feeling ${CONFIG.playerName2Pos} (70-80% chance of possibility 1)` },
+          { value: 'cause_60_70', label: `My ${CONFIG.playerName1} level could somewhat likely cause me feeling ${CONFIG.playerName2Pos} (60-70% chance of possibility 1)` },
+          { value: 'cause_50_60', label: `Unsure. Slightly more likely that my ${CONFIG.playerName1} level could cause me feeling ${CONFIG.playerName2Pos} than <u>not</u> (50-60% chance of possibility 1)` },
+          { value: 'notcause_50_60', label: `Unsure. Slightly more likely that my ${CONFIG.playerName1} level could <u>not</u> cause me feeling ${CONFIG.playerName2Pos} than it could (50-60% chance of possibility 2)` },
+          { value: 'notcause_60_70', label: `My ${CONFIG.playerName1} level somewhat likely could <u>not</u> cause me feeling ${CONFIG.playerName2Pos} (60-70% chance of possibility 2)` },
+          { value: 'notcause_70_80', label: `My ${CONFIG.playerName1} level likely could <u>not</u> cause me feeling ${CONFIG.playerName2Pos} (70-80% chance of possibility 2)` },
+          { value: 'notcause_80_90', label: `My ${CONFIG.playerName1} level very likely could <u>not</u> cause me feeling ${CONFIG.playerName2Pos} (80-90% chance of possibility 2)` },
+          { value: 'notcause_90_100', label: `My ${CONFIG.playerName1} level almost certainly could <u>not</u> cause me feeling ${CONFIG.playerName2Pos} (90-100% chance of possibility 2)` }
         ]
       };
 
@@ -358,7 +358,7 @@
 
                 <div className="mb-8">
                   <p className="text-base text-gray-800 mb-4">
-                    Q8. In your own words, describe how the three players in game Game{CONFIG.currentSymbol} influence one another, and in what ways.
+                    Q8. In your own words, describe how your choice to drink {CONFIG.playerName0}, your {CONFIG.playerName1} level, and how you feel influence each other, and in what ways.
                   </p>
                   <textarea
                     value={answers.q8}
