@@ -32,9 +32,13 @@
           if (qConfig.playerName0) CONFIG.playerName0 = qConfig.playerName0;
           if (qConfig.playerName1) CONFIG.playerName1 = qConfig.playerName1;
           if (qConfig.playerName2Pos) CONFIG.playerName2Pos = qConfig.playerName2Pos;
+          if (qConfig.playerName2) CONFIG.playerName2 = qConfig.playerName2;
+          if (qConfig.playerPronoun2) CONFIG.playerPronoun2 = qConfig.playerPronoun2;
           if (qConfig.playerIcon0) CONFIG.playerIcon0 = qConfig.playerIcon0;
           if (qConfig.nRounds !== undefined) CONFIG.nRounds = qConfig.nRounds;
           if (qConfig.currentSymbol) CONFIG.currentSymbol = qConfig.currentSymbol;
+          if (qConfig.gameVersionsDescriptionOrderDieter1) CONFIG.gameVersionsDescriptionOrderDieter1 = qConfig.gameVersionsDescriptionOrderDieter1;
+          if (qConfig.gameVersionsDescriptionOrderDieter2) CONFIG.gameVersionsDescriptionOrderDieter2 = qConfig.gameVersionsDescriptionOrderDieter2;
           console.log('Applied config:', CONFIG);
         }
 
@@ -76,9 +80,13 @@
       playerName0: 'Driftwell',
       playerName1: 'Qivaryn',
       playerName2Pos: 'energetic',
+      playerName2: 'Qivaryn',
+      playerPronoun2: 'it',
       playerIcon0: '🥤',
       nRounds: 30,
-      currentSymbol: '1'
+      currentSymbol: '1',
+      gameVersionsDescriptionOrderDieter1: 'A',
+      gameVersionsDescriptionOrderDieter2: 'B'
     };
   </script>
 
@@ -98,22 +106,30 @@
       '91 - 100%'
     ];
 
-    function RadioQuestion({ questionNumber, questionText, selectedValue, onChange }) {
+    function RadioQuestion({ questionNumber, questionText, introText, options, selectedValue, onChange }) {
+      const optionList = options || PERCENTAGE_OPTIONS;
       return (
         <div className="mb-8">
+          {introText && (
+            <p className="text-base text-gray-600 mb-3" dangerouslySetInnerHTML={{ __html: introText }} />
+          )}
           <p className="text-base text-gray-800 mb-4" dangerouslySetInnerHTML={{ __html: `Q${questionNumber}. ${questionText}` }} />
           <div className="space-y-2 ml-4">
-            {PERCENTAGE_OPTIONS.map((option, idx) => (
-              <label key={idx} className="flex items-center gap-3 cursor-pointer py-1 px-3 rounded-lg hover:bg-gray-50 transition-colors">
+            {optionList.map((option, idx) => (
+              <label key={idx} className="flex items-start gap-3 cursor-pointer py-1 px-3 rounded-lg hover:bg-gray-50 transition-colors">
                 <input
                   type="radio"
                   name={`q${questionNumber}`}
-                  value={option}
-                  checked={selectedValue === option}
-                  onChange={() => onChange(option)}
-                  className="w-4 h-4 text-blue-600 cursor-pointer"
+                  value={typeof option === 'string' ? option : option.value}
+                  checked={selectedValue === (typeof option === 'string' ? option : option.value)}
+                  onChange={() => onChange(typeof option === 'string' ? option : option.value)}
+                  className="w-4 h-4 text-blue-600 cursor-pointer mt-0.5 flex-shrink-0"
                 />
-                <span className="text-sm text-gray-700">{option}</span>
+                {typeof option === 'string' ? (
+                  <span className="text-sm text-gray-700">{option}</span>
+                ) : (
+                  <span className="text-sm text-gray-700" dangerouslySetInnerHTML={{ __html: option.label }} />
+                )}
               </label>
             ))}
           </div>
@@ -127,8 +143,12 @@
         q2: null,
         q3: null,
         q4: null,
-        q5: null
+        q5: null,
+        q6: null,
+        q7: '',
+        q8: ''
       });
+      const [page, setPage] = useState(1);
       const [error, setError] = useState('');
       const [submitted, setSubmitted] = useState(false);
       const [ready, setReady] = useState(false);
@@ -149,21 +169,48 @@
         setError('');
       };
 
-      const handleSubmit = () => {
-        const unanswered = Object.entries(answers).filter(([, v]) => v === null);
+      const handleNext = () => {
+        const page1Keys = ['q1', 'q2', 'q3', 'q4', 'q5'];
+        const unanswered = page1Keys.filter(k => answers[k] === null);
         if (unanswered.length > 0) {
-          const nums = unanswered.map(([k]) => k.replace('q', 'Q'));
+          const nums = unanswered.map(k => k.replace('q', 'Q'));
           setError(`Please answer all questions. Missing: ${nums.join(', ')}`);
+          return;
+        }
+        setError('');
+        setPage(2);
+        window.scrollTo(0, 0);
+      };
+
+      const handleNextPage2 = () => {
+        if (answers.q6 === null) {
+          setError('Please answer the question before continuing.');
+          return;
+        }
+        setError('');
+        setPage(3);
+        window.scrollTo(0, 0);
+      };
+
+      const handleSubmit = () => {
+        const missing = [];
+        if (!answers.q7.trim()) missing.push('Q7');
+        if (!answers.q8.trim()) missing.push('Q8');
+        if (missing.length > 0) {
+          setError(`Please answer all questions. Missing: ${missing.join(', ')}`);
           return;
         }
 
         setSubmitted(true);
         sendDataToQualtrics('QUESTIONS_COMPLETE', {
-          q1_drinkFrequency: answers.q1,
-          q2_chemicalNormal: answers.q2,
-          q3_feelingPositive: answers.q3,
-          q4_nodrink_joint: answers.q4,
-          q5_drink_joint: answers.q5
+          dieterPA: answers.q1,
+          dieterPX: answers.q2,
+          dieterPY: answers.q3,
+          dieterSameNo: answers.q4,
+          dieterSameYes: answers.q5,
+          dieterVersion: answers.q6,
+          dieterOwnWords: answers.q7,
+          dieterOwnWordsDAG: answers.q8
         });
       };
 
@@ -183,14 +230,14 @@
         );
       }
 
-      const questions = [
+      const page1Questions = [
         {
           key: 'q1',
           text: `How often did <strong>you drink ${CONFIG.playerName0}</strong> ${CONFIG.playerIcon0}?`
         },
         {
           key: 'q2',
-          text: `How often was <strong>${CONFIG.playerName1}</strong> level normal?`
+          text: `How often was your <strong>${CONFIG.playerName1}</strong> level normal?`
         },
         {
           key: 'q3',
@@ -198,13 +245,41 @@
         },
         {
           key: 'q4',
-          text: `<strong>Whenever you did NOT drink ${CONFIG.playerName0}</strong>, how often did your ${CONFIG.playerName1} level normal and you feel ${CONFIG.playerName2Pos} at the same time?`
+          text: `<strong>Whenever you did NOT drink ${CONFIG.playerName0}</strong>, how often was your ${CONFIG.playerName1} level normal and you also felt ${CONFIG.playerName2Pos}?`
         },
         {
           key: 'q5',
-          text: `<strong>Whenever you did drink ${CONFIG.playerName0}</strong>, how often did your ${CONFIG.playerName1} level normal and you feel ${CONFIG.playerName2Pos} at the same time?`
+          text: `<strong>Whenever you did drink ${CONFIG.playerName0}</strong>, how often was your ${CONFIG.playerName1} level normal and you also felt ${CONFIG.playerName2Pos}?`
         }
       ];
+
+      const q6 = {
+        key: 'q6',
+        introText: `<p style="margin-bottom: 12px;">As we explained, there are two possibilities on the blood chemical in this study. The chemical level is either a cause of how you feel, or a response to how you feel.</p>
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 8px;">
+            <div style="background: #f9fafb; border-radius: 12px; padding: 12px 16px; border-left: 4px solid #60a5fa;">
+              <div style="color: #2563eb; font-weight: bold; margin-bottom: 4px;">Possibility 1: The chemical level <span style="text-decoration: underline;">is a cause</span> of how you feel.</div>
+              <div style="color: #4b5563;">Hence, normalizing your chemical level (by consuming the drink) <strong style="color: #111827;">raises the chance that you will feel good</strong> later that day.</div>
+            </div>
+            <div style="background: #f9fafb; border-radius: 12px; padding: 12px 16px; border-left: 4px solid #60a5fa;">
+              <div style="color: #2563eb; font-weight: bold; margin-bottom: 4px;">Possibility 2: The chemical level <span style="text-decoration: underline;">is a response to</span> how you feel, but <span style="text-decoration: underline;">not a cause</span>.</div>
+              <div style="color: #4b5563;">In this case, drinking the beverage will still make a normal chemical level more likely, but this <strong style="color: #111827;">will not affect how you feel</strong>.</div>
+            </div>
+          </div>`,
+        text: `Which one is the case for your <strong>${CONFIG.playerName1} level</strong> and you feel <strong>${CONFIG.playerName2Pos}</strong> in this study?`,
+        options: [
+          { value: 'cause_90_100', label: `My ${CONFIG.playerName1} level could almost certainly cause me feeling ${CONFIG.playerName2Pos} (90-100% chance of possibility 1)` },
+          { value: 'cause_80_90', label: `My ${CONFIG.playerName1} level could almost certainly cause me feeling ${CONFIG.playerName2Pos} (80-90% chance of possibility 1)` },
+          { value: 'react_70_80', label: `${CONFIG.playerName2} could likely react to ${CONFIG.playerName1} and/or me (70-80% chance of possibility 1)` },
+          { value: 'react_60_70', label: `${CONFIG.playerName2} could somewhat likely react to ${CONFIG.playerName1} and/or me (60-70% chance of possibility 1)` },
+          { value: 'react_50_60', label: `Unsure. Slightly more likely that ${CONFIG.playerName2} could react to ${CONFIG.playerName1} and/or me than that ${CONFIG.playerPronoun2} could <u>not</u> (50-60% chance of possibility 1)` },
+          { value: 'notreact_50_60', label: `Unsure. Slightly more likely that ${CONFIG.playerName2} could <u>not</u> react to ${CONFIG.playerName1} than that ${CONFIG.playerPronoun2} could (50-60% chance of possibility 2)` },
+          { value: 'notreact_60_70', label: `${CONFIG.playerName2} somewhat likely could <u>not</u> react to ${CONFIG.playerName1} (60-70% chance of possibility 2)` },
+          { value: 'notreact_70_80', label: `${CONFIG.playerName2} likely could <u>not</u> react to ${CONFIG.playerName1} (70-80% chance of possibility 2)` },
+          { value: 'notreact_80_90', label: `${CONFIG.playerName2} very likely could <u>not</u> react to ${CONFIG.playerName1} (80-90% chance of possibility 2)` },
+          { value: 'notreact_90_100', label: `${CONFIG.playerName2} almost certainly could <u>not</u> react to ${CONFIG.playerName1} (90-100% chance of possibility 2)` }
+        ]
+      };
 
       return (
         <div className="min-h-screen bg-white py-10 px-4">
@@ -212,32 +287,98 @@
             <h1 className="text-2xl font-bold text-gray-900 mb-4 text-center">
               Questions about Study {CONFIG.currentSymbol}
             </h1>
-            <p className="text-base text-gray-600 mb-8 text-center">
-              Now, please answer some questions about the game you have played in the last {CONFIG.nRounds} rounds with {CONFIG.playerName1} and {CONFIG.playerName2Pos}.
-            </p>
 
-            <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
-              {questions.map((q) => (
+            {page === 1 && (
+              <>
+                <p className="text-base text-gray-600 mb-8 text-center">
+                  Now, please answer some questions about {CONFIG.playerName0}, {CONFIG.playerName1} and how you feel.
+                </p>
+
+                <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
+                  {page1Questions.map((q) => (
+                    <RadioQuestion
+                      key={q.key}
+                      questionNumber={parseInt(q.key.replace('q', ''))}
+                      questionText={q.text}
+                      selectedValue={answers[q.key]}
+                      onChange={(val) => handleChange(q.key, val)}
+                    />
+                  ))}
+
+                  {error && (
+                    <p className="text-red-600 font-medium mb-4">{error}</p>
+                  )}
+
+                  <button
+                    onClick={handleNext}
+                    className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg"
+                  >
+                    Next
+                  </button>
+                </div>
+              </>
+            )}
+
+            {page === 2 && (
+              <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
                 <RadioQuestion
-                  key={q.key}
-                  questionNumber={parseInt(q.key.replace('q', ''))}
-                  questionText={q.text}
-                  selectedValue={answers[q.key]}
-                  onChange={(val) => handleChange(q.key, val)}
+                  questionNumber={6}
+                  questionText={q6.text}
+                  introText={q6.introText}
+                  options={q6.options}
+                  selectedValue={answers.q6}
+                  onChange={(val) => handleChange('q6', val)}
                 />
-              ))}
 
-              {error && (
-                <p className="text-red-600 font-medium mb-4">{error}</p>
-              )}
+                {error && (
+                  <p className="text-red-600 font-medium mb-4">{error}</p>
+                )}
 
-              <button
-                onClick={handleSubmit}
-                className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg"
-              >
-                Submit
-              </button>
-            </div>
+                <button
+                  onClick={handleNextPage2}
+                  className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+
+            {page === 3 && (
+              <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
+                <div className="mb-8">
+                  <p className="text-base text-gray-800 mb-4">
+                    Q7. In your own words, please describe how you usually chose between "drink {CONFIG.playerName0} {CONFIG.playerIcon0}" and "Skip" in study {CONFIG.currentSymbol}. How did your decision making evolve over time?
+                  </p>
+                  <textarea
+                    value={answers.q7}
+                    onChange={(e) => handleChange('q7', e.target.value)}
+                    className="w-full h-40 p-4 border border-gray-300 rounded-lg text-sm text-gray-700 resize-y focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+                  />
+                </div>
+
+                <div className="mb-8">
+                  <p className="text-base text-gray-800 mb-4">
+                    Q8. In your own words, describe how the three players in game Game{CONFIG.currentSymbol} influence one another, and in what ways.
+                  </p>
+                  <textarea
+                    value={answers.q8}
+                    onChange={(e) => handleChange('q8', e.target.value)}
+                    className="w-full h-40 p-4 border border-gray-300 rounded-lg text-sm text-gray-700 resize-y focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+                  />
+                </div>
+
+                {error && (
+                  <p className="text-red-600 font-medium mb-4">{error}</p>
+                )}
+
+                <button
+                  onClick={handleSubmit}
+                  className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg"
+                >
+                  Submit
+                </button>
+              </div>
+            )}
           </div>
         </div>
       );
