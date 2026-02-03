@@ -445,15 +445,18 @@
             <button
               onClick={() => onChoice(1)}
               disabled={disabled}
-              className={`w-32 h-20 px-4 py-3 rounded-lg font-bold transition-all flex flex-col items-center justify-center ${
+              className={`w-32 h-20 px-4 py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 ${
                 disabled
                   ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
                   : 'bg-green-600 hover:bg-green-500 text-white shadow-lg hover:shadow-xl cursor-pointer'
               }`}
             >
-              <div>Drink</div>
-              <div>{CONFIG.playerName0}</div>
-              <div className="text-xs opacity-70">-{CONFIG.currency}{CONFIG.aCost}</div>
+              <span className="text-xl">{CONFIG.playerIcon0}</span>
+              <div className="text-left">
+                <div>Drink</div>
+                <div>{CONFIG.playerName0}</div>
+                <div className="text-xs opacity-70">-{CONFIG.currency}{CONFIG.aCost}</div>
+              </div>
             </button>
             <button
               onClick={() => onChoice(0)}
@@ -582,8 +585,8 @@
               return (
                 <div key={roundNumber} className="flex items-center gap-2 text-sm py-1 px-2 bg-slate-700/30 rounded">
                   <span className="text-slate-500 w-6">#{roundNumber}</span>
-                  <span className={`w-12 ${A === 1 ? 'text-green-400' : 'text-red-400'}`}>
-                    {A === 1 ? 'Drink' : 'Skip'}
+                  <span className={`w-12 ${A === 1 ? 'text-blue-400' : 'text-slate-500'}`}>
+                    {A === 1 ? CONFIG.playerIcon0 : '⊘'}
                   </span>
                   <span className={`flex-1 font-medium ${X === 1 ? 'text-green-400' : 'text-red-400'}`}>
                     {X === 1 ? 'Normal' : 'Abnormal'}
@@ -796,16 +799,7 @@
       return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
           <div className="max-w-6xl mx-auto">
-            {CONFIG.currentSymbol && (
-              <div className="flex items-center gap-4 mb-4">
-                <div
-                  style={{ transform: 'scale(0.6)', transformOrigin: 'left center' }}
-                  dangerouslySetInnerHTML={{ __html: CONFIG.currentSymbol }}
-                />
-              </div>
-            )}
-
-            <div className="bg-slate-800/50 backdrop-blur rounded-2xl p-6 mb-4 border border-slate-700 relative overflow-hidden">
+              <div className="bg-slate-800/50 backdrop-blur rounded-2xl p-6 mb-4 border border-slate-700 relative overflow-hidden">
               <NewDayOverlay show={showNewDay} dayNumber={nextDayNumber} />
 
               <div className="absolute top-4 left-4 bg-white/10 backdrop-blur rounded-xl px-4 py-2">
