@@ -10,7 +10,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     * { box-sizing: border-box; }
-    body { margin: 0; padding: 0; }
+    body { margin: 0; padding: 0; background: #ffffff; }
 
     .slider-hidden-thumb::-webkit-slider-thumb {
       -webkit-appearance: none;
@@ -339,9 +339,9 @@
         const displayEdges = finalEdges || edges;
 
         return (
-          <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-4">
-            <div className="max-w-5xl mx-auto">
-              <div className="bg-white rounded-2xl shadow-2xl p-6">
+          <div className="min-h-screen bg-white p-4">
+            <div className="max-w-4xl mx-auto">
+              <div className="bg-white rounded-2xl p-6">
                 {/* Display the final DAG */}
                 <div className="mb-6 flex justify-center">
                   <svg
@@ -510,14 +510,14 @@
       }
 
       return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-4">
-          <div className="max-w-5xl mx-auto">
-            <div className="bg-white rounded-2xl shadow-2xl p-6">
+        <div className="min-h-screen bg-white p-4">
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white rounded-2xl p-6">
               <div className="mb-4">
                 <h2 className="text-2xl font-bold text-gray-800 mb-3 text-center">
                   How do you think these factors influenced each other?
                 </h2>
-                <ul className="text-gray-600 space-y-2 text-sm list-disc list-inside">
+                <ul className="text-gray-600 space-y-2 text-base list-disc list-inside">
                   <li>Please draw arrows between the three factors below. An arrow from one factor to another means the former could influence the latter. Make an arrow if you think there was an influence, regardless of whether the influence was strong or weak.</li>
                   <li>To draw an arrow, click on a factor, hold your mouse pressed, and move it to another factor.</li>
                   <li>To delete an arrow, double-click it.</li>
