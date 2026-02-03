@@ -10,7 +10,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     * { box-sizing: border-box; }
-    body { margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; background: #ffffff; }
     
     .pie-segment {
       cursor: pointer;
@@ -90,6 +90,7 @@
           if (qConfig.id !== undefined) CONFIG.id = qConfig.id;
           if (qConfig.beliefPaymentMax !== undefined) CONFIG.beliefPaymentMax = qConfig.beliefPaymentMax;
           if (qConfig.beliefPaymentIncentive !== undefined) CONFIG.beliefPaymentIncentive = qConfig.beliefPaymentIncentive;
+          if (qConfig.aCost !== undefined) CONFIG.aCost = qConfig.aCost;
           if (qConfig.currency) CONFIG.currency = qConfig.currency;
           if (qConfig.nRounds !== undefined) CONFIG.nRounds = qConfig.nRounds;
           if (qConfig.currentSymbol) CONFIG.currentSymbol = qConfig.currentSymbol;
@@ -160,6 +161,7 @@
       id: 1,                      // Participant ID for data storage
       beliefPaymentMax: 6.00,     // Max payment per question
       beliefPaymentIncentive: 0.10, // Payment reduction per step wrong
+      aCost: 0.00,                // Cost of drinking
       currency: '$',              // Currency symbol
       nRounds: 10,                // Number of rounds played
       currentSymbol: null,        // HTML for scenario tile display
@@ -467,36 +469,36 @@
         const isQuestion = state === 'question';
         const isCause = state === 'cause';
 
-        const drinkHighlight = (highlightButton === 'drink' || highlightButton === 'both') ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-slate-900' : '';
-        const skipHighlight = (highlightButton === 'skip' || highlightButton === 'both') ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-slate-900' : '';
+        const drinkHighlight = (highlightButton === 'drink' || highlightButton === 'both') ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-white' : '';
+        const skipHighlight = (highlightButton === 'skip' || highlightButton === 'both') ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-white' : '';
 
         return (
           <div className="flex flex-col items-center">
-            <div className="text-sm text-slate-400 mb-2 h-5">Morning Decision</div>
-            <div className="flex gap-2 h-32 items-center">
+            <div className="text-sm text-gray-500 mb-2 h-5">Morning Decision</div>
+            <div className="flex gap-2 h-44 items-center">
               {/* Drink button */}
               <div className={`relative flex items-center justify-center w-32 h-20 rounded-lg transition-all shadow-lg ${
                 isOn || isCause ? 'bg-blue-600 text-white' :
-                'bg-slate-700 text-slate-400'
+                'bg-gray-200 text-gray-400'
               } ${drinkHighlight}`}>
                 {isLocked && isOn && <span className="absolute -top-2 -right-2 text-sm">🔒</span>}
                 <span className="text-2xl mr-2">🥤</span>
                 <div className="flex flex-col">
                   <span className="text-sm font-bold">Drink</span>
                   <span className="text-sm font-bold">{playerName0}</span>
-                  <span className="text-xs opacity-70">-$0</span>
+                  <span className="text-xs opacity-70">-{CONFIG.currency}{CONFIG.aCost}</span>
                 </div>
               </div>
               {/* Skip button */}
               <div className={`relative flex items-center justify-center w-32 h-20 rounded-lg transition-all shadow-lg ${
                 isOff || isCause ? 'bg-blue-600 text-white' :
-                'bg-slate-700 text-slate-400'
+                'bg-gray-200 text-gray-400'
               } ${skipHighlight}`}>
                 {isLocked && isOff && <span className="absolute -top-2 -right-2 text-sm">🔒</span>}
                 <span className="text-2xl mr-2">⊘</span>
                 <div className="flex flex-col">
                   <span className="text-sm font-bold">Skip</span>
-                  <span className="text-xs opacity-70">$0</span>
+                  <span className="text-xs opacity-70">{CONFIG.currency}0</span>
                 </div>
               </div>
             </div>
@@ -533,18 +535,18 @@
         
         return (
           <div className="flex flex-col items-center">
-            <div className="text-sm text-slate-400 mb-2 h-5">{playerName1} Level</div>
-            <div className="relative h-32 flex items-center justify-center">
+            <div className="text-sm text-gray-500 mb-2 h-5">{playerName1} Level</div>
+            <div className="relative flex items-center justify-center">
               {isLocked && <span className="absolute -top-2 -right-2 text-sm z-10">🔒</span>}
-              <svg viewBox="0 0 120 160" className="w-24 h-32">
+              <svg viewBox="0 0 120 160" className="w-32 h-44">
                 {/* Main body */}
-                <rect x="10" y="10" width="100" height="140" rx="12" fill="#0f172a" stroke={isQuestion ? '#eab308' : '#334155'} strokeWidth="2" strokeDasharray={isQuestion ? '4,4' : 'none'} />
+                <rect x="10" y="10" width="100" height="140" rx="12" fill="#0f172a" stroke="#334155" strokeWidth="2" />
                 {/* Screen border */}
                 <rect x="18" y="20" width="84" height="100" rx="6" fill="#1e293b" />
                 {/* Screen background */}
-                <rect x="22" y="24" width="76" height="92" rx="4" fill={getStatusBg()} />
+                <rect x="22" y="24" width="76" height="92" rx="4" fill={getStatusBg()} className="transition-all duration-500" />
                 {/* Status circle */}
-                <circle cx="60" cy="55" r="24" fill={getStatusColor()}>
+                <circle cx="60" cy="55" r="24" fill={getStatusColor()} className="transition-all duration-300">
                   {isQuestion && <animate attributeName="opacity" values="1;0.5;1" dur="1.5s" repeatCount="indefinite" />}
                 </circle>
                 {/* Checkmark for normal */}
@@ -563,12 +565,12 @@
                   <text x="60" y="62" textAnchor="middle" fill="white" fontSize="28" fontWeight="bold">?</text>
                 )}
                 {/* Status text */}
-                <text x="60" y="100" textAnchor="middle" fill={isOn || isOff ? 'white' : '#64748b'} fontSize="10" fontWeight="bold">
+                <text x="60" y="100" textAnchor="middle" fill={isOn || isOff ? 'white' : '#64748b'} fontSize="11" fontWeight="bold">
                   {getStatusText()}
                 </text>
                 {/* BioClip label area */}
                 <rect x="30" y="126" width="60" height="18" rx="4" fill="#334155" />
-                <text x="60" y="139" textAnchor="middle" fill="#94a3b8" fontSize="9" fontFamily="monospace">
+                <text x="60" y="139" textAnchor="middle" fill="#94a3b8" fontSize="10" fontFamily="monospace">
                   BioClip™
                 </text>
                 {/* Arm/clip on the side */}
@@ -594,29 +596,29 @@
         };
         
         const getStatusText = () => {
-          if (isOn) return playerName2Pos.charAt(0).toUpperCase() + playerName2Pos.slice(1);
+          if (isOn) return playerName2Pos.charAt(0).toUpperCase() + playerName2Pos.slice(1) + '!';
           if (isOff) return playerName2Neg.charAt(0).toUpperCase() + playerName2Neg.slice(1);
           if (isQuestion) return '???';
           return '';
         };
         
-        const getRingColor = () => {
-          if (isOn) return 'ring-green-500 bg-green-500/20';
-          if (isOff) return 'ring-red-500 bg-red-500/20';
-          if (isQuestion) return 'ring-yellow-400 ring-dashed bg-yellow-400/10';
-          return 'ring-slate-600 bg-slate-700';
+        const getCircleStyle = () => {
+          if (isOn) return 'bg-gradient-to-br from-emerald-400 to-green-600';
+          if (isOff) return 'bg-gradient-to-br from-rose-400 to-red-600';
+          if (isQuestion) return 'bg-yellow-100 ring-4 ring-yellow-400';
+          return 'bg-gray-200';
         };
-        
+
         return (
           <div className="flex flex-col items-center">
-            <div className="text-sm text-slate-400 mb-2 h-5">Later this day...</div>
-            <div className="relative h-32 flex flex-col items-center justify-center">
+            <div className="text-sm text-gray-500 mb-2 h-5">Later this day...</div>
+            <div className="relative h-44 flex flex-col items-center justify-center">
               {isLocked && <span className="absolute -top-2 -right-2 text-sm z-10">🔒</span>}
-              <div className={`w-20 h-20 rounded-full ring-4 flex items-center justify-center ${getRingColor()} ${isQuestion ? 'animate-pulse' : ''}`}>
-                <span className="text-4xl">{getEmoji()}</span>
+              <div className={`w-28 h-28 rounded-full flex-shrink-0 flex items-center justify-center transition-all duration-500 ${getCircleStyle()} ${isQuestion ? 'animate-pulse' : ''}`}>
+                <span className={`text-6xl ${!isOn && !isOff && !isQuestion ? 'grayscale opacity-30' : ''}`}>{getEmoji()}</span>
               </div>
-              <div className="text-center mt-2 h-4">
-                <span className="text-xs text-slate-400">{getStatusText()}</span>
+              <div className="text-center mt-3">
+                <span className="text-lg font-bold text-gray-900">{getStatusText()}</span>
               </div>
             </div>
           </div>
@@ -624,15 +626,15 @@
       };
       
       return (
-        <div className="bg-slate-900 rounded-xl p-4 mb-4">
+        <div className="bg-gray-50 rounded-xl p-4 mb-4 border border-gray-200">
           <div className="flex justify-around items-start gap-4">
-            <div className={`rounded-xl p-2 transition-all ${isAHighlighted && !highlightButton ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-slate-900 bg-slate-800' : ''}`}>
+            <div className={`rounded-xl p-2 transition-all ${isAHighlighted && !highlightButton ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-white bg-gray-100' : ''}`}>
               <DrinkPanel state={aState} highlightButton={highlightButton} />
             </div>
-            <div className={`rounded-xl p-2 transition-all ${isXHighlighted ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-slate-900 bg-slate-800' : ''}`}>
+            <div className={`rounded-xl p-2 transition-all ${isXHighlighted ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-white bg-gray-100' : ''}`}>
               <MachinePanel state={xState} />
             </div>
-            <div className={`rounded-xl p-2 transition-all ${isYHighlighted ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-slate-900 bg-slate-800' : ''}`}>
+            <div className={`rounded-xl p-2 transition-all ${isYHighlighted ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-white bg-gray-100' : ''}`}>
               <OutcomePanel state={yState} />
             </div>
           </div>
@@ -875,7 +877,7 @@
       const effectiveWalkthroughStep = walkthroughContent.skipToStep1 && walkthroughStep === 0 ? 1 : walkthroughStep;
 
       return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 p-4">
+        <div className="min-h-screen bg-white p-4">
           <div className="max-w-5xl mx-auto">
             {/* Progress */}
             <div className="mb-6">
@@ -943,9 +945,9 @@
                     playerName1={playerName1}
                     playerName2Pos={playerName2Pos}
                     playerName2Neg={playerName2Neg}
-                    highlightPanel={(stage === 1 || stage === 2 || stage === 3) ? (causalElicit === 'XY' || causalElicit === 'YX' ? ['X', 'Y'] : config.outcomePanel) : null}
+                    highlightPanel={(stage === 1 || stage === 2 || stage === 3) ? (causalElicit === 'XY' || causalElicit === 'YX' ? ['X', 'Y'] : (stage === 3 ? ['A', config.outcomePanel] : config.outcomePanel)) : null}
                     isWalkthrough={false}
-                    highlightButton={config.causePanel === 'A' ? (stage === 1 ? 'skip' : stage === 2 ? 'drink' : stage === 3 ? 'both' : null) : null}
+                    highlightButton={config.causePanel === 'A' ? (stage === 1 ? 'skip' : stage === 2 ? 'drink' : null) : null}
                   />
 
                   {/* Divider */}
@@ -1083,7 +1085,7 @@
       const [showDetails, setShowDetails] = useState(false);
 
       return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 p-4">
+        <div className="min-h-screen bg-white p-4">
           <div className="max-w-5xl mx-auto">
             <div className="bg-white rounded-xl shadow-lg p-8">
               {/* Title */}
@@ -1107,13 +1109,26 @@
                 </p>
 
                 <p>
-                  There will be {CONFIG.mainCausals.length} different scenarios. <strong>Some scenarios will ask what would happen
-                  if your {CONFIG.playerName1} level or how you feel are fixed by one of four other medications.</strong> Specifically:
+                  There will be {CONFIG.mainCausals.length} different scenarios. Some scenarios ask what will happen if your {CONFIG.playerName1} level are set by one of two medications:
                 </p>
                 <ul className="list-disc list-inside space-y-2 ml-4 mb-4">
-                  <li><strong>{CONFIG.playerName2PosExo}</strong> makes you <strong>{CONFIG.playerName2Pos}</strong> for sure; <strong>{CONFIG.playerName2NegExo}</strong> makes you <strong>{CONFIG.playerName2Neg}</strong> for sure. These medications have <i>no direct effects</i> on your {CONFIG.playerName1} levels. However, <i>if</i> {CONFIG.playerName1} is a response of your body to feeling {CONFIG.playerName2Neg} or {CONFIG.playerName2Pos}, you may see your {CONFIG.playerName1} level change if you consume {CONFIG.playerName2PosExo} or {CONFIG.playerName2NegExo}.</li>
-                  <li><strong>{CONFIG.playerName1}-Normalase</strong> normalizes your {CONFIG.playerName1} level for sure. <strong>{CONFIG.playerName1}-Disrupton</strong> makes your {CONFIG.playerName1} levels abnormal for sure. These medications have <i>no direct effects</i> on how you feel. However, <i>if</i> how you feel is a response of your body to your {CONFIG.playerName1} level, you may feel different if you consume {CONFIG.playerName1}-Normalase or {CONFIG.playerName1}-Disrupton.</li>
+                  <li><strong>{CONFIG.playerName1}-Normalase</strong> normalizes your {CONFIG.playerName1} level for sure.</li>
+                  <li><strong>{CONFIG.playerName1}-Disrupton</strong> makes your {CONFIG.playerName1} levels abnormal for sure.</li>
                 </ul>
+                <p>
+                  These medications have <i>no direct effects</i> on how you feel. However, <i>if</i> how you feel is a response of your body to your {CONFIG.playerName1} level, you may feel different if you consume {CONFIG.playerName1}-Normalase or {CONFIG.playerName1}-Disrupton.
+                </p>
+
+                <p>
+                  Other scenarios ask what will happen if how you feel is set fixed by one of two other medications:
+                </p>
+                <ul className="list-disc list-inside space-y-2 ml-4 mb-4">
+                  <li><strong>{CONFIG.playerName2PosExo}</strong> makes you <strong>{CONFIG.playerName2Pos}</strong> for sure.</li>
+                  <li><strong>{CONFIG.playerName2NegExo}</strong> makes you <strong>{CONFIG.playerName2Neg}</strong> for sure.</li>
+                </ul>
+                <p>
+                  These medications have <i>no direct effects</i> on your {CONFIG.playerName1} levels. However, <i>if</i> {CONFIG.playerName1} is a response of your body to feeling {CONFIG.playerName2Neg} or {CONFIG.playerName2Pos}, you may see your {CONFIG.playerName1} level change if you consume {CONFIG.playerName2PosExo} or {CONFIG.playerName2NegExo}.
+                </p>
 
                 <p>
                   This part may determine your bonus payment. If your reports are accurate, you will receive {CONFIG.currency}{CONFIG.beliefPaymentMax}. The less accurate your reports, the lower this bonus will be. The payment system is designed
@@ -1251,7 +1266,7 @@
       
       if (!ready) {
         return (
-          <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+          <div className="min-h-screen bg-white flex items-center justify-center">
             <div className="text-gray-600 text-xl">Loading...</div>
           </div>
         );
@@ -1263,7 +1278,7 @@
 
       if (completed) {
         return (
-          <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center p-4">
+          <div className="min-h-screen bg-white flex items-center justify-center p-4">
             <div className="bg-white rounded-xl shadow-lg p-8 max-w-md text-center">
               <div className="text-5xl mb-4">✅</div>
               <h2 className="text-2xl font-bold text-gray-800 mb-2">All Done!</h2>
