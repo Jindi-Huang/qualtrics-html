@@ -123,12 +123,13 @@
       const [confidence, setConfidence] = useState(null);
       const [showDetails, setShowDetails] = useState(false);
       const [finalEdges, setFinalEdges] = useState(null);
+      const alertCountRef = useRef(0);
 
       // Node definitions
       const nodes = [
         { id: 'A', label: `Drink ${playerName0}`, x: 200, y: 100, icon: playerIcon0 },
         { id: 'X', label: `${playerName1} Level`, x: 500, y: 100, icon: '📟' },
-        { id: 'Y', label: 'How You Feel', x: 350, y: 300, icon: '😐' }
+        { id: 'Y', label: 'How You Feel', x: 350, y: 300, icon: '😶' }
       ];
 
       // Node pairs for confirmation
@@ -150,6 +151,11 @@
 
       const addEdge = (from, to) => {
         if (from === to || hasEdge(from, to)) return;
+        if (to === 'A') {
+          const sourceLabel = from === 'X' ? `your ${playerName1} level` : 'how you feel';
+          alertCountRef.current++;
+          alert(`Alert #${alertCountRef.current}: You choose whether to drink ${playerName0} first. Hence, ${sourceLabel} cannot affect your choice to drink ${playerName0} within any given round. You can double-click an arrow to delete it.`);
+        }
         setEdges(prev => [...prev, { from, to }]);
       };
 
@@ -281,7 +287,7 @@
 
       const handleConfidenceSubmit = () => {
         if (confidence === null) return;
-        onComplete(initialEdges, finalEdges || edges, confidence);
+        onComplete(initialEdges, finalEdges || edges, confidence, alertCountRef.current);
       };
 
       // Draw curved arrow path
@@ -395,7 +401,7 @@
                           x={node.x}
                           y={node.y + 60}
                           textAnchor="middle"
-                          className="text-sm font-medium fill-gray-700 pointer-events-none"
+                          className="text-lg font-bold fill-gray-700 pointer-events-none"
                         >
                           {node.label}
                         </text>
@@ -722,7 +728,7 @@
                             x={node.x}
                             y={node.y + 60}
                             textAnchor="middle"
-                            className="text-sm font-medium fill-gray-700 pointer-events-none"
+                            className="text-lg font-bold fill-gray-700 pointer-events-none"
                           >
                             {node.label}
                           </text>
@@ -852,11 +858,12 @@
 
     // Main App
     function App() {
-      const handleComplete = (initialEdges, finalEdges, confidence) => {
+      const handleComplete = (initialEdges, finalEdges, confidence, dagAlertCount) => {
         sendToParent('DAG_COMPLETE', {
           initialDAG: initialEdges,
           finalDAG: finalEdges,
-          confidence: confidence
+          confidence: confidence,
+          DAGAlertCount: dagAlertCount
         });
       };
 
