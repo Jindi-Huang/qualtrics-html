@@ -48,6 +48,7 @@
       playerName1: 'Qivaryn',
       playerIcon0: '🥤',
       noConfirmation: null,  // If 1, skip confirmation step and go directly to confidence
+      nRoundsHalf: 15,
     };
 
     // =============== QUALTRICS/PARENT COMMUNICATION ===============
@@ -84,6 +85,7 @@
           if (qConfig.playerName1) CONFIG.playerName1 = qConfig.playerName1;
           if (qConfig.playerIcon0) CONFIG.playerIcon0 = qConfig.playerIcon0;
           if (qConfig.noConfirmation !== undefined) CONFIG.noConfirmation = qConfig.noConfirmation;
+          if (qConfig.nRoundsHalf !== undefined) CONFIG.nRoundsHalf = qConfig.nRoundsHalf;
         }
 
         // Re-render with new config
@@ -515,7 +517,7 @@
             <div className="bg-white rounded-2xl p-6">
               <div className="mb-4">
                 <h2 className="text-2xl font-bold text-gray-800 mb-3 text-center">
-                  How do you think these factors influenced each other?
+                  {CONFIG.noConfirmation !== 1 && `Before we complete the final ${CONFIG.nRoundsHalf} rounds of this game, `}How do you think these factors influenced each other?
                 </h2>
                 <ul className="text-gray-600 space-y-2 text-base list-disc list-inside">
                   <li>Please draw arrows between the three factors below. An arrow from one factor to another means the former could influence the latter. Make an arrow if you think there was an influence, regardless of whether the influence was strong or weak.</li>
