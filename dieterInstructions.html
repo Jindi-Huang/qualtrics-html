@@ -179,20 +179,30 @@
       const [q2Error, setQ2Error] = useState(null);
       const totalPages = 7;
 
-      const [q1Items] = useState(() => shuffleArray([
-        { id: 'drinkNoPay', text: `Whether I drink the beverage or not does${'\u00A0'}`, underline: 'not', after: ` affect my payment.` },
-        { id: 'drinkCost', text: `Drinking the beverage will cost ${CONFIG.currency}${CONFIG.aCost.toFixed(2)}.` },
-        { id: 'feelGoodBonus', text: `If I feel good at the end of the day, I'll receive an additional ${CONFIG.currency}${CONFIG.yBonus.toFixed(2)} bonus.` },
-        { id: 'oneRound', text: 'My overall payment will be determined by one round randomly selected from throughout the study.' },
-        { id: 'sumAll', text: 'My overall payment will be the sum of all the payments I collect over all rounds I play.' },
-        { id: 'bioClipPay', text: 'My blood chemical levels measured by BioClip directly affects my payment.' }
+      const [q1Order] = useState(() => shuffleArray([
+        'drinkNoPay', 'drinkCost', 'feelGoodBonus', 'oneRound', 'sumAll', 'bioClipPay'
       ]));
 
-      const [q2Items] = useState(() => shuffleArray([
-        { id: 'normalCausesGood', text: `If my BioClip shows a normal chemical level and I later feel good, this means that the normal chemical level caused me to feel good.` },
-        { id: 'normalNotCausesGood', text: `If my BioClip shows a normal chemical level and I later feel good, this does `, underline: 'not', after: ` mean that the normal chemical level caused me to feel good.` },
-        { id: 'twoVersions', text: `Each blood chemical has two possibilities: either it is a cause of how you feel, or is a response to how you feel. Different chemicals may work in different ways.` }
+      const q1ItemsMap = {
+        drinkNoPay: { id: 'drinkNoPay', text: `Whether I drink the beverage or not does${'\u00A0'}`, underline: 'not', after: ` affect my payment.` },
+        drinkCost: { id: 'drinkCost', text: `Drinking the beverage will cost ${CONFIG.currency}${CONFIG.aCost.toFixed(2)}.` },
+        feelGoodBonus: { id: 'feelGoodBonus', text: `If I feel good at the end of the day, I'll receive an additional ${CONFIG.currency}${CONFIG.yBonus.toFixed(2)} bonus.` },
+        oneRound: { id: 'oneRound', text: 'My overall payment will be determined by one round randomly selected from throughout the study.' },
+        sumAll: { id: 'sumAll', text: 'My overall payment will be the sum of all the payments I collect over all rounds I play.' },
+        bioClipPay: { id: 'bioClipPay', text: 'My blood chemical levels measured by BioClip directly affects my payment.' }
+      };
+      const q1Items = q1Order.map(id => q1ItemsMap[id]);
+
+      const [q2Order] = useState(() => shuffleArray([
+        'normalCausesGood', 'normalNotCausesGood', 'twoVersions'
       ]));
+
+      const q2ItemsMap = {
+        normalCausesGood: { id: 'normalCausesGood', text: `If my BioClip shows a normal chemical level and I later feel good, this means that the normal chemical level caused me to feel good.` },
+        normalNotCausesGood: { id: 'normalNotCausesGood', text: `If my BioClip shows a normal chemical level and I later feel good, this does `, underline: 'not', after: ` mean that the normal chemical level caused me to feel good.` },
+        twoVersions: { id: 'twoVersions', text: `Each blood chemical has two possibilities: either it is a cause of how you feel, or is a response to how you feel. Different chemicals may work in different ways.` }
+      };
+      const q2Items = q2Order.map(id => q2ItemsMap[id]);
 
       const q1Correct = new Set(['drinkCost', 'feelGoodBonus', 'oneRound']);
       const q1All = ['drinkNoPay', 'drinkCost', 'feelGoodBonus', 'oneRound', 'sumAll', 'bioClipPay'];
@@ -552,23 +562,17 @@
       return (
         <div className="min-h-screen bg-white p-4">
           <div className="max-w-5xl mx-auto">
-            {/* Warning Banner - only on instruction pages */}
-            {currentPage < 6 && (
-              <div className="bg-amber-50 border border-amber-400 rounded-xl p-4 mb-6">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">⚠️</span>
-                  <p className="text-amber-700 font-medium">
-                    Do NOT click Next on any instructions page without having read all of it carefully. Otherwise, you will fail the attention check!
-                  </p>
-                </div>
-              </div>
-            )}
-
             {/* Main Content Card */}
             <div className="bg-white rounded-2xl p-6">
               <h1 className="text-3xl font-bold text-gray-900 mb-2 text-center">
                 {currentPage < 6 ? 'Instructions' : 'Comprehension Check'}
               </h1>
+
+              {currentPage < 6 && (
+                <p className="text-gray-700 text-center mb-2">
+                  Do <span className="text-red-500 font-semibold">NOT</span> click Next on any instructions page without having read all of it carefully. Otherwise, you will fail the attention check!
+                </p>
+              )}
 
               {currentPage >= 6 && (
                 <p className="text-gray-600 italic text-center mb-4">
