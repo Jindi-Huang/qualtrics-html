@@ -22,13 +22,13 @@
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      background: #ffffff;
       font-family: 'Segoe UI', system-ui, sans-serif;
       padding: 40px 20px 20px 20px;
     }
 
     h1 {
-      color: #e2e8f0;
+      color: #1e293b;
       margin-bottom: 30px;
       font-size: 1.8rem;
       text-align: center;
@@ -83,26 +83,26 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     }
 
     .back {
       background: linear-gradient(145deg,
-        hsl(var(--hue), 70%, 45%),
-        hsl(var(--hue), 60%, 35%));
-      border: 3px solid hsl(var(--hue), 80%, 60%);
+        hsl(var(--hue), 50%, 92%),
+        hsl(var(--hue), 40%, 85%));
+      border: 3px solid hsl(var(--hue), 60%, 70%);
     }
 
     .back::after {
       content: '?';
       font-size: 3rem;
-      color: rgba(255, 255, 255, 0.3);
+      color: hsl(var(--hue), 40%, 60%);
       font-weight: bold;
     }
 
     .front {
-      background: linear-gradient(145deg, #ffffff, #f0f4f8);
-      border: 3px solid hsl(var(--hue), 70%, 50%);
+      background: linear-gradient(145deg, #ffffff, #f8fafc);
+      border: 3px solid hsl(var(--hue), 60%, 65%);
       transform: rotateY(180deg);
       padding: 8px;
     }
@@ -182,7 +182,7 @@
     }
 
     #message {
-      color: #94a3b8;
+      color: #64748b;
       margin-top: 20px;
       font-size: 1rem;
       text-align: center;
@@ -192,7 +192,7 @@
   </style>
 </head>
 <body>
-  <h2 id="studyCounter" style="color: #e2e8f0; margin-bottom: 8px; font-size: 1.8rem; text-align: center;"></h2>
+  <h2 id="studyCounter" style="color: #1e293b; margin-bottom: 24px; font-size: 1.8rem; text-align: center;"></h2>
   <h1 id="title"></h1>
   <div id="container"></div>
   <div id="message"></div>
