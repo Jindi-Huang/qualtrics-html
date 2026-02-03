@@ -163,7 +163,7 @@
 
     #continueBtn {
       display: none;
-      margin-top: 40px;
+      margin-top: 10px;
       padding: 14px 40px;
       font-size: 1.1rem;
       font-weight: 600;
@@ -271,7 +271,7 @@
       }
       const titleEl = document.getElementById('title');
       if (titleEl) {
-        titleEl.textContent = `This study is about drinking ${CONFIG.playerName0}, your ${CONFIG.playerName1} levels and how you feel`;
+        titleEl.innerHTML = `<span style="font-weight: normal">This study is about</span> drinking ${CONFIG.playerName0}<span style="font-weight: normal">, your</span> ${CONFIG.playerName1} levels <span style="font-weight: normal">and</span> how you feel`;
       }
     }
 
