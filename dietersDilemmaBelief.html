@@ -150,7 +150,7 @@
       playerName1: 'Qivaryn',     // Chemical name (X)
       playerIcon0: '🥤',
       id: 1,                      // Participant ID for data storage
-      beliefPaymentMax: 1.00,     // Max payment per question
+      beliefPaymentMax: 6.00,     // Max payment per question
       beliefPaymentIncentive: 0.10, // Payment reduction per step wrong
       currency: '$',              // Currency symbol
       nRounds: 10,                // Number of rounds played
@@ -367,7 +367,7 @@
     // Variable Panel Component - shows 3 variables with game-style visuals
     function VariablePanel({ causalElicit, exoButton, stage, pie1Value, pie2Value, playerName0, playerName1, highlightPanel, isWalkthrough, highlightButton }) {
       // Determine variable states based on causalElicit and stage
-      // A = Drink, X = Chemical (Qivaryn), Y = Headache
+      // A = Drink, X = Chemical (Qivaryn), Y = How You Feel
 
       const getVariableStates = () => {
         let aState = 'neutral';  // 'neutral', 'off', 'on', 'question', 'fixed-on', 'fixed-off'
@@ -587,8 +587,8 @@
         };
         
         const getStatusText = () => {
-          if (isOn) return 'Headache-free';
-          if (isOff) return 'Headache';
+          if (isOn) return 'Energetic';
+          if (isOff) return 'Tired';
           if (isQuestion) return '???';
           return '';
         };
@@ -673,31 +673,33 @@
       
       // Generate questions based on causalElicit type
       const getQuestionConfig = () => {
-        // A = Drink decision, X = Chemical level, Y = Headache (outcome)
+        // A = Drink decision, X = Chemical level, Y = How You Feel (outcome)
         
         const instructionConfigs = {
           AX: {
             title: `How does <strong>your choice to drink ${playerName0}</strong> affect <strong>${playerName1} level</strong> if ...`,
             bullet1: exoButton === null
-              ? "Your headache status is determined as before."
+              ? "Your how you feel is determined as before."
               : exoButton === 1
-                ? "You are <strong>headache-free</strong>, due to other factors."
-                : "You <strong>have a headache</strong>, due to other factors.",
+                ? "You take <strong>\"Energenix\"</strong> which makes you <strong>energetic</strong>."
+                : "You take <strong>\"Somnexil\"</strong> which makes you <strong>tired</strong>.",
             bullet2: `${playerName1} level is determined as before.`,
-            conditionText: exoButton === null ? null : (exoButton === 1 ? `you are <strong>headache-free</strong>:` : `you <strong>have a headache</strong>:`),
+            conditionText: exoButton === null ? null : (exoButton === 1 ? `you take <strong>Energenix</strong> which makes you <strong>energetic</strong>:` : `you take <strong>Somnexil</strong> which makes you <strong>tired</strong>:`),
             // Walkthrough text for each step
             walkthroughStep0: exoButton === null
               ? null
-              : `In this scenario, you <strong>${exoButton === 1 ? 'are headache-free' : 'have a headache'}</strong>, due to other factors...`,
+              : `In this scenario, you take <strong>${exoButton === 1 ? 'Energenix' : 'Somnexil'}</strong> which makes you <strong>${exoButton === 1 ? 'energetic' : 'tired'}</strong>...`,
             walkthroughStep1: `...report how <strong>your choice to drink ${playerName0}</strong>...`,
             walkthroughStep2: `...affects your <strong>${playerName1} level</strong>.`,
             walkthroughHighlight: { step0: 'Y', step1: 'A', step2: 'X' },
             causePanel: 'A',
             outcomePanel: 'X',
-            pie1Question: `What is the chance that your <strong>${playerName1} level is normal</strong> if you <strong class="text-red-600">do NOT drink ${playerName0}</strong>?`,
+            pie1Question: exoButton === null
+              ? `What is the chance that your <strong>${playerName1} level is normal</strong> if you <strong class="text-red-600">do NOT drink ${playerName0}</strong>?`
+              : `Suppose you <strong class="text-red-600">do NOT drink ${playerName0}</strong>. Immediately after, you take <strong>${exoButton === 1 ? 'Energenix' : 'Somnexil'}</strong> which makes you feel <strong>${exoButton === 1 ? 'energetic' : 'tired'}</strong>. What is the chance that your <strong>${playerName1} level is normal</strong>?`,
             pie2Question: exoButton === null
               ? `What is the chance that your <strong>${playerName1} level is normal</strong> if you <strong class="text-green-600">drink ${playerName0}</strong>?`
-              : `What is the chance that your <strong>${playerName1} level is normal</strong> if you <strong class="text-green-600">${exoButton === 1 ? 'drink' : 'drink'} ${playerName0}</strong>?`,
+              : `Suppose you <strong class="text-green-600">drink ${playerName0}</strong>. Immediately after, you take <strong>${exoButton === 1 ? 'Energenix' : 'Somnexil'}</strong> which makes you feel <strong>${exoButton === 1 ? 'energetic' : 'tired'}</strong>. What is the chance that your <strong>${playerName1} level is normal</strong>?`,
             verbalQuestion: exoButton === null
               ? `How does <strong>drinking ${playerName0}</strong> change the chance that your <strong>${playerName1} level is normal</strong>?`
               : `How does <strong>drinking ${playerName0}</strong> change the chance that your <strong>${playerName1} level is normal</strong>?`,
@@ -706,55 +708,59 @@
             pie2Color: '#22c55e'
           },
           AY: {
-            title: `How does <strong>your choice to drink ${playerName0}</strong> affect your <strong>headache</strong> if ...`,
+            title: `How does <strong>your choice to drink ${playerName0}</strong> affect <strong>how you feel</strong> if ...`,
             bullet1: exoButton === null
               ? `Your ${playerName1} level is determined as before.`
               : exoButton === 1
-                ? `Your ${playerName1} level is <strong>normal</strong>, due to other factors.`
-                : `Your ${playerName1} level is <strong>abnormal</strong>, due to other factors.`,
-            bullet2: "Your headache status is determined as before.",
-            conditionText: exoButton === null ? null : `your <strong>${playerName1} level is ${exoButton === 1 ? 'normal' : 'abnormal'}</strong>:`,
+                ? `You take <strong>${playerName1}-Normalase</strong> which makes your ${playerName1} level <strong>normal</strong>.`
+                : `You take <strong>${playerName1}-Disrupton</strong> which makes your ${playerName1} level <strong>abnormal</strong>.`,
+            bullet2: "Your how you feel is determined as before.",
+            conditionText: exoButton === null ? null : `you take <strong>"${playerName1}-${exoButton === 1 ? 'Normalase' : 'Disrupton'}"</strong> which makes your ${playerName1} level <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>:`,
             // Walkthrough text for each step
             walkthroughStep0: exoButton === null
               ? null
-              : `In this scenario, your <strong>${playerName1} level is ${exoButton === 1 ? 'normal' : 'abnormal'}</strong>, due to other factors...`,
+              : `In this scenario, you take <strong>"${playerName1}-${exoButton === 1 ? 'Normalase' : 'Disrupton'}"</strong> which makes your ${playerName1} level <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>...`,
             walkthroughStep1: `...report how <strong>your choice to drink ${playerName0}</strong>...`,
-            walkthroughStep2: `...affects your <strong>headache</strong>.`,
+            walkthroughStep2: `...affects <strong>how you feel</strong>.`,
             walkthroughHighlight: { step0: 'X', step1: 'A', step2: 'Y' },
             causePanel: 'A',
             outcomePanel: 'Y',
-            pie1Question: `What is the chance that you are <strong>headache-free</strong> if you <strong class="text-red-600">do NOT drink ${playerName0}</strong>?`,
-            pie2Question: `What is the chance that you are <strong>headache-free</strong> if you <strong class="text-green-600">drink ${playerName0}</strong>?`,
+            pie1Question: exoButton === null
+              ? `What is the chance that you are <strong>energetic</strong> if you <strong class="text-red-600">do NOT drink ${playerName0}</strong>?`
+              : `Suppose you <strong class="text-red-600">do NOT drink ${playerName0}</strong>. Immediately after, you take <strong>"${playerName1}-${exoButton === 1 ? 'Normalase' : 'Disrupton'}"</strong> which fixes your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>. What is the chance that you feel <strong>energetic</strong>?`,
+            pie2Question: exoButton === null
+              ? `What is the chance that you are <strong>energetic</strong> if you <strong class="text-green-600">drink ${playerName0}</strong>?`
+              : `Suppose you <strong class="text-green-600">drink ${playerName0}</strong>. Immediately after, you take <strong>"${playerName1}-${exoButton === 1 ? 'Normalase' : 'Disrupton'}"</strong> which fixes your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>. What is the chance that you feel <strong>energetic</strong>?`,
             verbalQuestion: exoButton === null
-              ? `How does <strong>drinking ${playerName0}</strong> change the chance that you are <strong>headache-free</strong>?`
-              : `How does <strong>drinking ${playerName0}</strong> change the chance that you are <strong>headache-free</strong>?`,
-            outcomeText: 'headache-free',
+              ? `How does <strong>drinking ${playerName0}</strong> change the chance that you are <strong>energetic</strong>?`
+              : `How does <strong>drinking ${playerName0}</strong> change the chance that you are <strong>energetic</strong>?`,
+            outcomeText: 'energetic',
             pie1Color: '#ef4444',
             pie2Color: '#22c55e'
           },
           XY: {
-            title: `How does <strong>${playerName1} level</strong> affect your <strong>headache</strong> if ...`,
+            title: `How does <strong>${playerName1} level</strong> affect <strong>how you feel</strong> if ...`,
             bullet1: exoButton === 1
               ? `You <strong>drink</strong> ${playerName0}.`
               : `You <strong>do NOT drink</strong> ${playerName0}.`,
-            bullet2: "Your headache status is determined as before.",
+            bullet2: "Your how you feel is determined as before.",
             conditionText: `you <strong>${exoButton === 1 ? 'drink' : 'do NOT drink'}</strong> ${playerName0}:`,
             // Walkthrough text for each step
             walkthroughStep0: `In this scenario, you <strong>${exoButton === 1 ? 'drink' : 'do NOT drink'}</strong> ${playerName0}...`,
             walkthroughStep1: `...report how <strong>your ${playerName1} level</strong>...`,
-            walkthroughStep2: `...affects your <strong>headache</strong>.`,
+            walkthroughStep2: `...affects <strong>how you feel</strong>.`,
             walkthroughHighlight: { step0: 'A', step1: 'X', step2: 'Y' },
             causePanel: 'X',
             outcomePanel: 'Y',
-            pie1Question: `What is the chance that you are <strong>headache-free</strong> if your <strong class="text-red-600">${playerName1} level is abnormal</strong>?`,
-            pie2Question: `What is the chance that you are <strong>headache-free</strong> if your <strong class="text-green-600">${playerName1} level is normal</strong>?`,
-            verbalQuestion: `How does having <strong>normal ${playerName1}</strong> (vs. abnormal) change the chance that you are <strong>headache-free</strong>?`,
-            outcomeText: 'headache-free',
+            pie1Question: `Suppose you <strong>${exoButton === 1 ? 'drink' : 'do NOT drink'}</strong> ${playerName0}. Immediately after, you take <strong>${playerName1}-Disrupton</strong> which fixes your ${playerName1} level to <strong class="text-red-600">abnormal</strong>. What is the chance that you feel <strong>energetic</strong>?`,
+            pie2Question: `Suppose you <strong>${exoButton === 1 ? 'drink' : 'do NOT drink'}</strong> ${playerName0}. Immediately after, you take <strong>${playerName1}-Normalase</strong> which fixes your ${playerName1} level to <strong class="text-green-600">normal</strong>. What is the chance that you feel <strong>energetic</strong>?`,
+            verbalQuestion: `How does having <strong>normal ${playerName1}</strong> (vs. abnormal) change the chance that you are <strong>energetic</strong>?`,
+            outcomeText: 'energetic',
             pie1Color: '#ef4444',
             pie2Color: '#22c55e'
           },
           YX: {
-            title: `How does your <strong>headache status</strong> affect <strong>${playerName1} level</strong> if ...`,
+            title: `How does <strong>how you feel</strong> affect <strong>${playerName1} level</strong> if ...`,
             bullet1: exoButton === 1
               ? `You <strong>drink</strong> ${playerName0}.`
               : `You <strong>do NOT drink</strong> ${playerName0}.`,
@@ -762,14 +768,14 @@
             conditionText: `you <strong>${exoButton === 1 ? 'drink' : 'do NOT drink'}</strong> ${playerName0}:`,
             // Walkthrough text for each step
             walkthroughStep0: `In this scenario, you <strong>${exoButton === 1 ? 'drink' : 'do NOT drink'}</strong> ${playerName0}...`,
-            walkthroughStep1: `...report how <strong>your headache status</strong>...`,
+            walkthroughStep1: `...report how <strong>your how you feel</strong>...`,
             walkthroughStep2: `...affects your <strong>${playerName1} level</strong>.`,
             walkthroughHighlight: { step0: 'A', step1: 'Y', step2: 'X' },
             causePanel: 'Y',
             outcomePanel: 'X',
-            pie1Question: `What is the chance that your <strong>${playerName1} level is normal</strong> if you <strong class="text-red-600">have a headache</strong>?`,
-            pie2Question: `What is the chance that your <strong>${playerName1} level is normal</strong> if you are <strong class="text-green-600">headache-free</strong>?`,
-            verbalQuestion: `How does being <strong>headache-free</strong> (vs. having a headache) change the chance that your <strong>${playerName1} level is normal</strong>?`,
+            pie1Question: `Suppose you <strong>${exoButton === 1 ? 'drink' : 'do NOT drink'}</strong> ${playerName0}. Immediately after, you take <strong>Somnexil</strong> which makes you feel <strong class="text-red-600">tired</strong>. What is the chance that your <strong>${playerName1} level is normal</strong>?`,
+            pie2Question: `Suppose you <strong>${exoButton === 1 ? 'drink' : 'do NOT drink'}</strong> ${playerName0}. Immediately after, you take <strong>Energenix</strong> which makes you feel <strong class="text-green-600">energetic</strong>. What is the chance that your <strong>${playerName1} level is normal</strong>?`,
+            verbalQuestion: `How does being <strong>energetic</strong> (vs. being tired) change the chance that your <strong>${playerName1} level is normal</strong>?`,
             outcomeText: `${playerName1} level is normal`,
             pie1Color: '#ef4444',
             pie2Color: '#22c55e'
@@ -956,12 +962,6 @@
                 {/* Stage 1: First Pie Chart */}
                 {stage === 1 && (
                   <div className="animate-fadeIn">
-                    {config.conditionText && (
-                      <p className="text-gray-700 text-center mb-2">
-                        <span>In the scenario in which </span>
-                        <span dangerouslySetInnerHTML={{ __html: config.conditionText }} />
-                      </p>
-                    )}
                     <p className="text-gray-700 text-center mb-6" dangerouslySetInnerHTML={{ __html: config.pie1Question }} />
                     <div className="flex justify-center mb-6">
                       <PieChart
@@ -989,12 +989,6 @@
                 {/* Stage 2: Second Pie Chart */}
                 {stage === 2 && (
                   <div className="animate-fadeIn">
-                    {config.conditionText && (
-                      <p className="text-gray-700 text-center mb-2">
-                        <span>In the scenario in which </span>
-                        <span dangerouslySetInnerHTML={{ __html: config.conditionText }} />
-                      </p>
-                    )}
                     <p className="text-gray-700 text-center mb-6" dangerouslySetInnerHTML={{ __html: config.pie2Question }} />
                     <div className="flex justify-center mb-6">
                       <PieChart
@@ -1028,12 +1022,6 @@
                 {/* Stage 3: Verbal Scale */}
                 {stage === 3 && (
                   <div className="animate-fadeIn">
-                    {config.conditionText && (
-                      <p className="text-gray-700 text-center mb-2">
-                        <span>In the scenario in which </span>
-                        <span dangerouslySetInnerHTML={{ __html: config.conditionText }} />
-                      </p>
-                    )}
                     <p className="text-gray-700 text-center mb-4" dangerouslySetInnerHTML={{ __html: config.verbalQuestion }} />
                     <div className="max-w-lg mx-auto">
                       <VerbalScale
@@ -1084,7 +1072,7 @@
               {/* Title */}
               <div className="text-center mb-6">
                 <div className="flex items-center justify-center gap-3 mb-4">
-                  <h1 className="text-2xl font-bold text-gray-800">Your Beliefs About How {CONFIG.playerName0}, {CONFIG.playerName1}, and Headaches Are Related</h1>
+                  <h1 className="text-2xl font-bold text-gray-800">Your Beliefs About Cause and Effect</h1>
                   {CONFIG.currentSymbol && (
                     <div
                       style={{ transform: 'scale(0.5)', transformOrigin: 'left center' }}
@@ -1098,13 +1086,17 @@
               <div className="text-gray-700 space-y-4 mb-6">
                 <p>
                   Each of the next <strong>{CONFIG.mainCausals.length}</strong> decision screens show you a different scenario.
-                  Each will ask about how your decision to drink <strong>{CONFIG.playerName0}</strong>, your <strong>{CONFIG.playerName1} level</strong>, and your <strong>headache status</strong> are related.
+                  Each will ask about how your decision to drink <strong>{CONFIG.playerName0}</strong>, your <strong>{CONFIG.playerName1} level</strong>, and <strong>how you feel</strong> are related.
                 </p>
 
                 <p>
                   There will be {CONFIG.mainCausals.length} different scenarios. <strong>Some scenarios will ask what would happen
-                  if certain factors were fixed by other factors.</strong> In these scenarios, it does not matter what would have happened originally.
+                  if your {CONFIG.playerName1} level or how you feel are fixed by other medications.</strong> For example:
                 </p>
+                <ul className="list-disc list-inside space-y-2 ml-4 mb-4">
+                  <li>Two medications affect your {CONFIG.playerName1} levels and have no other effects. The medication named <strong>Energenix</strong> makes you <strong>energetic</strong> for sure; The medication named <strong>Somnexil</strong> makes you <strong>tired</strong> for sure. These medications will not affect your {CONFIG.playerName1} level.</li>
+                  <li>The medication <strong>{CONFIG.playerName1}-Normalase</strong> normalizes your {CONFIG.playerName1} level. <strong>{CONFIG.playerName1}-Disrupton</strong> makes your {CONFIG.playerName1} levels abnormal. These medications will not affect how you feel.</li>
+                </ul>
 
                 <p>
                   This part may determine your bonus payment. If your reports are accurate, you will receive {CONFIG.currency}{CONFIG.beliefPaymentMax}. The less accurate your reports, the lower this bonus will be. The payment system is designed

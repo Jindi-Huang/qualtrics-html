@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Instructions</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 0; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script>
+    // =============== QUALTRICS COMMUNICATION ===============
+    let participantId = null;
+    let gameId = null;
+
+    window.addEventListener('message', function(event) {
+      if (event.data.type === 'INIT') {
+        console.log('Received INIT from Qualtrics:', event.data);
+        participantId = event.data.participantId;
+        gameId = event.data.gameId;
+
+        if (event.data.gameConfig) {
+          const qConfig = event.data.gameConfig;
+          if (qConfig.currency) CONFIG.currency = qConfig.currency;
+          if (qConfig.basePay !== undefined) CONFIG.basePay = qConfig.basePay;
+          if (qConfig.aCost !== undefined) CONFIG.aCost = qConfig.aCost;
+          if (qConfig.yBonus !== undefined) CONFIG.yBonus = qConfig.yBonus;
+          if (qConfig.nRounds !== undefined) CONFIG.nRounds = qConfig.nRounds;
+          if (qConfig.playerName0) CONFIG.playerName0 = qConfig.playerName0;
+          if (qConfig.playerName1) CONFIG.playerName1 = qConfig.playerName1;
+          if (qConfig.playerIcon0) CONFIG.playerIcon0 = qConfig.playerIcon0;
+          console.log('Applied config:', CONFIG);
+        }
+
+        markInitialized();
+      }
+    });
+
+    function sendDataToQualtrics(dataType, data) {
+      if (window.parent !== window) {
+        window.parent.postMessage({
+          type: 'GAME_DATA',
+          gameId: gameId,
+          dataType: dataType,
+          data: data,
+          participantId: participantId,
+          timestamp: new Date().toISOString()
+        }, '*');
+      }
+      console.log('Sent to Qualtrics:', dataType, data);
+    }
+
+    let isInitialized = false;
+    let initCallbacks = [];
+
+    function onInitialized(callback) {
+      if (isInitialized) callback();
+      else initCallbacks.push(callback);
+    }
+
+    function markInitialized() {
+      isInitialized = true;
+      initCallbacks.forEach(cb => cb());
+      initCallbacks = [];
+    }
+
+    // Configuration
+    const CONFIG = {
+      currency: '$',
+      basePay: 2.00,
+      aCost: 0.00,
+      yBonus: 2.00,
+      nRounds: 10,
+      playerName0: 'Driftwell',
+      playerName1: 'Qivaryn',
+      playerIcon0: '🥤'
+    };
+
+    // Example drink-chemical pairs for illustration
+    const EXAMPLES = [
+      { drink: 'Driftwell', chemical: 'Qivaryn', icon: '🥤' },
+      { drink: 'Clearhaven', chemical: 'Zerqalase', icon: '🧋' },
+      { drink: 'Melloway', chemical: 'Melythor', icon: '🍶' }
+    ];
+  </script>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // Mini BioClip illustration (matches BioClipLarge from dietersDilemma.html)
+    function BioClipMini({ status }) {
+      const getStatusColor = () => {
+        if (status === null) return '#64748b';
+        return status === 1 ? '#22c55e' : '#ef4444';
+      };
+
+      const getStatusBg = () => {
+        if (status === null) return '#1e293b';
+        return status === 1 ? '#14532d' : '#7f1d1d';
+      };
+
+      return (
+        <svg viewBox="0 0 120 160" className="w-24 h-32">
+          <rect x="10" y="10" width="100" height="140" rx="12" fill="#0f172a" stroke="#334155" strokeWidth="2" />
+          <rect x="18" y="20" width="84" height="100" rx="6" fill="#1e293b" />
+          <rect x="22" y="24" width="76" height="92" rx="4" fill={getStatusBg()} />
+          <circle cx="60" cy="55" r="24" fill={getStatusColor()} />
+          {status === 1 && (
+            <path d="M48 55 L56 63 L72 47" stroke="white" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          )}
+          {status === 0 && (
+            <g stroke="white" strokeWidth="4" strokeLinecap="round">
+              <line x1="50" y1="45" x2="70" y2="65" />
+              <line x1="70" y1="45" x2="50" y2="65" />
+            </g>
+          )}
+          <text x="60" y="100" textAnchor="middle" fill={status === null ? '#64748b' : 'white'} fontSize="11" fontWeight="bold">
+            {status === null ? 'READING...' : status === 1 ? 'NORMAL' : 'ABNORMAL'}
+          </text>
+          <rect x="30" y="126" width="60" height="18" rx="4" fill="#334155" />
+          <text x="60" y="139" textAnchor="middle" fill="#94a3b8" fontSize="10" fontFamily="monospace">BioClip™</text>
+          <path d="M0 50 L10 50 L10 110 L0 110 C-4 110 -6 105 -6 100 L-6 60 C-6 55 -4 50 0 50 Z" fill="#475569" />
+        </svg>
+      );
+    }
+
+    // Mood indicator mini (matches MoodLarge from dietersDilemma.html)
+    function MoodMini({ mood }) {
+      return (
+        <div className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-500 ${
+          mood === null ? 'bg-slate-700' : mood === 1 ? 'bg-gradient-to-br from-emerald-400 to-green-600' : 'bg-gradient-to-br from-rose-400 to-red-600'
+        }`}>
+          <span className={`text-5xl ${mood === null ? 'grayscale opacity-30' : ''}`}>
+            {mood === null ? '😐' : mood === 1 ? '😊' : '😔'}
+          </span>
+        </div>
+      );
+    }
+
+    // Drink button mini
+    function DrinkButtonMini({ icon, name, type }) {
+      const bgColor = type === 'drink' ? 'bg-green-600' : 'bg-red-600';
+      return (
+        <div className={`w-20 py-2 rounded-lg flex items-center justify-center gap-2 ${bgColor} text-white`}>
+          {icon && <span className="text-xl">{icon}</span>}
+          <span className="text-sm font-bold">{name}</span>
+        </div>
+      );
+    }
+
+    // Main Instructions Component
+    function Instructions() {
+      const [ready, setReady] = useState(false);
+      const [currentSection, setCurrentSection] = useState(0);
+
+      useEffect(() => {
+        const timeout = setTimeout(() => {
+          if (!ready) {
+            console.log('Timeout: starting with default config');
+            setReady(true);
+          }
+        }, 3000);
+
+        onInitialized(() => {
+          clearTimeout(timeout);
+          setReady(true);
+        });
+
+        return () => clearTimeout(timeout);
+      }, []);
+
+      const handleContinue = () => {
+        sendDataToQualtrics('INSTRUCTIONS_COMPLETE', { completed: true });
+      };
+
+      if (!ready) {
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+            <div className="text-white text-xl">Loading...</div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
+          <div className="max-w-5xl mx-auto">
+            {/* Warning Banner */}
+            <div className="bg-amber-500/20 border border-amber-500 rounded-xl p-4 mb-6">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">⚠️</span>
+                <p className="text-amber-200 font-medium">
+                  Do NOT click Next on any instructions page without having read all of it carefully. Otherwise, you will fail the attention check!
+                </p>
+              </div>
+            </div>
+
+            {/* Main Content Card */}
+            <div className="bg-slate-800/50 backdrop-blur rounded-2xl p-6 border border-slate-700">
+              <h1 className="text-3xl font-bold text-white mb-6 text-center">Instructions</h1>
+
+              {/* Section 1: The Setup */}
+              <section className="mb-8">
+                <h2 className="text-xl font-bold text-cyan-400 mb-4 flex items-center gap-2">
+                  <span className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-white text-sm">1</span>
+                  The Setup
+                </h2>
+                <div className="bg-slate-700/50 rounded-xl p-4 space-y-4">
+                  <p className="text-slate-200">
+                    For this study, imagine the following:
+                  </p>
+                  <p className="text-slate-200">
+                    There are new products of two kinds:
+                  </p>
+                  <ul className="list-disc list-inside space-y-2 text-slate-300 ml-4">
+                    <li><strong className="text-white">New functional beverages.</strong> These are drinks that have some effect on you, such as altering certain blood chemicals.</li>
+                    <li><strong className="text-white">A new smartphone extension called BioClip</strong> that measures these blood chemicals.</li>
+                  </ul>
+                  <p className="text-slate-200 mt-4">
+                    It is known that each of the drinks affect one blood chemical. For instance,
+                  </p>
+
+                  <div className="bg-slate-800 rounded-xl p-4 mt-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {EXAMPLES.map((ex, i) => (
+                        <div key={i} className="bg-slate-700 rounded-lg p-3 flex items-center gap-3">
+                          <span className="text-2xl">{ex.icon}</span>
+                          <div>
+                            <div className="text-white font-medium">{ex.drink}</div>
+                            <div className="text-slate-400 text-sm">affects {ex.chemical}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Section 2: What Happens Each Week */}
+              <section className="mb-8">
+                <h2 className="text-xl font-bold text-cyan-400 mb-4 flex items-center gap-2">
+                  <span className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-white text-sm">2</span>
+                  What Happens Each Week
+                </h2>
+                <div className="bg-slate-700/50 rounded-xl p-4">
+                  <p className="text-slate-200 mb-4">
+                    Each Monday morning, when you get up, you decide whether to consume the drink. Shortly after, your BioClip tells you whether your blood chemical level is normal. What you care about is whether you will feel good or bad later in the day.
+                  </p>
+                  <div className="flex flex-col md:flex-row items-stretch justify-around gap-6 py-4">
+                    {/* Step 1: Decision */}
+                    <div className="text-center flex flex-col items-center">
+                      <div className="h-12 flex flex-col justify-start">
+                        <div className="text-white font-medium">Morning</div>
+                        <div className="text-slate-400 text-sm">You decide: Drink or Skip?</div>
+                      </div>
+                      <div className="flex-1 flex items-center">
+                        <div className="flex gap-2 justify-center">
+                          <DrinkButtonMini name="Drink" type="drink" />
+                          <DrinkButtonMini icon="⊘" name="Skip" type="skip" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-slate-500 text-2xl flex items-center">→</div>
+
+                    {/* Step 2: BioClip Reading */}
+                    <div className="text-center flex flex-col items-center">
+                      <div className="h-12 flex flex-col justify-start">
+                        <div className="text-white font-medium">Shortly After</div>
+                        <div className="text-slate-400 text-sm">BioClip shows chemical level</div>
+                      </div>
+                      <div className="flex-1 flex items-center">
+                        <BioClipMini status={null} />
+                      </div>
+                    </div>
+
+                    <div className="text-slate-500 text-2xl flex items-center">→</div>
+
+                    {/* Step 3: Outcome */}
+                    <div className="text-center flex flex-col items-center">
+                      <div className="h-12 flex flex-col justify-start">
+                        <div className="text-white font-medium">Later That Day</div>
+                        <div className="text-slate-400 text-sm">How do you feel?</div>
+                      </div>
+                      <div className="flex-1 flex items-center">
+                        <MoodMini mood={null} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Section 3: What You Know */}
+              <section className="mb-8">
+                <h2 className="text-xl font-bold text-cyan-400 mb-4 flex items-center gap-2">
+                  <span className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-white text-sm">3</span>
+                  What You Know vs. Don't Know
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-green-900/30 border border-green-700 rounded-xl p-4">
+                    <h3 className="text-green-400 font-bold mb-2 flex items-center gap-2">
+                      <span>✓</span> What You Know
+                    </h3>
+                    <p className="text-slate-300">
+                      Consuming a drink makes it <strong className="text-white">more likely</strong> that your blood chemical level will be <strong className="text-green-400">normal</strong>.
+                    </p>
+                  </div>
+                  <div className="bg-amber-900/30 border border-amber-700 rounded-xl p-4">
+                    <h3 className="text-amber-400 font-bold mb-2 flex items-center gap-2">
+                      <span>?</span> What You Don't Know
+                    </h3>
+                    <p className="text-slate-300">
+                      What having a normal chemical level means for how you <strong className="text-white">feel later that day</strong>.
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+              {/* Section 4: Two Possibilities */}
+              <section className="mb-8">
+                <h2 className="text-xl font-bold text-cyan-400 mb-4 flex items-center gap-2">
+                  <span className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-white text-sm">4</span>
+                  Two Possibilities
+                </h2>
+                <div className="space-y-4">
+                  <div className="bg-slate-700/50 rounded-xl p-4 border-l-4 border-cyan-500">
+                    <h3 className="text-cyan-400 font-bold mb-2">Possibility 1: The chemical level is a cause of how you will feel later that day.</h3>
+                    <p className="text-slate-300">
+                      Hence, normalizing your chemical level (by consuming the drink) <strong className="text-white">raises the chance that you will feel good</strong> later that day.
+                    </p>
+                  </div>
+                  <div className="bg-slate-700/50 rounded-xl p-4 border-l-4 border-cyan-500">
+                    <h3 className="text-cyan-400 font-bold mb-2">Possibility 2: The chemical level predicts how you will feel later that day, but does not cause it.</h3>
+                    <p className="text-slate-300">
+                      The chemical might, for example, be a side-product of your body processing something else that is the actual cause for how you feel later that day. In this case, drinking the beverage will still increase the chance that your chemical level will be normal, but this <strong className="text-white">will not affect how you feel</strong> later that day.
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+              {/* Section 5: Note */}
+              <section className="mb-8">
+                <h2 className="text-xl font-bold text-cyan-400 mb-4 flex items-center gap-2">
+                  <span className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-white text-sm">5</span>
+                  Note
+                </h2>
+                <div className="bg-slate-700/50 rounded-xl p-4">
+                  <p className="text-slate-300">
+                    Because many things are going on in your body at any time, <strong className="text-white">even effective decisions will not work 100% of the time</strong>. For instance, even though the beverage normalizes your blood chemical level:
+                  </p>
+                  <ul className="list-disc list-inside space-y-2 text-slate-300 mt-3 ml-4">
+                    <li>Sometimes it will be normal even if you don't drink the beverage</li>
+                    <li>Sometimes it will be abnormal even if you drink the beverage</li>
+                  </ul>
+                  <p className="text-slate-300 mt-3">
+                    Therefore, even effective decisions won't give you 100% control, they will only <strong className="text-white">change the chance</strong> that you will feel good.
+                  </p>
+                </div>
+              </section>
+
+              {/* Section 6: Payment */}
+              <section className="mb-8">
+                <h2 className="text-xl font-bold text-cyan-400 mb-4 flex items-center gap-2">
+                  <span className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center text-white text-sm">6</span>
+                  Payment
+                </h2>
+                <div className="bg-slate-700/50 rounded-xl p-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 bg-slate-800 rounded-lg p-3">
+                      <span className="text-2xl">💰</span>
+                      <div>
+                        <div className="text-white font-medium">Baseline Bonus</div>
+                        <div className="text-slate-400">You begin each round with a baseline bonus of {CONFIG.currency}{CONFIG.basePay}.</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 bg-slate-800 rounded-lg p-3">
+                      <span className="text-2xl">🥤</span>
+                      <div>
+                        <div className="text-white font-medium">Drink Cost</div>
+                        <div className="text-slate-400">If you consume the drink, you pay {CONFIG.currency}{CONFIG.aCost} for it (deducted from your baseline bonus).</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 bg-slate-800 rounded-lg p-3">
+                      <span className="text-2xl">😊</span>
+                      <div>
+                        <div className="text-white font-medium">Feeling Good Bonus</div>
+                        <div className="text-slate-400">If you feel good at the end of the day, you receive an additional {CONFIG.currency}{CONFIG.yBonus} bonus, if you feel bad, you don't.</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 bg-slate-800 rounded-lg p-3">
+                      <span className="text-2xl">📟</span>
+                      <div>
+                        <div className="text-white font-medium">BioClip Reading</div>
+                        <div className="text-slate-400">The BioClip's reading of your blood chemicals does not directly affect your payment.</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="text-slate-300 mt-4">
+                    <strong className="text-white">There will be {CONFIG.nRounds} rounds.</strong> This may sound like a lot, but because each round only takes a few seconds, this is quite manageable.
+                  </p>
+                  <p className="text-slate-300 mt-2">
+                    <strong className="text-white">You will be paid for one round,</strong> selected at random at the end of the study.
+                  </p>
+                </div>
+              </section>
+
+              {/* Continue Button */}
+              <div className="flex justify-center mt-8">
+                <button
+                  onClick={handleContinue}
+                  className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all"
+                >
+                  I Have Read the Instructions — Continue
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Render
+    ReactDOM.createRoot(document.getElementById('root')).render(<Instructions />);
+  </script>
+</body>
+</html>
