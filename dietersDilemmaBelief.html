@@ -445,10 +445,11 @@
 
       const { aState, xState, yState } = getVariableStates();
 
-      // Check if each panel should be highlighted
-      const isAHighlighted = highlightPanel === 'A';
-      const isXHighlighted = highlightPanel === 'X';
-      const isYHighlighted = highlightPanel === 'Y';
+      // Check if each panel should be highlighted (highlightPanel can be string or array)
+      const highlightPanels = Array.isArray(highlightPanel) ? highlightPanel : (highlightPanel ? [highlightPanel] : []);
+      const isAHighlighted = highlightPanels.includes('A');
+      const isXHighlighted = highlightPanels.includes('X');
+      const isYHighlighted = highlightPanels.includes('Y');
       
       // Drink buttons component (A) - matches game style
       const DrinkPanel = ({ state, highlightButton }) => {
@@ -681,14 +682,14 @@
             bullet1: exoButton === null
               ? "Your how you feel is determined as before."
               : exoButton === 1
-                ? "You take <strong>\"Energenix\"</strong> which makes you <strong>energetic</strong>."
-                : "You take <strong>\"Somnexil\"</strong> which makes you <strong>tired</strong>.",
+                ? "You take Energenix which makes you <strong>energetic</strong>."
+                : "You take Somnexil which makes you <strong>tired</strong>.",
             bullet2: `${playerName1} level is determined as before.`,
-            conditionText: exoButton === null ? null : (exoButton === 1 ? `you take <strong>Energenix</strong> which makes you <strong>energetic</strong>:` : `you take <strong>Somnexil</strong> which makes you <strong>tired</strong>:`),
+            conditionText: exoButton === null ? null : (exoButton === 1 ? `you take Energenix which makes you <strong>energetic</strong>:` : `you take Somnexil which makes you <strong>tired</strong>:`),
             // Walkthrough text for each step
             walkthroughStep0: exoButton === null
               ? null
-              : `In this scenario, you take <strong>${exoButton === 1 ? 'Energenix' : 'Somnexil'}</strong> which makes you <strong>${exoButton === 1 ? 'energetic' : 'tired'}</strong>...`,
+              : `In this scenario, you take ${exoButton === 1 ? 'Energenix' : 'Somnexil'} which makes you <strong>${exoButton === 1 ? 'energetic' : 'tired'}</strong>...`,
             walkthroughStep1: `...report how <strong>your choice to drink ${playerName0}</strong>...`,
             walkthroughStep2: `...affects your <strong>${playerName1} level</strong>.`,
             walkthroughHighlight: { step0: 'Y', step1: 'A', step2: 'X' },
@@ -696,13 +697,13 @@
             outcomePanel: 'X',
             pie1Question: exoButton === null
               ? `What is the chance that your <strong>${playerName1} level is normal</strong> if you <strong class="text-red-600">do NOT drink ${playerName0}</strong>?`
-              : `Suppose you <strong class="text-red-600">do NOT drink ${playerName0}</strong>. Immediately after, you take <strong>${exoButton === 1 ? 'Energenix' : 'Somnexil'}</strong> which makes you feel <strong>${exoButton === 1 ? 'energetic' : 'tired'}</strong>. What is the chance that your <strong>${playerName1} level is normal</strong>?`,
+              : `Suppose you <strong class="text-red-600">do NOT drink ${playerName0}</strong>. Immediately after, you take ${exoButton === 1 ? 'Energenix' : 'Somnexil'} which makes you feel <strong>${exoButton === 1 ? 'energetic' : 'tired'}</strong>. What is the chance that your <strong>${playerName1} level is normal</strong>?`,
             pie2Question: exoButton === null
               ? `What is the chance that your <strong>${playerName1} level is normal</strong> if you <strong class="text-green-600">drink ${playerName0}</strong>?`
-              : `Suppose you <strong class="text-green-600">drink ${playerName0}</strong>. Immediately after, you take <strong>${exoButton === 1 ? 'Energenix' : 'Somnexil'}</strong> which makes you feel <strong>${exoButton === 1 ? 'energetic' : 'tired'}</strong>. What is the chance that your <strong>${playerName1} level is normal</strong>?`,
+              : `Suppose you <strong class="text-green-600">drink ${playerName0}</strong>. Immediately after, you take ${exoButton === 1 ? 'Energenix' : 'Somnexil'} which makes you feel <strong>${exoButton === 1 ? 'energetic' : 'tired'}</strong>. What is the chance that your <strong>${playerName1} level is normal</strong>?`,
             verbalQuestion: exoButton === null
               ? `How does <strong>drinking ${playerName0}</strong> change the chance that your <strong>${playerName1} level is normal</strong>?`
-              : `How does <strong>drinking ${playerName0}</strong> change the chance that your <strong>${playerName1} level is normal</strong>?`,
+              : `Suppose you take ${exoButton === 1 ? 'Energenix' : 'Somnexil'} which makes you feel <strong>${exoButton === 1 ? 'energetic' : 'tired'}</strong>. How does <strong>drinking ${playerName0}</strong> change the chance that your <strong>${playerName1} level is normal</strong>?`,
             outcomeText: `${playerName1} level is normal`,
             pie1Color: '#ef4444',
             pie2Color: '#22c55e'
@@ -712,14 +713,14 @@
             bullet1: exoButton === null
               ? `Your ${playerName1} level is determined as before.`
               : exoButton === 1
-                ? `You take <strong>${playerName1}-Normalase</strong> which makes your ${playerName1} level <strong>normal</strong>.`
-                : `You take <strong>${playerName1}-Disrupton</strong> which makes your ${playerName1} level <strong>abnormal</strong>.`,
+                ? `You take ${playerName1}-Normalase which makes your ${playerName1} level <strong>normal</strong>.`
+                : `You take ${playerName1}-Disrupton which makes your ${playerName1} level <strong>abnormal</strong>.`,
             bullet2: "Your how you feel is determined as before.",
-            conditionText: exoButton === null ? null : `you take <strong>"${playerName1}-${exoButton === 1 ? 'Normalase' : 'Disrupton'}"</strong> which makes your ${playerName1} level <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>:`,
+            conditionText: exoButton === null ? null : `you take ${playerName1}-${exoButton === 1 ? 'Normalase' : 'Disrupton'} which makes your ${playerName1} level <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>:`,
             // Walkthrough text for each step
             walkthroughStep0: exoButton === null
               ? null
-              : `In this scenario, you take <strong>"${playerName1}-${exoButton === 1 ? 'Normalase' : 'Disrupton'}"</strong> which makes your ${playerName1} level <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>...`,
+              : `In this scenario, you take ${playerName1}-${exoButton === 1 ? 'Normalase' : 'Disrupton'} which makes your ${playerName1} level <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>...`,
             walkthroughStep1: `...report how <strong>your choice to drink ${playerName0}</strong>...`,
             walkthroughStep2: `...affects <strong>how you feel</strong>.`,
             walkthroughHighlight: { step0: 'X', step1: 'A', step2: 'Y' },
@@ -727,13 +728,13 @@
             outcomePanel: 'Y',
             pie1Question: exoButton === null
               ? `What is the chance that you are <strong>energetic</strong> if you <strong class="text-red-600">do NOT drink ${playerName0}</strong>?`
-              : `Suppose you <strong class="text-red-600">do NOT drink ${playerName0}</strong>. Immediately after, you take <strong>"${playerName1}-${exoButton === 1 ? 'Normalase' : 'Disrupton'}"</strong> which fixes your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>. What is the chance that you feel <strong>energetic</strong>?`,
+              : `Suppose you <strong class="text-red-600">do NOT drink ${playerName0}</strong>. Immediately after, you take ${playerName1}-${exoButton === 1 ? 'Normalase' : 'Disrupton'} which fixes your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>. What is the chance that you feel <strong>energetic</strong>?`,
             pie2Question: exoButton === null
               ? `What is the chance that you are <strong>energetic</strong> if you <strong class="text-green-600">drink ${playerName0}</strong>?`
-              : `Suppose you <strong class="text-green-600">drink ${playerName0}</strong>. Immediately after, you take <strong>"${playerName1}-${exoButton === 1 ? 'Normalase' : 'Disrupton'}"</strong> which fixes your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>. What is the chance that you feel <strong>energetic</strong>?`,
+              : `Suppose you <strong class="text-green-600">drink ${playerName0}</strong>. Immediately after, you take ${playerName1}-${exoButton === 1 ? 'Normalase' : 'Disrupton'} which fixes your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>. What is the chance that you feel <strong>energetic</strong>?`,
             verbalQuestion: exoButton === null
               ? `How does <strong>drinking ${playerName0}</strong> change the chance that you are <strong>energetic</strong>?`
-              : `How does <strong>drinking ${playerName0}</strong> change the chance that you are <strong>energetic</strong>?`,
+              : `Suppose you take ${playerName1}-${exoButton === 1 ? 'Normalase' : 'Disrupton'} which fixes your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>. How does <strong>drinking ${playerName0}</strong> change the chance that you are <strong>energetic</strong>?`,
             outcomeText: 'energetic',
             pie1Color: '#ef4444',
             pie2Color: '#22c55e'
@@ -752,9 +753,9 @@
             walkthroughHighlight: { step0: 'A', step1: 'X', step2: 'Y' },
             causePanel: 'X',
             outcomePanel: 'Y',
-            pie1Question: `Suppose you <strong>${exoButton === 1 ? 'drink' : 'do NOT drink'}</strong> ${playerName0}. Immediately after, you take <strong>${playerName1}-Disrupton</strong> which fixes your ${playerName1} level to <strong class="text-red-600">abnormal</strong>. What is the chance that you feel <strong>energetic</strong>?`,
-            pie2Question: `Suppose you <strong>${exoButton === 1 ? 'drink' : 'do NOT drink'}</strong> ${playerName0}. Immediately after, you take <strong>${playerName1}-Normalase</strong> which fixes your ${playerName1} level to <strong class="text-green-600">normal</strong>. What is the chance that you feel <strong>energetic</strong>?`,
-            verbalQuestion: `How does having <strong>normal ${playerName1}</strong> (vs. abnormal) change the chance that you are <strong>energetic</strong>?`,
+            pie1Question: `Suppose you <strong>${exoButton === 1 ? 'drink' : 'do NOT drink'}</strong> ${playerName0}. Immediately after, you take ${playerName1}-Disrupton which fixes your ${playerName1} level to <strong class="text-red-600">abnormal</strong>. What is the chance that you feel <strong>energetic</strong>?`,
+            pie2Question: `Suppose you <strong>${exoButton === 1 ? 'drink' : 'do NOT drink'}</strong> ${playerName0}. Immediately after, you take ${playerName1}-Normalase which fixes your ${playerName1} level to <strong class="text-green-600">normal</strong>. What is the chance that you feel <strong>energetic</strong>?`,
+            verbalQuestion: `Suppose you <strong>${exoButton === 1 ? 'drink' : 'do NOT drink'}</strong> ${playerName0}. How does having <strong>normal ${playerName1}</strong> (vs. abnormal) change the chance that you are <strong>energetic</strong>?`,
             outcomeText: 'energetic',
             pie1Color: '#ef4444',
             pie2Color: '#22c55e'
@@ -773,9 +774,9 @@
             walkthroughHighlight: { step0: 'A', step1: 'Y', step2: 'X' },
             causePanel: 'Y',
             outcomePanel: 'X',
-            pie1Question: `Suppose you <strong>${exoButton === 1 ? 'drink' : 'do NOT drink'}</strong> ${playerName0}. Immediately after, you take <strong>Somnexil</strong> which makes you feel <strong class="text-red-600">tired</strong>. What is the chance that your <strong>${playerName1} level is normal</strong>?`,
-            pie2Question: `Suppose you <strong>${exoButton === 1 ? 'drink' : 'do NOT drink'}</strong> ${playerName0}. Immediately after, you take <strong>Energenix</strong> which makes you feel <strong class="text-green-600">energetic</strong>. What is the chance that your <strong>${playerName1} level is normal</strong>?`,
-            verbalQuestion: `How does being <strong>energetic</strong> (vs. being tired) change the chance that your <strong>${playerName1} level is normal</strong>?`,
+            pie1Question: `Suppose you <strong>${exoButton === 1 ? 'drink' : 'do NOT drink'}</strong> ${playerName0}. Immediately after, you take Somnexil which makes you feel <strong class="text-red-600">tired</strong>. What is the chance that your <strong>${playerName1} level is normal</strong>?`,
+            pie2Question: `Suppose you <strong>${exoButton === 1 ? 'drink' : 'do NOT drink'}</strong> ${playerName0}. Immediately after, you take Energenix which makes you feel <strong class="text-green-600">energetic</strong>. What is the chance that your <strong>${playerName1} level is normal</strong>?`,
+            verbalQuestion: `Suppose you <strong>${exoButton === 1 ? 'drink' : 'do NOT drink'}</strong> ${playerName0}. How does being <strong>energetic</strong> (vs. being tired) change the chance that your <strong>${playerName1} level is normal</strong>?`,
             outcomeText: `${playerName1} level is normal`,
             pie1Color: '#ef4444',
             pie2Color: '#22c55e'
@@ -926,7 +927,7 @@
                     pie2Value={pie2Value}
                     playerName0={playerName0}
                     playerName1={playerName1}
-                    highlightPanel={(stage === 1 || stage === 2 || stage === 3) ? config.outcomePanel : null}
+                    highlightPanel={(stage === 1 || stage === 2 || stage === 3) ? (causalElicit === 'XY' || causalElicit === 'YX' ? ['X', 'Y'] : config.outcomePanel) : null}
                     isWalkthrough={false}
                     highlightButton={config.causePanel === 'A' ? (stage === 1 ? 'skip' : stage === 2 ? 'drink' : stage === 3 ? 'both' : null) : null}
                   />
@@ -1094,8 +1095,8 @@
                   if your {CONFIG.playerName1} level or how you feel are fixed by other medications.</strong> For example:
                 </p>
                 <ul className="list-disc list-inside space-y-2 ml-4 mb-4">
-                  <li>Two medications affect your {CONFIG.playerName1} levels and have no other effects. The medication named <strong>Energenix</strong> makes you <strong>energetic</strong> for sure; The medication named <strong>Somnexil</strong> makes you <strong>tired</strong> for sure. These medications will not affect your {CONFIG.playerName1} level.</li>
-                  <li>The medication <strong>{CONFIG.playerName1}-Normalase</strong> normalizes your {CONFIG.playerName1} level. <strong>{CONFIG.playerName1}-Disrupton</strong> makes your {CONFIG.playerName1} levels abnormal. These medications will not affect how you feel.</li>
+                  <li>Two medications affect how you feel and have no other effects. The medication named <strong>Energenix</strong> makes you <strong>energetic</strong> for sure; The medication named <strong>Somnexil</strong> makes you <strong>tired</strong> for sure. These medications will not affect your {CONFIG.playerName1} level.</li>
+                  <li>Two medications affect your {CONFIG.playerName1} levels and have no other effects. The medication <strong>{CONFIG.playerName1}-Normalase</strong> normalizes your {CONFIG.playerName1} level. <strong>{CONFIG.playerName1}-Disrupton</strong> makes your {CONFIG.playerName1} levels abnormal. These medications will not affect how you feel.</li>
                 </ul>
 
                 <p>
