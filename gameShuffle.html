@@ -192,6 +192,7 @@
   </style>
 </head>
 <body>
+  <h2 id="studyCounter" style="color: #e2e8f0; margin-bottom: 8px; font-size: 1.8rem; text-align: center;"></h2>
   <h1 id="title"></h1>
   <div id="container"></div>
   <div id="message"></div>
@@ -210,12 +211,9 @@
 
         if (event.data.gameConfig) {
           const qConfig = event.data.gameConfig;
-          if (qConfig.scenarioIndex !== undefined) {
-            CONFIG.scenarioIndex = qConfig.scenarioIndex;
-          }
-          if (qConfig.shownScenarios) {
-            CONFIG.shownScenarios = qConfig.shownScenarios;
-          }
+          if (qConfig.playerName0) CONFIG.playerName0 = qConfig.playerName0;
+          if (qConfig.playerName1) CONFIG.playerName1 = qConfig.playerName1;
+          if (qConfig.playerIcon0) CONFIG.playerIcon0 = qConfig.playerIcon0;
           if (qConfig.gameCounter !== undefined) {
             CONFIG.gameCounter = qConfig.gameCounter;
           }
@@ -259,24 +257,23 @@
 
     // =============== CONFIGURATION ===============
     const CONFIG = {
-      scenarioIndex: null,  // Will be set randomly or from Qualtrics
-      shownScenarios: [],   // Track which scenarios have been shown
-      gameCounter: 1,       // Current game number
-      nSupergames: 1        // Total number of games
+      playerName0: 'Driftwell',  // Drink name (A)
+      playerName1: 'Qivaryn',   // Chemical name (X)
+      playerIcon0: '🥤',        // Icon for drink action (A)
+      gameCounter: 1,            // Current game number
+      nSupergames: 1             // Total number of games
     };
 
-    function updateTitle(scenario) {
+    function updateTitle() {
+      const counterEl = document.getElementById('studyCounter');
+      if (counterEl) {
+        counterEl.textContent = `Study ${CONFIG.gameCounter}`;
+      }
       const titleEl = document.getElementById('title');
-      if (titleEl && scenario) {
-        titleEl.textContent = `This study is about drinking ${scenario.drinkName}, your ${scenario.chemicalName} levels and how you feel`;
+      if (titleEl) {
+        titleEl.textContent = `This study is about drinking ${CONFIG.playerName0}, your ${CONFIG.playerName1} levels and how you feel`;
       }
     }
-
-    const metaNameData = {
-      player0Names: ['Driftwell', 'Clearhaven', 'Melloway'],
-      player0Icons: ['🥤', '🧋', '🍶'],
-      player1Names: ['Qivaryn', 'Zerqalin', 'Melythor']
-    };
 
     const defaultHue = 220; // Consistent blue color for all tiles
 
@@ -365,31 +362,14 @@
       if (!container) return;
       container.textContent = "";
 
-      // Determine which scenario to show
-      let chosenIndex;
-      if (CONFIG.scenarioIndex !== null) {
-        chosenIndex = CONFIG.scenarioIndex;
-      } else {
-        // Pick a scenario that hasn't been shown yet
-        const availableIndices = [0, 1, 2].filter(i => !CONFIG.shownScenarios.includes(i));
-        if (availableIndices.length === 0) {
-          CONFIG.shownScenarios = [];
-          chosenIndex = Math.floor(Math.random() * 3);
-        } else {
-          chosenIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
-        }
-      }
-
-      CONFIG.shownScenarios.push(chosenIndex);
-
       const chosenScenario = {
-        drinkName: metaNameData.player0Names[chosenIndex],
-        drinkIcon: metaNameData.player0Icons[chosenIndex],
-        chemicalName: metaNameData.player1Names[chosenIndex]
+        drinkName: CONFIG.playerName0,
+        drinkIcon: CONFIG.playerIcon0,
+        chemicalName: CONFIG.playerName1
       };
 
       // Update title with scenario info
-      updateTitle(chosenScenario);
+      updateTitle();
 
       // Create single tile for the chosen scenario - centered
       const tile = document.createElement('div');
@@ -449,18 +429,15 @@
 
       // Send data to Qualtrics
       sendDataToQualtrics('SCENARIO_REVEALED', {
-        scenarioIndex: chosenIndex,
         drinkName: chosenScenario.drinkName,
         drinkIcon: chosenScenario.drinkIcon,
         chemicalName: chosenScenario.chemicalName,
-        shownScenarios: CONFIG.shownScenarios,
         tileHTML: tileHTML
       });
 
       // Continue button handler
       continueBtn.addEventListener('click', () => {
         sendDataToQualtrics('SCENARIO_COMPLETE', {
-          scenarioIndex: chosenIndex,
           drinkName: chosenScenario.drinkName,
           drinkIcon: chosenScenario.drinkIcon,
           chemicalName: chosenScenario.chemicalName,
