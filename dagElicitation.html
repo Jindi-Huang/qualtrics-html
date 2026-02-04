@@ -141,6 +141,8 @@
       const [showDetails, setShowDetails] = useState(false);
       const [finalEdges, setFinalEdges] = useState(null);
       const alertCountRef = useRef(0);
+      const pageEnteredRef = useRef(Date.now());
+      const dagTimesRef = useRef({ initialDAGTime: 0, finalDAGTime: 0, confidenceTime: 0 });
 
       // Node definitions
       const nodes = [
@@ -229,11 +231,16 @@
       };
 
       const handleConfirm = () => {
+        const now = Date.now();
+        dagTimesRef.current.initialDAGTime = (now - pageEnteredRef.current) / 1000;
+        pageEnteredRef.current = now;
+
         setInitialEdges([...edges]);
 
         // If noConfirmation is set, skip confirmation and go directly to confidence
         if (CONFIG.noConfirmation === 1) {
           setFinalEdges([...edges]);
+          recordConfirmationEnd();
           setShowConfidence(true);
         } else {
           setConfirmMode(true);
@@ -260,6 +267,7 @@
           setConfirmIndex(prev => prev + 1);
         } else {
           setFinalEdges([...edges]);
+          recordConfirmationEnd();
           setShowConfidence(true);
         }
       };
@@ -292,6 +300,7 @@
             setConfirmIndex(prev => prev + 1);
           } else {
             setFinalEdges([...edges]);
+            recordConfirmationEnd();
             setShowConfidence(true);
           }
         }, 50);
@@ -302,9 +311,16 @@
         setSelectedOption(null);
       };
 
+      const recordConfirmationEnd = () => {
+        const now = Date.now();
+        dagTimesRef.current.finalDAGTime = (now - pageEnteredRef.current) / 1000;
+        pageEnteredRef.current = now;
+      };
+
       const handleConfidenceSubmit = () => {
         if (confidence === null) return;
-        onComplete(initialEdges, finalEdges || edges, confidence, alertCountRef.current);
+        dagTimesRef.current.confidenceTime = (Date.now() - pageEnteredRef.current) / 1000;
+        onComplete(initialEdges, finalEdges || edges, confidence, alertCountRef.current, dagTimesRef.current);
       };
 
       // Draw curved arrow path
@@ -875,12 +891,15 @@
 
     // Main App
     function App() {
-      const handleComplete = (initialEdges, finalEdges, confidence, dagAlertCount) => {
+      const handleComplete = (initialEdges, finalEdges, confidence, dagAlertCount, dagTimes) => {
         sendToParent('DAG_COMPLETE', {
           initialDAG: initialEdges,
           finalDAG: finalEdges,
           confidence: confidence,
-          DAGAlertCount: dagAlertCount
+          DAGAlertCount: dagAlertCount,
+          initialDAGTime: dagTimes.initialDAGTime,
+          finalDAGTime: dagTimes.finalDAGTime,
+          confidenceTime: dagTimes.confidenceTime
         });
       };
 

@@ -540,7 +540,7 @@
         const handleMessage = (event) => {
           if (event.data.type === 'DAG_DATA' && event.data.dataType === 'DAG_COMPLETE') {
             const data = event.data.data;
-            onComplete(data.initialDAG, data.finalDAG, data.confidence, data.DAGAlertCount);
+            onComplete(data.initialDAG, data.finalDAG, data.confidence, data.DAGAlertCount, data.initialDAGTime, data.finalDAGTime, data.confidenceTime);
           }
         };
 
@@ -732,8 +732,8 @@
       }, [currentRound]);
       
       // Handle DAG completion
-      const handleDAGComplete = useCallback((initialDAG, finalDAG, confidence, DAGAlertCount) => {
-        setDagData({ initial: initialDAG, final: finalDAG, confidence: confidence, alertCount: DAGAlertCount });
+      const handleDAGComplete = useCallback((initialDAG, finalDAG, confidence, DAGAlertCount, initialDAGTime, finalDAGTime, confidenceTime) => {
+        setDagData({ initial: initialDAG, final: finalDAG, confidence: confidence, alertCount: DAGAlertCount, initialDAGTime, finalDAGTime, confidenceTime });
         setDagCompleted(true);
         setShowDAG(false);
         
@@ -743,6 +743,9 @@
           finalDAG: finalDAG,
           confidence: confidence,
           DAGAlertCount: DAGAlertCount,
+          initialDAGTime: initialDAGTime,
+          finalDAGTime: finalDAGTime,
+          confidenceTime: confidenceTime,
           completedAtRound: currentRound
         });
         
@@ -788,7 +791,10 @@
           dagInitial: dagData.initial,
           dagFinal: dagData.final,
           dagConfidence: dagData.confidence,
-          DAGAlertCount: dagData.alertCount
+          DAGAlertCount: dagData.alertCount,
+          initialDAGTime: dagData.initialDAGTime,
+          finalDAGTime: dagData.finalDAGTime,
+          confidenceTime: dagData.confidenceTime
         });
         
         setTimeout(() => {
