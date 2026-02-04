@@ -196,6 +196,13 @@
         'drinkNoPay', 'drinkCost', 'feelGoodBonus', 'oneRound', 'sumAll', 'bioClipPay'
       ]));
 
+      // Randomize order of two possibilities (1=cause, 2=response)
+      const [possibilityOrder] = useState(() => shuffleArray([1, 2]));
+      // gameVersionsDescriptionOrderDieter1: position of possibility 1 (cause) — 1 if shown first, 2 if shown second
+      const gameVersionsDescriptionOrderDieter1 = possibilityOrder.indexOf(1) + 1;
+      // gameVersionsDescriptionOrderDieter2: position of possibility 2 (response) — 1 if shown first, 2 if shown second
+      const gameVersionsDescriptionOrderDieter2 = possibilityOrder.indexOf(2) + 1;
+
       const q1ItemsMap = {
         drinkNoPay: { id: 'drinkNoPay', text: `Whether I drink the beverage or not does${'\u00A0'}`, underline: 'not', after: ` affect my payment.` },
         drinkCost: { id: 'drinkCost', text: `Drinking the beverage will cost ${CONFIG.currency}${CONFIG.aCost.toFixed(2)}.` },
@@ -298,7 +305,9 @@
             allAnswersDieterQ1: newAllQ1,
             allAnswersDieterQ2: newAllQ2,
             pageTimes: pageTimesRef.current,
-            comprehTimes: comprehTimesRef.current
+            comprehTimes: comprehTimesRef.current,
+            gameVersionsDescriptionOrderDieter1: gameVersionsDescriptionOrderDieter1,
+            gameVersionsDescriptionOrderDieter2: gameVersionsDescriptionOrderDieter2
           });
         }
       };
@@ -444,18 +453,23 @@
           </h2>
           <div className="bg-gray-50 rounded-xl p-4 space-y-4">
             <p className="text-gray-700">For each blood chemical in this study, there are two possibilities:</p>
-            <div className="bg-white rounded-xl p-4 border-l-4 border-blue-400">
-              <h3 className="text-blue-600 font-bold mb-2">Possibility 1: The chemical level <span className="underline">is a cause</span> of how you feel.</h3>
-              <p className="text-gray-600">
-                Hence, normalizing your chemical level (by consuming the drink) <strong className="text-gray-900">raises the chance that you will feel good</strong> later that day.
-              </p>
-            </div>
-            <div className="bg-white rounded-xl p-4 border-l-4 border-blue-400">
-              <h3 className="text-blue-600 font-bold mb-2">Possibility 2: The chemical level <span className="underline">is a response to</span> how you feel, but <span className="underline">not a cause</span>.</h3>
-              <p className="text-gray-600">
-                In this case, drinking the beverage will still make a normal chemical level more likely, but this <strong className="text-gray-900">will not affect how you feel</strong>.
-              </p>
-            </div>
+            {possibilityOrder.map((id, idx) => (
+              id === 1 ? (
+                <div key={id} className="bg-white rounded-xl p-4 border-l-4 border-blue-400">
+                  <h3 className="text-blue-600 font-bold mb-2">Possibility {idx + 1}: The chemical level <span className="underline">is a cause</span> of how you feel.</h3>
+                  <p className="text-gray-600">
+                    Hence, normalizing your chemical level (by consuming the drink) <strong className="text-gray-900">raises the chance that you will feel good</strong> later that day.
+                  </p>
+                </div>
+              ) : (
+                <div key={id} className="bg-white rounded-xl p-4 border-l-4 border-blue-400">
+                  <h3 className="text-blue-600 font-bold mb-2">Possibility {idx + 1}: The chemical level <span className="underline">is a response to</span> how you feel, but <span className="underline">not a cause</span>.</h3>
+                  <p className="text-gray-600">
+                    In this case, drinking the beverage will still make a normal chemical level more likely, but this <strong className="text-gray-900">will not affect how you feel</strong>.
+                  </p>
+                </div>
+              )
+            ))}
           </div>
         </section>,
 
@@ -645,7 +659,7 @@
                     onClick={() => {
                       recordPageTime(currentPage);
                       if (currentPage === 1 && attentionCheck === 0) {
-                        sendDataToQualtrics('INSTRUCTIONS_COMPLETE', { completed: true, attentionCheck: 0, comprehension: {}, pageTimes: pageTimesRef.current, comprehTimes: comprehTimesRef.current });
+                        sendDataToQualtrics('INSTRUCTIONS_COMPLETE', { completed: true, attentionCheck: 0, comprehension: {}, pageTimes: pageTimesRef.current, comprehTimes: comprehTimesRef.current, gameVersionsDescriptionOrderDieter1: gameVersionsDescriptionOrderDieter1, gameVersionsDescriptionOrderDieter2: gameVersionsDescriptionOrderDieter2 });
                         return;
                       }
                       setCurrentPage(p => p + 1);
