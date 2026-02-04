@@ -194,6 +194,8 @@
 <body>
   <h2 id="studyCounter" style="color: #1e293b; margin-bottom: 24px; font-size: 1.8rem; text-align: center;"></h2>
   <h1 id="title"></h1>
+  <ul id="bonusInfo" style="color: #475569; font-size: 1.2rem; text-align: left; margin: 0 auto 20px auto; max-width: 600px; line-height: 1.6;"></ul>
+  <p id="newStudyNote" style="display: none; color: #64748b; font-size: 1rem; text-align: center; margin-bottom: 20px;"></p>
   <div id="container"></div>
   <div id="message"></div>
   <button id="continueBtn">Continue</button>
@@ -220,6 +222,9 @@
           if (qConfig.nSupergames !== undefined) {
             CONFIG.nSupergames = qConfig.nSupergames;
           }
+          if (qConfig.yBonus !== undefined) CONFIG.yBonus = qConfig.yBonus;
+          if (qConfig.aCost !== undefined) CONFIG.aCost = qConfig.aCost;
+          if (qConfig.currency) CONFIG.currency = qConfig.currency;
           console.log('Applied config:', CONFIG);
         }
 
@@ -261,7 +266,10 @@
       playerName1: 'Qivaryn',   // Chemical name (X)
       playerIcon0: '🥤',        // Icon for drink action (A)
       gameCounter: 1,            // Current game number
-      nSupergames: 1             // Total number of games
+      nSupergames: 1,            // Total number of games
+      yBonus: 0.10,              // Bonus for feeling good
+      aCost: 0.05,               // Cost of drinking
+      currency: '$'              // Currency symbol
     };
 
     function updateTitle() {
@@ -272,6 +280,16 @@
       const titleEl = document.getElementById('title');
       if (titleEl) {
         titleEl.innerHTML = `<span style="font-weight: normal">This study is about</span> drinking ${CONFIG.playerName0}<span style="font-weight: normal">, your</span> ${CONFIG.playerName1} levels <span style="font-weight: normal">and</span> how you feel.`;
+      }
+      const bonusEl = document.getElementById('bonusInfo');
+      if (bonusEl) {
+        bonusEl.innerHTML = `<li>If you feel good at the end of the day, you receive an additional ${CONFIG.currency}${Number(CONFIG.yBonus).toFixed(2)} bonus. If you feel bad, you don't.</li>` +
+          `<li>If you consume the drink, you pay ${CONFIG.currency}${Number(CONFIG.aCost).toFixed(2)} for it (deducted from your baseline bonus).</li>`;
+      }
+      const noteEl = document.getElementById('newStudyNote');
+      if (noteEl && CONFIG.gameCounter >= 2) {
+        noteEl.textContent = 'This beverage and this blood chemical have nothing to do with what you experienced in the previous study.';
+        noteEl.style.display = 'block';
       }
     }
 

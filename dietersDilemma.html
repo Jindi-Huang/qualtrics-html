@@ -12,6 +12,20 @@
     * { box-sizing: border-box; }
     body { margin: 0; padding: 0; background: #ffffff; }
 
+    /* First-round guidance: two-step shine/blink */
+    @keyframes shineGlow {
+      0%, 100% { box-shadow: 0 0 4px 2px rgba(250,204,21,0.3); }
+      50% { box-shadow: 0 0 16px 6px rgba(250,204,21,0.7); }
+    }
+    /* Step 1: pill shines first (0–2s) */
+    .first-round-shine-pill {
+      animation: shineGlow 0.65s ease-in-out 3;
+    }
+    /* Step 2: panel shines after (starts at 2s), loops until choice */
+    .first-round-shine-panel {
+      animation: shineGlow 0.8s ease-in-out 2s infinite;
+    }
+
     /* Hide slider thumb when confidence not yet selected */
     .slider-hidden-thumb::-webkit-slider-thumb {
       -webkit-appearance: none;
@@ -264,7 +278,7 @@
             </text>
             <path d="M0 50 L10 50 L10 110 L0 110 C-4 110 -6 105 -6 100 L-6 60 C-6 55 -4 50 0 50 Z" fill="#475569" />
           </svg>
-          <div className="text-lg font-bold text-gray-900 mt-2">{CONFIG.playerName1} Level</div>
+          <div className="text-lg font-bold text-gray-900 mt-1">{CONFIG.playerName1} Level</div>
         </div>
       );
     }
@@ -272,7 +286,7 @@
     // Mood indicator (shows Y = feeling)
     function MoodLarge({ mood }) {
       return (
-        <div className="flex flex-col items-center mt-12">
+        <div className="flex flex-col items-center mt-8">
           <div className={`w-32 h-32 rounded-full flex items-center justify-center transition-all duration-500 ${
             mood === null ? 'bg-gray-200' : mood === 1 ? 'bg-gradient-to-br from-emerald-400 to-green-600' : 'bg-gradient-to-br from-rose-400 to-red-600'
           }`}>
@@ -280,7 +294,7 @@
               {mood === null ? '😶' : mood === 1 ? '😊' : '😔'}
             </span>
           </div>
-          <div className="text-lg font-bold text-gray-900 mt-3">
+          <div className="text-lg font-bold text-gray-900 mt-1">
             {mood === null ? 'Later this day...' : mood === 1 ? `${CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}!` : CONFIG.playerName2Neg.charAt(0).toUpperCase() + CONFIG.playerName2Neg.slice(1)}
           </div>
           <div className={`text-lg font-bold mt-1 ${mood === null ? 'invisible' : mood === 1 ? 'text-green-600' : 'text-red-600'}`}>
@@ -303,7 +317,7 @@
       const connectionColor = X === 1 ? '#22c55e' : '#ef4444';
       
       return (
-        <div className="relative flex items-center justify-center gap-8 py-8">
+        <div className="relative flex items-center justify-center gap-8 pt-8 pb-2">
           <BioClipLarge status={X} />
           
           <div className="flex flex-col items-center relative">
@@ -371,7 +385,7 @@
       return (
         <div className="bg-white rounded-2xl p-5 border-2 border-blue-200 shadow-sm">
           <h3 className="text-blue-600 font-bold text-lg mb-4 flex items-center gap-2">
-            <span className="text-2xl">📊</span> {CONFIG.playerName1} → {CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}
+            <span className="text-2xl">📊</span> {CONFIG.playerName1} ⇢ {CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}
           </h3>
 
           <div className="grid grid-cols-2 gap-4">
@@ -434,7 +448,7 @@
     }
 
     // Drink decision panel (A = action)
-    function DrinkDecisionPanel({ onChoice, disabled, stats }) {
+    function DrinkDecisionPanel({ onChoice, disabled, stats, isFirstRound }) {
       const A1Y1Rate = stats.A1.total > 0 
         ? Math.round(stats.A1.Y1 / stats.A1.total * 100) 
         : null;
@@ -452,7 +466,7 @@
               className={`w-32 h-20 px-4 py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 ${
                 disabled
                   ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg hover:shadow-xl cursor-pointer'
+                  : `bg-blue-600 hover:bg-blue-500 text-white shadow-lg hover:shadow-xl cursor-pointer ${isFirstRound ? 'first-round-shine-panel' : ''}`
               }`}
             >
               <span className="text-xl">{CONFIG.playerIcon0}</span>
@@ -468,7 +482,7 @@
               className={`w-32 h-20 px-4 py-3 rounded-lg font-bold transition-all flex flex-col items-center justify-center ${
                 disabled
                   ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg hover:shadow-xl cursor-pointer'
+                  : `bg-blue-600 hover:bg-blue-500 text-white shadow-lg hover:shadow-xl cursor-pointer ${isFirstRound ? 'first-round-shine-panel' : ''}`
               }`}
             >
               <div className="flex items-center gap-2">
@@ -479,10 +493,11 @@
             </button>
           </div>
 
+
           <div className="mt-3 space-y-2">
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="bg-gray-50 rounded p-2 text-center border border-gray-200">
-                <div className="text-green-600">{CONFIG.playerName0} → {CONFIG.playerName1}</div>
+                <div className="text-green-600">{CONFIG.playerName0} ⇢ {CONFIG.playerName1}</div>
                 <div className="text-gray-900 font-bold">
                   {stats.A1.total > 0
                     ? `${Math.round(stats.A1.X1 / stats.A1.total * 100)}% normal`
@@ -490,7 +505,7 @@
                 </div>
               </div>
               <div className="bg-gray-50 rounded p-2 text-center border border-gray-200">
-                <div className="text-red-600">Skip → {CONFIG.playerName1}</div>
+                <div className="text-red-600">Skip ⇢ {CONFIG.playerName1}</div>
                 <div className="text-gray-900 font-bold">
                   {stats.A0.total > 0
                     ? `${Math.round(stats.A0.X1 / stats.A0.total * 100)}% normal`
@@ -500,13 +515,13 @@
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="bg-gray-50 rounded p-2 text-center border border-gray-200">
-                <div className="text-green-600">{CONFIG.playerName0} → {CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}</div>
+                <div className="text-green-600">{CONFIG.playerName0} ⇢ {CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}</div>
                 <div className="text-gray-900 font-bold">
                   {A1Y1Rate !== null ? `${A1Y1Rate}%` : '—'}
                 </div>
               </div>
               <div className="bg-gray-50 rounded p-2 text-center border border-gray-200">
-                <div className="text-red-600">Skip → {CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}</div>
+                <div className="text-red-600">Skip ⇢ {CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}</div>
                 <div className="text-gray-900 font-bold">
                   {A0Y1Rate !== null ? `${A0Y1Rate}%` : '—'}
                 </div>
@@ -808,6 +823,19 @@
               <div className="bg-gray-50 rounded-2xl p-6 mb-4 border border-gray-200 shadow-sm relative overflow-hidden">
               <NewDayOverlay show={showNewDay} dayNumber={nextDayNumber} />
 
+              <div className="text-center mb-4">
+                <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${
+                  phase === 'decision' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                  phase === 'chemical' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                  currentY === 1 ? 'bg-green-50 text-green-700 border border-green-200' :
+                  'bg-red-50 text-red-700 border border-red-200'
+                } ${currentRound === 1 && phase === 'decision' ? 'first-round-shine-pill' : ''}`}>
+                  {phase === 'decision' && `Morning: Will you drink ${CONFIG.playerName0}?`}
+                  {phase === 'chemical' && `Reading your ${CONFIG.playerName1} level...`}
+                  {phase === 'outcome' && `Later this day: ${currentY === 1 ? `${CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}! 😊` : `${CONFIG.playerName2Neg.charAt(0).toUpperCase() + CONFIG.playerName2Neg.slice(1)} 😔`}`}
+                </span>
+              </div>
+
               <div className="absolute top-4 left-4 bg-white rounded-xl px-4 py-2 border border-gray-200 shadow-sm">
                 <div className="text-gray-700 font-medium text-sm mb-1">Monday</div>
                 <div className="flex items-center gap-3">
@@ -832,25 +860,14 @@
                 stats={stats}
                 hideRateBox={hideRateBox}
               />
-              
-              <div className="text-center mt-4">
-                <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${
-                  phase === 'decision' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
-                  phase === 'chemical' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                  'bg-green-50 text-green-700 border border-green-200'
-                }`}>
-                  {phase === 'decision' && `Morning: Will you drink ${CONFIG.playerName0}?`}
-                  {phase === 'chemical' && `Reading your ${CONFIG.playerName1} level...`}
-                  {phase === 'outcome' && `Later this day: ${currentY === 1 ? `${CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}! 😊` : `${CONFIG.playerName2Neg.charAt(0).toUpperCase() + CONFIG.playerName2Neg.slice(1)} 😔`}`}
-                </span>
-              </div>
             </div>
 
             <div className="grid grid-cols-3 gap-4">
-              <DrinkDecisionPanel 
-                onChoice={handleChoice} 
+              <DrinkDecisionPanel
+                onChoice={handleChoice}
                 disabled={phase !== 'decision'}
                 stats={stats}
+                isFirstRound={currentRound === 1}
               />
               <XStatsPanel stats={stats} currentX={currentX} />
               <CompactHistory history={history} />

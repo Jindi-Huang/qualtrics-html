@@ -198,8 +198,8 @@
       ]));
 
       const q2ItemsMap = {
-        normalCausesGood: { id: 'normalCausesGood', text: `If my BioClip shows a normal chemical level and I later feel good, this means that the normal chemical level caused me to feel good.` },
-        normalNotCausesGood: { id: 'normalNotCausesGood', text: `If my BioClip shows a normal chemical level and I later feel good, this does `, underline: 'not', after: ` mean that the normal chemical level caused me to feel good.` },
+        normalCausesGood: { id: 'normalCausesGood', text: `If my BioClip shows a normal chemical level and I later feel good, this necessarily means that the normal chemical level caused me to feel good.` },
+        normalNotCausesGood: { id: 'normalNotCausesGood', text: `If my BioClip shows a normal chemical level and I later feel good, this does `, underline: 'not necessarily', after: ` mean that the normal chemical level caused me to feel good.` },
         twoVersions: { id: 'twoVersions', text: `Each blood chemical has two possibilities: either it is a cause of how you feel, or is a response to how you feel. Different chemicals may work in different ways.` }
       };
       const q2Items = q2Order.map(id => q2ItemsMap[id]);
@@ -395,22 +395,24 @@
             <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">3</span>
             What You Know vs. Don't Know
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-green-50 border border-green-300 rounded-xl p-4">
-              <h3 className="text-green-600 font-bold mb-2 flex items-center gap-2">
-                <span>✓</span> What You Know
-              </h3>
-              <p className="text-gray-600">
-                Consuming a drink makes it <strong className="text-gray-900">more likely</strong> that your blood chemical level will be <strong className="text-green-600">normal</strong>.
-              </p>
-            </div>
-            <div className="bg-amber-50 border border-amber-300 rounded-xl p-4">
-              <h3 className="text-amber-600 font-bold mb-2 flex items-center gap-2">
-                <span>?</span> What You Don't Know
-              </h3>
-              <p className="text-gray-600">
-                Whether having a normal or abnormal chemical level affects how you <strong className="text-gray-900">feel later that day</strong>.
-              </p>
+          <div className="bg-gray-50 rounded-xl p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-green-50 border border-green-300 rounded-xl p-4">
+                <h3 className="text-green-600 font-bold mb-2 flex items-center gap-2">
+                  <span>✓</span> What You Know
+                </h3>
+                <p className="text-gray-600">
+                  Consuming a drink makes it <strong className="text-gray-900">more likely</strong> that your blood chemical level will be <strong className="text-green-600">normal</strong>.
+                </p>
+              </div>
+              <div className="bg-amber-50 border border-amber-300 rounded-xl p-4">
+                <h3 className="text-amber-600 font-bold mb-2 flex items-center gap-2">
+                  <span>?</span> What You Don't Know
+                </h3>
+                <p className="text-gray-600">
+                  Whether having a normal or abnormal chemical level affects how you <strong className="text-gray-900">feel later that day</strong>.
+                </p>
+              </div>
             </div>
           </div>
         </section>,
@@ -421,15 +423,15 @@
             <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">4</span>
             Two Possibilities
           </h2>
-          <div className="space-y-4">
+          <div className="bg-gray-50 rounded-xl p-4 space-y-4">
             <p className="text-gray-700">For each blood chemical in this study, there are two possibilities:</p>
-            <div className="bg-gray-50 rounded-xl p-4 border-l-4 border-blue-400">
+            <div className="bg-white rounded-xl p-4 border-l-4 border-blue-400">
               <h3 className="text-blue-600 font-bold mb-2">Possibility 1: The chemical level <span className="underline">is a cause</span> of how you feel.</h3>
               <p className="text-gray-600">
                 Hence, normalizing your chemical level (by consuming the drink) <strong className="text-gray-900">raises the chance that you will feel good</strong> later that day.
               </p>
             </div>
-            <div className="bg-gray-50 rounded-xl p-4 border-l-4 border-blue-400">
+            <div className="bg-white rounded-xl p-4 border-l-4 border-blue-400">
               <h3 className="text-blue-600 font-bold mb-2">Possibility 2: The chemical level <span className="underline">is a response to</span> how you feel, but <span className="underline">not a cause</span>.</h3>
               <p className="text-gray-600">
                 In this case, drinking the beverage will still make a normal chemical level more likely, but this <strong className="text-gray-900">will not affect how you feel</strong>.
