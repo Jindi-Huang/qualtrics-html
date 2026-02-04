@@ -40,7 +40,7 @@
         
         if (event.data.gameConfig) {
           const qConfig = event.data.gameConfig;
-          if (qConfig.nRounds) CONFIG.totalRounds = qConfig.nRounds;
+          if (qConfig.nRounds !== undefined) CONFIG.totalRounds = parseInt(qConfig.nRounds) || CONFIG.totalRounds;
           if (qConfig.id) CONFIG.id = qConfig.id;
           if (qConfig.yBonus !== undefined) CONFIG.yBonus = qConfig.yBonus;
           if (qConfig.aCost !== undefined) CONFIG.aCost = qConfig.aCost;
@@ -518,7 +518,7 @@
     }
 
     // DAG Iframe Component
-    function DAGIframe({ onComplete, playerName0, playerName1, playerIcon0 }) {
+    function DAGIframe({ onComplete, playerName0, playerName1, playerIcon0, nRounds }) {
       const iframeRef = useRef(null);
 
       useEffect(() => {
@@ -539,7 +539,8 @@
               gameConfig: {
                 playerName0: playerName0,
                 playerName1: playerName1,
-                playerIcon0: playerIcon0
+                playerIcon0: playerIcon0,
+                nRounds: nRounds
               }
             }, '*');
           }
@@ -552,7 +553,7 @@
           window.removeEventListener('message', handleMessage);
           clearTimeout(timeout);
         };
-      }, [onComplete, playerName0, playerName1, playerIcon0]);
+      }, [onComplete, playerName0, playerName1, playerIcon0, nRounds]);
 
       return (
         <iframe
@@ -796,6 +797,7 @@
             playerName0={CONFIG.playerName0}
             playerName1={CONFIG.playerName1}
             playerIcon0={CONFIG.playerIcon0}
+            nRounds={CONFIG.totalRounds}
           />
         );
       }

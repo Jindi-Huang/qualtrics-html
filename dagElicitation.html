@@ -85,7 +85,7 @@
           if (qConfig.playerName1) CONFIG.playerName1 = qConfig.playerName1;
           if (qConfig.playerIcon0) CONFIG.playerIcon0 = qConfig.playerIcon0;
           if (qConfig.noConfirmation !== undefined) CONFIG.noConfirmation = qConfig.noConfirmation;
-          if (qConfig.nRounds !== undefined) CONFIG.nRounds = qConfig.nRounds;
+          if (qConfig.nRounds !== undefined) CONFIG.nRounds = parseInt(qConfig.nRounds) || CONFIG.nRounds;
         }
 
         // Re-render with new config
