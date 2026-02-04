@@ -95,6 +95,7 @@
           if (qConfig.nRounds !== undefined) CONFIG.nRounds = qConfig.nRounds;
           if (qConfig.currentSymbol) CONFIG.currentSymbol = qConfig.currentSymbol;
           if (qConfig.rationalInference) CONFIG.rationalInference = qConfig.rationalInference;
+          if (qConfig.increasingOrder !== undefined) CONFIG.increasingOrder = qConfig.increasingOrder;
 
           // Accept mainCausals as a single array OR as individual fields (mainCausal1-10)
           if (qConfig.mainCausals) {
@@ -167,6 +168,7 @@
       currentSymbol: null,        // HTML for scenario tile display
       rationalInference: null,    // Will be set from Qualtrics
       // Default mainCausals - will be overwritten by Qualtrics
+      increasingOrder: Math.random() < 0.5 ? 1 : 0,  // 1 = increases first, 0 = decreases first
       mainCausals: [
         { causalElicit: "AX", exoButton: 0, id: "AX0" },
         { causalElicit: "AX", exoButton: 1, id: "AX1" },
@@ -653,6 +655,7 @@
       playerName2Neg,
       playerName2PosExo,
       playerName2NegExo,
+      increasingOrder,
       onComplete
     }) {
       // Stage 0 = walkthrough (with walkthroughStep 0, 1, 2), Stage 1-3 = questions
@@ -1047,7 +1050,7 @@
                         value={verbalValue}
                         onChange={setVerbalValue}
                         options={verbalOptions}
-                        increasingOrder={true}
+                        increasingOrder={increasingOrder === 1}
                       />
                     </div>
                     <div className="flex justify-center gap-4 mt-4">
@@ -1251,7 +1254,8 @@
             // Also include raw values for convenience
             pie1Values: newResponses.map(r => r.pie1Value),
             pie2Values: newResponses.map(r => r.pie2Value),
-            verbalValues: newResponses.map(r => r.verbalValue)
+            verbalValues: newResponses.map(r => r.verbalValue),
+            increasingOrder: CONFIG.increasingOrder
           });
 
           console.log('Payments calculated:', payments);
@@ -1302,6 +1306,7 @@
           playerName2Neg={CONFIG.playerName2Neg}
           playerName2PosExo={CONFIG.playerName2PosExo}
           playerName2NegExo={CONFIG.playerName2NegExo}
+          increasingOrder={CONFIG.increasingOrder}
           onComplete={handleComplete}
         />
       );
