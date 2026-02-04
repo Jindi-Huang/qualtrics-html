@@ -259,31 +259,46 @@
         text: `<strong>Whenever you did drink ${CONFIG.playerName0}</strong>, how often was your ${CONFIG.playerName1} level normal and you also felt ${CONFIG.playerName2Pos}?`
       };
 
+      // Determine possibility labels based on gameVersionsDescriptionOrderDieter1
+      // If 1: cause = "Possibility 1", response = "Possibility 2"
+      // If 2: cause = "Possibility 2", response = "Possibility 1"
+      const causeLabel = CONFIG.gameVersionsDescriptionOrderDieter1 == 2 ? 2 : 1;
+      const responseLabel = causeLabel === 1 ? 2 : 1;
+
+      const causePossibility = `
+        <div style="background: #f9fafb; border-radius: 12px; padding: 12px 16px; border-left: 4px solid #60a5fa;">
+          <div style="color: #2563eb; font-weight: bold; margin-bottom: 4px;">Possibility ${causeLabel}: The chemical level <span style="text-decoration: underline;">is a cause</span> of how you feel.</div>
+          <div style="color: #4b5563;">Hence, normalizing your chemical level (by consuming the drink) <strong style="color: #111827;">raises the chance that you will feel good</strong> later that day.</div>
+        </div>`;
+      const responsePossibility = `
+        <div style="background: #f9fafb; border-radius: 12px; padding: 12px 16px; border-left: 4px solid #60a5fa;">
+          <div style="color: #2563eb; font-weight: bold; margin-bottom: 4px;">Possibility ${responseLabel}: The chemical level <span style="text-decoration: underline;">is a response to</span> how you feel, but <span style="text-decoration: underline;">not a cause</span>.</div>
+          <div style="color: #4b5563;">In this case, drinking the beverage will still make a normal chemical level more likely, but this <strong style="color: #111827;">will not affect how you feel</strong>.</div>
+        </div>`;
+
+      // Show in order: possibility 1 first, then possibility 2
+      const firstBox = causeLabel === 1 ? causePossibility : responsePossibility;
+      const secondBox = causeLabel === 1 ? responsePossibility : causePossibility;
+
       const q6 = {
         key: 'q6',
         introText: `<p style="margin-bottom: 12px;">As we explained, there are two possibilities on the blood chemical in this study. The chemical level is either a cause of how you feel, or a response to how you feel.</p>
           <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 8px;">
-            <div style="background: #f9fafb; border-radius: 12px; padding: 12px 16px; border-left: 4px solid #60a5fa;">
-              <div style="color: #2563eb; font-weight: bold; margin-bottom: 4px;">Possibility 1: The chemical level <span style="text-decoration: underline;">is a cause</span> of how you feel.</div>
-              <div style="color: #4b5563;">Hence, normalizing your chemical level (by consuming the drink) <strong style="color: #111827;">raises the chance that you will feel good</strong> later that day.</div>
-            </div>
-            <div style="background: #f9fafb; border-radius: 12px; padding: 12px 16px; border-left: 4px solid #60a5fa;">
-              <div style="color: #2563eb; font-weight: bold; margin-bottom: 4px;">Possibility 2: The chemical level <span style="text-decoration: underline;">is a response to</span> how you feel, but <span style="text-decoration: underline;">not a cause</span>.</div>
-              <div style="color: #4b5563;">In this case, drinking the beverage will still make a normal chemical level more likely, but this <strong style="color: #111827;">will not affect how you feel</strong>.</div>
-            </div>
+            ${firstBox}
+            ${secondBox}
           </div>`,
         text: `Which one is the case for your <strong>${CONFIG.playerName1} level</strong> and <strong>how you feel</strong> in this study?`,
         options: [
-          { value: 'cause_90_100', label: `My ${CONFIG.playerName1} level could almost certainly cause me feeling ${CONFIG.playerName2Pos} (90-100% chance of possibility 1)` },
-          { value: 'cause_80_90', label: `My ${CONFIG.playerName1} level could very likely cause me feeling ${CONFIG.playerName2Pos} (80-90% chance of possibility 1)` },
-          { value: 'cause_70_80', label: `My ${CONFIG.playerName1} level could likely cause me feeling ${CONFIG.playerName2Pos} (70-80% chance of possibility 1)` },
-          { value: 'cause_60_70', label: `My ${CONFIG.playerName1} level could somewhat likely cause me feeling ${CONFIG.playerName2Pos} (60-70% chance of possibility 1)` },
-          { value: 'cause_50_60', label: `Unsure. Slightly more likely that my ${CONFIG.playerName1} level could cause me feeling ${CONFIG.playerName2Pos} than <u>not</u> (50-60% chance of possibility 1)` },
-          { value: 'notcause_50_60', label: `Unsure. Slightly more likely that my ${CONFIG.playerName1} level could <u>not</u> cause me feeling ${CONFIG.playerName2Pos} than it could (50-60% chance of possibility 2)` },
-          { value: 'notcause_60_70', label: `My ${CONFIG.playerName1} level somewhat likely could <u>not</u> cause me feeling ${CONFIG.playerName2Pos} (60-70% chance of possibility 2)` },
-          { value: 'notcause_70_80', label: `My ${CONFIG.playerName1} level likely could <u>not</u> cause me feeling ${CONFIG.playerName2Pos} (70-80% chance of possibility 2)` },
-          { value: 'notcause_80_90', label: `My ${CONFIG.playerName1} level very likely could <u>not</u> cause me feeling ${CONFIG.playerName2Pos} (80-90% chance of possibility 2)` },
-          { value: 'notcause_90_100', label: `My ${CONFIG.playerName1} level almost certainly could <u>not</u> cause me feeling ${CONFIG.playerName2Pos} (90-100% chance of possibility 2)` }
+          { value: 'cause_90_100', label: `My ${CONFIG.playerName1} level could almost certainly cause me feeling ${CONFIG.playerName2Pos} (90-100% chance of possibility ${causeLabel})` },
+          { value: 'cause_80_90', label: `My ${CONFIG.playerName1} level could very likely cause me feeling ${CONFIG.playerName2Pos} (80-90% chance of possibility ${causeLabel})` },
+          { value: 'cause_70_80', label: `My ${CONFIG.playerName1} level could likely cause me feeling ${CONFIG.playerName2Pos} (70-80% chance of possibility ${causeLabel})` },
+          { value: 'cause_60_70', label: `My ${CONFIG.playerName1} level could somewhat likely cause me feeling ${CONFIG.playerName2Pos} (60-70% chance of possibility ${causeLabel})` },
+          { value: 'cause_50_60', label: `Unsure. Slightly more likely that my ${CONFIG.playerName1} level could cause me feeling ${CONFIG.playerName2Pos} than <u>not</u> (50-60% chance of possibility ${causeLabel})` },
+          { value: 'notcause_50_60', label: `Unsure. Slightly more likely that my ${CONFIG.playerName1} level could <u>not</u> cause me feeling ${CONFIG.playerName2Pos} than it could (50-60% chance of possibility ${responseLabel})` },
+          { value: 'notcause_60_70', label: `My ${CONFIG.playerName1} level somewhat likely could <u>not</u> cause me feeling ${CONFIG.playerName2Pos} (60-70% chance of possibility ${responseLabel})` },
+          { value: 'notcause_70_80', label: `My ${CONFIG.playerName1} level likely could <u>not</u> cause me feeling ${CONFIG.playerName2Pos} (70-80% chance of possibility ${responseLabel})` },
+          { value: 'notcause_80_90', label: `My ${CONFIG.playerName1} level very likely could <u>not</u> cause me feeling ${CONFIG.playerName2Pos} (80-90% chance of possibility ${responseLabel})` },
+          { value: 'notcause_90_100', label: `My ${CONFIG.playerName1} level almost certainly could <u>not</u> cause me feeling ${CONFIG.playerName2Pos} (90-100% chance of possibility ${responseLabel})` }
         ]
       };
 
