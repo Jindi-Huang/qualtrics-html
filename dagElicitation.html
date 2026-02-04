@@ -75,6 +75,8 @@
     const observer = new MutationObserver(reportHeight);
     observer.observe(document.body, { childList: true, subtree: true, attributes: true });
 
+    let isInitialized = false;
+
     window.addEventListener('message', function(event) {
       if (event.data.type === 'INIT') {
         console.log('Received INIT:', event.data);
@@ -88,11 +90,24 @@
           if (qConfig.nRounds !== undefined) CONFIG.nRounds = parseInt(qConfig.nRounds) || CONFIG.nRounds;
         }
 
-        // Re-render with new config
-        renderApp();
+        if (!isInitialized) {
+          isInitialized = true;
+          renderApp();
+        } else {
+          renderApp();
+        }
         setTimeout(reportHeight, 100);
       }
     });
+
+    // Wait up to 3 seconds for INIT, then render with defaults
+    setTimeout(function() {
+      if (!isInitialized) {
+        console.log('Timeout: starting with default config');
+        isInitialized = true;
+        renderApp();
+      }
+    }, 3000);
 
     function sendToParent(dataType, data) {
       if (window.parent !== window) {
@@ -883,8 +898,7 @@
       ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     }
 
-    // Initial render
-    renderApp();
+    // Render is triggered by INIT message or 3-second timeout
   </script>
 </body>
 </html>
