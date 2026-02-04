@@ -540,7 +540,7 @@
         const handleMessage = (event) => {
           if (event.data.type === 'DAG_DATA' && event.data.dataType === 'DAG_COMPLETE') {
             const data = event.data.data;
-            onComplete(data.initialDAG, data.finalDAG, data.confidence);
+            onComplete(data.initialDAG, data.finalDAG, data.confidence, data.DAGAlertCount);
           }
         };
 
@@ -638,13 +638,11 @@
       const [currentY, setCurrentY] = useState(null);
       const [showNewDay, setShowNewDay] = useState(false);
       const [nextDayNumber, setNextDayNumber] = useState(2);
-      const [totalEarnings, setTotalEarnings] = useState(0);
-      const [selectedPaymentRound, setSelectedPaymentRound] = useState(null);
       
       // DAG-related state
       const [showDAG, setShowDAG] = useState(false);
       const [dagCompleted, setDagCompleted] = useState(false);
-      const [dagData, setDagData] = useState({ initial: null, final: null });
+      const [dagData, setDagData] = useState({ initial: null, final: null, confidence: null, alertCount: null });
       const [hideRateBox, setHideRateBox] = useState(false);
       
       const roundTimesRef = useRef([]);
@@ -693,12 +691,9 @@
             
             // Store as [A, X, Y]
             setHistory(prev => [...prev, [A, result.X, result.Y]]);
-            setTotalEarnings(prev => prev + earnings);
-            
+
             if (currentRound >= CONFIG.totalRounds) {
               setTimeout(() => {
-                const paymentRound = Math.floor(Math.random() * CONFIG.totalRounds) + 1;
-                setSelectedPaymentRound(paymentRound);
                 setPhase('complete');
               }, 2000);
             } else {
@@ -737,8 +732,8 @@
       }, [currentRound]);
       
       // Handle DAG completion
-      const handleDAGComplete = useCallback((initialDAG, finalDAG, confidence) => {
-        setDagData({ initial: initialDAG, final: finalDAG, confidence: confidence });
+      const handleDAGComplete = useCallback((initialDAG, finalDAG, confidence, DAGAlertCount) => {
+        setDagData({ initial: initialDAG, final: finalDAG, confidence: confidence, alertCount: DAGAlertCount });
         setDagCompleted(true);
         setShowDAG(false);
         
@@ -747,6 +742,7 @@
           initialDAG: initialDAG,
           finalDAG: finalDAG,
           confidence: confidence,
+          DAGAlertCount: DAGAlertCount,
           completedAtRound: currentRound
         });
         
@@ -782,21 +778,17 @@
       }
       
       // Send final data when game completes
-      if (phase === 'complete' && selectedPaymentRound !== null && history.length === CONFIG.totalRounds && !dataSentRef.current) {
+      if (phase === 'complete' && history.length === CONFIG.totalRounds && !dataSentRef.current) {
         dataSentRef.current = true;
-        const [pA, pX, pY] = history[selectedPaymentRound - 1];
-        const selectedRoundPayment = -CONFIG.aCost * pA + CONFIG.yBonus * pY;
-        
+
         sendDataToQualtrics('FINAL_DATA', {
           history: history,  // [[A, X, Y], [A, X, Y], ...]
           roundTimes: roundTimesRef.current,
           payment: history.map(([A, X, Y]) => -CONFIG.aCost * A + CONFIG.yBonus * Y),
-          selectedPaymentRound: selectedPaymentRound,
-          selectedRoundPayment: selectedRoundPayment,
-          totalEarnings: totalEarnings,
           dagInitial: dagData.initial,
           dagFinal: dagData.final,
-          dagConfidence: dagData.confidence
+          dagConfidence: dagData.confidence,
+          DAGAlertCount: dagData.alertCount
         });
         
         setTimeout(() => {
