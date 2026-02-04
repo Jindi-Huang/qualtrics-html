@@ -37,6 +37,7 @@
           if (qConfig.playerIcon0) CONFIG.playerIcon0 = qConfig.playerIcon0;
           if (qConfig.nRounds !== undefined) CONFIG.nRounds = qConfig.nRounds;
           if (qConfig.currentSymbol) CONFIG.currentSymbol = qConfig.currentSymbol;
+          if (qConfig.gameCounter !== undefined) CONFIG.gameCounter = qConfig.gameCounter;
           if (qConfig.gameVersionsDescriptionOrderDieter1) CONFIG.gameVersionsDescriptionOrderDieter1 = qConfig.gameVersionsDescriptionOrderDieter1;
           if (qConfig.gameVersionsDescriptionOrderDieter2) CONFIG.gameVersionsDescriptionOrderDieter2 = qConfig.gameVersionsDescriptionOrderDieter2;
           console.log('Applied config:', CONFIG);
@@ -85,6 +86,7 @@
       playerIcon0: '🥤',
       nRounds: 30,
       currentSymbol: '1',
+      gameCounter: 1,
       gameVersionsDescriptionOrderDieter1: 'A',
       gameVersionsDescriptionOrderDieter2: 'B'
     };
@@ -277,6 +279,7 @@
       return (
         <div className="min-h-screen bg-white py-10 px-4">
           <div className="max-w-5xl mx-auto">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Study {CONFIG.gameCounter}</h2>
             <h1 className="text-2xl font-bold text-gray-900 mb-4 text-center">
               Questions about Study {CONFIG.currentSymbol}
             </h1>
