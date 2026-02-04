@@ -474,31 +474,31 @@
 
         return (
           <div className="flex flex-col items-center">
-            <div className="text-sm text-gray-500 mb-2 h-5">Morning Decision</div>
-            <div className="flex gap-2 h-44 items-center">
+            <div className="text-xs text-gray-500 mb-1 h-4">Morning Decision</div>
+            <div className="flex gap-2 h-32 items-center">
               {/* Drink button */}
-              <div className={`relative flex items-center justify-center w-32 h-20 rounded-lg transition-all shadow-lg ${
+              <div className={`relative flex items-center justify-center w-24 h-16 rounded-lg transition-all shadow-lg ${
                 isOn || isCause ? 'bg-blue-600 text-white' :
                 'bg-gray-200 text-gray-400'
               } ${drinkHighlight}`}>
                 {isLocked && isOn && <span className="absolute -top-2 -right-2 text-sm">🔒</span>}
-                <span className="text-2xl mr-2">{CONFIG.playerIcon0}</span>
+                <span className="text-xl mr-1">{CONFIG.playerIcon0}</span>
                 <div className="flex flex-col">
-                  <span className="text-sm font-bold">Drink</span>
-                  <span className="text-sm font-bold">{playerName0}</span>
-                  <span className="text-xs opacity-70">-{CONFIG.currency}{CONFIG.aCost}</span>
+                  <span className="text-xs font-bold">Drink</span>
+                  <span className="text-xs font-bold">{playerName0}</span>
+                  <span className="text-[10px] opacity-70">-{CONFIG.currency}{CONFIG.aCost}</span>
                 </div>
               </div>
               {/* Skip button */}
-              <div className={`relative flex items-center justify-center w-32 h-20 rounded-lg transition-all shadow-lg ${
+              <div className={`relative flex items-center justify-center w-24 h-16 rounded-lg transition-all shadow-lg ${
                 isOff || isCause ? 'bg-blue-600 text-white' :
                 'bg-gray-200 text-gray-400'
               } ${skipHighlight}`}>
                 {isLocked && isOff && <span className="absolute -top-2 -right-2 text-sm">🔒</span>}
-                <span className="text-2xl mr-2">⊘</span>
+                <span className="text-xl mr-1">⊘</span>
                 <div className="flex flex-col">
-                  <span className="text-sm font-bold">Skip</span>
-                  <span className="text-xs opacity-70">{CONFIG.currency}0</span>
+                  <span className="text-xs font-bold">Skip</span>
+                  <span className="text-[10px] opacity-70">{CONFIG.currency}0</span>
                 </div>
               </div>
             </div>
@@ -535,10 +535,10 @@
         
         return (
           <div className="flex flex-col items-center">
-            <div className="text-sm text-gray-500 mb-2 h-5">{playerName1} Level</div>
-            <div className="relative flex items-center justify-center">
+            <div className="text-xs text-gray-500 mb-1 h-4">{playerName1} Level</div>
+            <div className="relative flex items-center justify-center h-32">
               {isLocked && <span className="absolute -top-2 -right-2 text-sm z-10">🔒</span>}
-              <svg viewBox="0 0 120 160" className="w-32 h-44">
+              <svg viewBox="0 0 120 160" className="w-24 h-32">
                 {/* Main body */}
                 <rect x="10" y="10" width="100" height="140" rx="12" fill="#0f172a" stroke="#334155" strokeWidth="2" />
                 {/* Screen border */}
@@ -611,14 +611,14 @@
 
         return (
           <div className="flex flex-col items-center">
-            <div className="text-sm text-gray-500 mb-2 h-5">Later this day...</div>
-            <div className="relative h-44 flex flex-col items-center justify-center">
+            <div className="text-xs text-gray-500 mb-1 h-4">Later this day...</div>
+            <div className="relative h-32 flex flex-col items-center justify-center">
               {isLocked && <span className="absolute -top-2 -right-2 text-sm z-10">🔒</span>}
-              <div className={`w-28 h-28 rounded-full flex-shrink-0 flex items-center justify-center transition-all duration-500 ${getCircleStyle()} ${isQuestion ? 'animate-pulse' : ''}`}>
-                <span className={`text-6xl ${!isOn && !isOff && !isQuestion ? 'grayscale opacity-30' : ''}`}>{getEmoji()}</span>
+              <div className={`w-20 h-20 rounded-full flex-shrink-0 flex items-center justify-center transition-all duration-500 ${getCircleStyle()} ${isQuestion ? 'animate-pulse' : ''}`}>
+                <span className={`text-4xl ${!isOn && !isOff && !isQuestion ? 'grayscale opacity-30' : ''}`}>{getEmoji()}</span>
               </div>
-              <div className="text-center mt-3">
-                <span className="text-lg font-bold text-gray-900">{getStatusText()}</span>
+              <div className="text-center mt-2">
+                <span className="text-sm font-bold text-gray-900">{getStatusText()}</span>
               </div>
             </div>
           </div>
@@ -626,8 +626,8 @@
       };
       
       return (
-        <div className="bg-gray-50 rounded-xl p-4 mb-4 border border-gray-200">
-          <div className="flex justify-around items-start gap-4">
+        <div className="bg-gray-50 rounded-xl p-3 mb-3 border border-gray-200">
+          <div className="flex justify-around items-start gap-3">
             <div className={`rounded-xl p-2 transition-all ${isAHighlighted && !highlightButton ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-white bg-gray-100' : ''}`}>
               <DrinkPanel state={aState} highlightButton={highlightButton} />
             </div>
