@@ -17,6 +17,22 @@
   <div id="root"></div>
 
   <script>
+    // =============== IFRAME HEIGHT REPORTING ===============
+    function reportHeight() {
+      if (window.parent !== window) {
+        const height = document.body.scrollHeight || document.documentElement.scrollHeight;
+        window.parent.postMessage({ iframeHeight: height }, '*');
+      }
+    }
+    window.addEventListener('load', () => {
+      reportHeight();
+      setTimeout(reportHeight, 500);
+      setTimeout(reportHeight, 1000);
+    });
+    window.addEventListener('resize', reportHeight);
+    const observer = new MutationObserver(reportHeight);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+
     // =============== QUALTRICS COMMUNICATION ===============
     let participantId = null;
     let gameId = null;
