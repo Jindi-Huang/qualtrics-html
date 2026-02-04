@@ -179,6 +179,19 @@
       const [q2Error, setQ2Error] = useState(null);
       const totalPages = 7;
 
+      // Track time spent on each page (in seconds)
+      const pageTimesRef = React.useRef(Array(7).fill(0));
+      const pageEnteredRef = React.useRef(Date.now());
+      // Track time per comprehension check attempt
+      const comprehTimesRef = React.useRef([]);
+
+      const recordPageTime = (pageIndex) => {
+        const now = Date.now();
+        const elapsed = (now - pageEnteredRef.current) / 1000;
+        pageTimesRef.current[pageIndex] += elapsed;
+        pageEnteredRef.current = now;
+      };
+
       const [q1Order] = useState(() => shuffleArray([
         'drinkNoPay', 'drinkCost', 'feelGoodBonus', 'oneRound', 'sumAll', 'bioClipPay'
       ]));
@@ -233,6 +246,10 @@
       }, []);
 
       const handleContinue = () => {
+        const now = Date.now();
+        const elapsed = (now - pageEnteredRef.current) / 1000;
+        comprehTimesRef.current.push(elapsed);
+        recordPageTime(currentPage);
         const q1Selected = q1All.filter(id => comprehension[id]);
         const q2Selected = q2All.filter(id => comprehension[id]);
         const q1Ok = checkAnswer(q1All, q1Correct);
@@ -279,7 +296,9 @@
             wrongCountDieterQ1: newWrongQ1,
             wrongCountDieterQ2: newWrongQ2,
             allAnswersDieterQ1: newAllQ1,
-            allAnswersDieterQ2: newAllQ2
+            allAnswersDieterQ2: newAllQ2,
+            pageTimes: pageTimesRef.current,
+            comprehTimes: comprehTimesRef.current
           });
         }
       };
@@ -603,7 +622,7 @@
               {/* Navigation buttons */}
               <div className="flex justify-between items-center mt-8">
                 <button
-                  onClick={() => setCurrentPage(p => p - 1)}
+                  onClick={() => { recordPageTime(currentPage); setCurrentPage(p => p - 1); }}
                   disabled={currentPage === 0}
                   className={`px-6 py-3 rounded-xl font-bold transition-all ${
                     currentPage === 0
@@ -624,8 +643,9 @@
                 ) : (
                   <button
                     onClick={() => {
+                      recordPageTime(currentPage);
                       if (currentPage === 1 && attentionCheck === 0) {
-                        sendDataToQualtrics('INSTRUCTIONS_COMPLETE', { completed: true, attentionCheck: 0, comprehension: {} });
+                        sendDataToQualtrics('INSTRUCTIONS_COMPLETE', { completed: true, attentionCheck: 0, comprehension: {}, pageTimes: pageTimesRef.current, comprehTimes: comprehTimesRef.current });
                         return;
                       }
                       setCurrentPage(p => p + 1);
