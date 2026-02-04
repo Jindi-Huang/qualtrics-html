@@ -197,6 +197,10 @@
         setError('');
         setPage(nextPage);
         window.scrollTo(0, 0);
+        // Tell parent to scroll to top (for iframe embedding)
+        if (window.parent !== window) {
+          window.parent.postMessage({ type: 'SCROLL_TO_TOP' }, '*');
+        }
       };
 
       const handleSubmit = () => {
