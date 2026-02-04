@@ -213,13 +213,18 @@
         }
 
         setSubmitted(true);
+        // Convert to numerical indices (0-9)
+        const pctIndex = (val) => PERCENTAGE_OPTIONS.indexOf(val);
+        const q6Values = ['cause_90_100', 'cause_80_90', 'cause_70_80', 'cause_60_70', 'cause_50_60', 'notcause_50_60', 'notcause_60_70', 'notcause_70_80', 'notcause_80_90', 'notcause_90_100'];
+        const q6Index = (val) => q6Values.indexOf(val);
+
         sendDataToQualtrics('QUESTIONS_COMPLETE', {
-          dieterPA: answers.q1,
-          dieterPX: answers.q2,
-          dieterPY: answers.q3,
-          dieterSameNo: answers.q4,
-          dieterSameYes: answers.q5,
-          dieterVersion: answers.q6,
+          dieterPA: pctIndex(answers.q1),
+          dieterPX: pctIndex(answers.q2),
+          dieterPY: pctIndex(answers.q3),
+          dieterSameNo: pctIndex(answers.q4),
+          dieterSameYes: pctIndex(answers.q5),
+          dieterVersion: q6Index(answers.q6),
           dieterOwnWords: answers.q7,
           dieterOwnWordsDAG: answers.q8
         });
