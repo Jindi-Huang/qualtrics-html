@@ -171,26 +171,15 @@
         setError('');
       };
 
-      const handleNext = () => {
-        const page1Keys = ['q1', 'q2', 'q3', 'q4', 'q5'];
-        const unanswered = page1Keys.filter(k => answers[k] === null);
+      const handleNextPage = (requiredKeys, nextPage) => {
+        const unanswered = requiredKeys.filter(k => answers[k] === null);
         if (unanswered.length > 0) {
           const nums = unanswered.map(k => k.replace('q', 'Q'));
           setError(`Please answer all questions. Missing: ${nums.join(', ')}`);
           return;
         }
         setError('');
-        setPage(2);
-        window.scrollTo(0, 0);
-      };
-
-      const handleNextPage2 = () => {
-        if (answers.q6 === null) {
-          setError('Please answer the question before continuing.');
-          return;
-        }
-        setError('');
-        setPage(3);
+        setPage(nextPage);
         window.scrollTo(0, 0);
       };
 
@@ -237,16 +226,18 @@
         {
           key: 'q3',
           text: `How often did you feel <strong>${CONFIG.playerName2Pos}</strong>?`
-        },
-        {
-          key: 'q4',
-          text: `<strong>Whenever you did NOT drink ${CONFIG.playerName0}</strong>, how often was your ${CONFIG.playerName1} level normal and you also felt ${CONFIG.playerName2Pos}?`
-        },
-        {
-          key: 'q5',
-          text: `<strong>Whenever you did drink ${CONFIG.playerName0}</strong>, how often was your ${CONFIG.playerName1} level normal and you also felt ${CONFIG.playerName2Pos}?`
         }
       ];
+
+      const q4 = {
+        key: 'q4',
+        text: `<strong>Whenever you did NOT drink ${CONFIG.playerName0}</strong>, how often was your ${CONFIG.playerName1} level normal and you also felt ${CONFIG.playerName2Pos}?`
+      };
+
+      const q5 = {
+        key: 'q5',
+        text: `<strong>Whenever you did drink ${CONFIG.playerName0}</strong>, how often was your ${CONFIG.playerName1} level normal and you also felt ${CONFIG.playerName2Pos}?`
+      };
 
       const q6 = {
         key: 'q6',
@@ -305,7 +296,7 @@
                   )}
 
                   <button
-                    onClick={handleNext}
+                    onClick={() => handleNextPage(['q1', 'q2', 'q3'], 2)}
                     className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg"
                   >
                     Next
@@ -315,6 +306,35 @@
             )}
 
             {page === 2 && (
+              <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
+                <RadioQuestion
+                  questionNumber={4}
+                  questionText={q4.text}
+                  selectedValue={answers.q4}
+                  onChange={(val) => handleChange('q4', val)}
+                />
+
+                <RadioQuestion
+                  questionNumber={5}
+                  questionText={q5.text}
+                  selectedValue={answers.q5}
+                  onChange={(val) => handleChange('q5', val)}
+                />
+
+                {error && (
+                  <p className="text-red-600 font-medium mb-4">{error}</p>
+                )}
+
+                <button
+                  onClick={() => handleNextPage(['q4', 'q5'], 3)}
+                  className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+
+            {page === 3 && (
               <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
                 <RadioQuestion
                   questionNumber={6}
@@ -330,7 +350,7 @@
                 )}
 
                 <button
-                  onClick={handleNextPage2}
+                  onClick={() => handleNextPage(['q6'], 4)}
                   className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg"
                 >
                   Next
@@ -338,7 +358,7 @@
               </div>
             )}
 
-            {page === 3 && (
+            {page === 4 && (
               <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
                 <div className="mb-8">
                   <p className="text-base text-gray-800 mb-4">
