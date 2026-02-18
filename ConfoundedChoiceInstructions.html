@@ -173,8 +173,8 @@
 
       // Randomize order of two possibilities (1=causal, 2=confounded)
       const [possibilityOrder] = useState(() => shuffleArray([1, 2]));
-      const gameVersionsDescriptionOrder1 = possibilityOrder.indexOf(1) + 1;
-      const gameVersionsDescriptionOrder2 = possibilityOrder.indexOf(2) + 1;
+      const gameVersionsDescriptionOrderMigraines1 = possibilityOrder.indexOf(1) + 1;
+      const gameVersionsDescriptionOrderMigraines2 = possibilityOrder.indexOf(2) + 1;
 
       const q1ItemsMap = {
         cravingDrinkPay: { id: 'cravingDrinkPay', text: `If I have a craving, I'll receive ${CONFIG.currency}${Math.abs(CONFIG.aCost1).toFixed(2)} for consuming the drink.` },
@@ -272,14 +272,14 @@
             completed: true,
             attentionCheck: attentionCheck,
             comprehension: comprehension,
-            wrongCountConfoundedQ1: newWrongQ1,
-            wrongCountConfoundedQ2: newWrongQ2,
-            allAnswersConfoundedQ1: newAllQ1,
-            allAnswersConfoundedQ2: newAllQ2,
+            wrongCountMigrainesQ1: newWrongQ1,
+            wrongCountMigrainesQ2: newWrongQ2,
+            allAnswersMigrainesQ1: newAllQ1,
+            allAnswersMigrainesQ2: newAllQ2,
             pageTimes: pageTimesRef.current,
             comprehTimes: comprehTimesRef.current,
-            gameVersionsDescriptionOrder1: gameVersionsDescriptionOrder1,
-            gameVersionsDescriptionOrder2: gameVersionsDescriptionOrder2
+            gameVersionsDescriptionOrderMigraines1: gameVersionsDescriptionOrderMigraines1,
+            gameVersionsDescriptionOrderMigraines2: gameVersionsDescriptionOrderMigraines2
           });
         }
       };
@@ -594,7 +594,7 @@
                     onClick={() => {
                       recordPageTime(currentPage);
                       if (currentPage === 1 && attentionCheck === 0) {
-                        sendDataToQualtrics('INSTRUCTIONS_COMPLETE', { completed: true, attentionCheck: 0, comprehension: {}, pageTimes: pageTimesRef.current, comprehTimes: comprehTimesRef.current, gameVersionsDescriptionOrder1: gameVersionsDescriptionOrder1, gameVersionsDescriptionOrder2: gameVersionsDescriptionOrder2 });
+                        sendDataToQualtrics('INSTRUCTIONS_COMPLETE', { completed: true, attentionCheck: 0, comprehension: {}, pageTimes: pageTimesRef.current, comprehTimes: comprehTimesRef.current, gameVersionsDescriptionOrderMigraines1: gameVersionsDescriptionOrderMigraines1, gameVersionsDescriptionOrderMigraines2: gameVersionsDescriptionOrderMigraines2 });
                         return;
                       }
                       setCurrentPage(p => p + 1);

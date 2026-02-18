@@ -35,9 +35,56 @@
 </head>
 <body>
   <div id="root"></div>
-  
-  <script type="text/babel">
-    const { useState, useCallback, useEffect } = React;
+
+  <script>
+    // =============== QUALTRICS COMMUNICATION ===============
+    let participantId = null;
+    let gameId = null;
+
+    // Receive config from Qualtrics
+    window.addEventListener('message', function(event) {
+      if (event.data.type === 'INIT') {
+        console.log('Received INIT from Qualtrics:', event.data);
+        participantId = event.data.participantId;
+        gameId = event.data.gameId;
+
+        if (event.data.gameConfig) {
+          const qConfig = event.data.gameConfig;
+          if (qConfig.nRounds !== undefined) CONFIG.totalRounds = parseInt(qConfig.nRounds) || CONFIG.totalRounds;
+          if (qConfig.id) CONFIG.id = qConfig.id;
+          if (qConfig.yBonus !== undefined) CONFIG.noHeadachePayoff = qConfig.yBonus;
+          if (qConfig.yCost !== undefined) CONFIG.headachePayoff = qConfig.yCost;
+          if (qConfig.aCost0 !== undefined) CONFIG.aCost0 = qConfig.aCost0;
+          if (qConfig.aCost1 !== undefined) CONFIG.aCost1 = qConfig.aCost1;
+          if (qConfig.drinkName) CONFIG.drinkName = qConfig.drinkName;
+          // DGP parameters: Y (craving) independent, X (headache) depends on Y
+          if (qConfig.pY !== undefined) CONFIG.confounder.pY = qConfig.pY;
+          if (qConfig.pX_Y !== undefined) CONFIG.confounder.pX_Y = qConfig.pX_Y;  // P(X=1 | Y=1)
+          if (qConfig.pX_y !== undefined) CONFIG.confounder.pX_y = qConfig.pX_y;  // P(X=1 | Y=0)
+          console.log('Applied config:', CONFIG);
+        }
+
+        // Mark as initialized and trigger callbacks
+        markInitialized();
+
+        sendDataToQualtrics('GAME_START', { started: true });
+      }
+    });
+
+    // Send data to Qualtrics
+    function sendDataToQualtrics(dataType, data) {
+      if (window.parent !== window) {
+        window.parent.postMessage({
+          type: 'GAME_DATA',
+          gameId: gameId,
+          dataType: dataType,
+          data: data,
+          participantId: participantId,
+          timestamp: new Date().toISOString()
+        }, '*');
+      }
+      console.log('Sent to Qualtrics:', dataType, data);
+    }
 
     // Configuration
     const CONFIG = {
@@ -45,22 +92,49 @@
       headachePayoff: -2.00,
       totalRounds: 100,
       currency: '$',
-      
+      id: 1,
+      aCost0: 1.00,   // cost of drinking when no craving (positive = pay)
+      aCost1: -1.00,  // cost of drinking when craving (negative = receive)
+
+      // DGP: Y (craving) generated independently, X (headache) depends on Y
       confounder: {
-        pCraving: 0.50,
-        pHeadacheGivenCraving: 0.85,
-        pHeadacheGivenNoCraving: 0.15,
+        pY: 0.50,      // P(Y=1) - probability of craving
+        pX_Y: 0.85,    // P(X=1 | Y=1) - probability of headache given craving
+        pX_y: 0.15,    // P(X=1 | Y=0) - probability of headache given no craving
       },
-      
+
       drinkName: 'Driftwell',
     };
+  </script>
 
-    // Simulate one round
-    function simulateRound(craving) {
-      const { pHeadacheGivenCraving, pHeadacheGivenNoCraving } = CONFIG.confounder;
-      const pHeadache = craving ? pHeadacheGivenCraving : pHeadacheGivenNoCraving;
-      const headache = Math.random() < pHeadache;
-      return { headache, noHeadache: !headache };
+  <script type="text/babel">
+    const { useState, useCallback, useEffect, useRef } = React;
+
+    // Track if config has been received from Qualtrics
+    let isInitialized = false;
+    let initCallbacks = [];
+
+    function onInitialized(callback) {
+      if (isInitialized) {
+        callback();
+      } else {
+        initCallbacks.push(callback);
+      }
+    }
+
+    function markInitialized() {
+      isInitialized = true;
+      initCallbacks.forEach(cb => cb());
+      initCallbacks = [];
+    }
+
+    // Simulate one round: X (headache) depends on Y (craving)
+    // Y is generated independently, X generated based on Y
+    function simulateRound(Y) {
+      const { pX_Y, pX_y } = CONFIG.confounder;
+      const pX = [pX_y, pX_Y];  // pX[0] = P(X=1|Y=0), pX[1] = P(X=1|Y=1)
+      const X = Math.random() < pX[Y ? 1 : 0] ? 1 : 0;
+      return { headache: X === 1, noHeadache: X === 0 };
     }
 
     // Statistics calculator
@@ -127,7 +201,7 @@
           </div>
           {noHeadache !== null && (
             <div className={`text-lg font-bold mt-1 ${noHeadache ? 'text-green-600' : 'text-red-600'}`}>
-              {noHeadache ? '+$2' : '-$2'}
+              {noHeadache ? `+${CONFIG.currency}${CONFIG.noHeadachePayoff.toFixed(0)}` : `-${CONFIG.currency}${Math.abs(CONFIG.headachePayoff).toFixed(0)}`}
             </div>
           )}
         </div>
@@ -283,7 +357,7 @@
                 <div className="text-left">
                   <div>Drink</div>
                   <div>{CONFIG.drinkName}</div>
-                  <div className="text-xs opacity-70">{craving ? '+$1' : '+$0'}</div>
+                  <div className="text-xs opacity-70">{craving ? `+${CONFIG.currency}${Math.abs(CONFIG.aCost1).toFixed(2)}` : `-${CONFIG.currency}${Math.abs(CONFIG.aCost0).toFixed(2)}`}</div>
                 </div>
               </button>
             </div>
@@ -303,7 +377,7 @@
                 <span className="text-xl">⊘</span>
                 <span>Skip</span>
               </div>
-              <div className="text-xs opacity-70">+$0</div>
+              <div className="text-xs opacity-70">+{CONFIG.currency}0</div>
             </button>
           </div>
         </div>
@@ -345,6 +419,7 @@
 
     // Main experiment component
     function CravingExperiment() {
+      const [ready, setReady] = useState(false);
       const [currentRound, setCurrentRound] = useState(1);
       const [phase, setPhase] = useState('craving');
       const [history, setHistory] = useState([]);
@@ -357,24 +432,50 @@
       const [nextDayNumber, setNextDayNumber] = useState(2);
       const [totalEarnings, setTotalEarnings] = useState(0);
       const [selectedPaymentRound, setSelectedPaymentRound] = useState(null);
-      
+
+      const roundTimesRef = useRef([]);
+      const roundStartTimeRef = useRef(Date.now());
+      const dataSentRef = useRef(false);
+
+      // Wait for Qualtrics config before showing game (max 3 seconds)
+      useEffect(() => {
+        const timeout = setTimeout(() => {
+          if (!ready) {
+            console.log('Timeout: starting with default config');
+            setReady(true);
+            roundStartTimeRef.current = Date.now();
+          }
+        }, 3000);
+
+        onInitialized(() => {
+          clearTimeout(timeout);
+          setReady(true);
+          roundStartTimeRef.current = Date.now();
+        });
+
+        return () => clearTimeout(timeout);
+      }, []);
+
       const stats = calculateStats(history);
-      
+
       const startRound = useCallback(() => {
-        const craving = Math.random() < CONFIG.confounder.pCraving;
-        setCurrentCraving(craving);
+        // Y (craving) generated independently with probability pY
+        const Y = Math.random() < CONFIG.confounder.pY ? 1 : 0;
+        setCurrentCraving(Y === 1);
         setPhase('decision');
       }, []);
-      
+
       useEffect(() => {
-        if (phase === 'craving' && currentCraving === null) {
+        if (ready && phase === 'craving' && currentCraving === null) {
           setTimeout(startRound, 500);
         }
-      }, [phase, currentCraving, startRound]);
+      }, [ready, phase, currentCraving, startRound]);
       
       const handleChoice = useCallback((drank) => {
+        roundTimesRef.current.push((Date.now() - roundStartTimeRef.current) / 1000);
+
         setCurrentDrank(drank);
-        
+
         if (currentCraving) {
           if (drank) {
             setShowCoinAnimation(true);
@@ -391,8 +492,11 @@
         
         setTimeout(() => {
           setCurrentOutcome(result.noHeadache);
-          
-          const earnings = result.noHeadache ? CONFIG.noHeadachePayoff : CONFIG.headachePayoff;
+
+          const headacheEarnings = result.noHeadache ? CONFIG.noHeadachePayoff : CONFIG.headachePayoff;
+          const drinkCost = drank ? (currentCraving ? CONFIG.aCost1 : CONFIG.aCost0) : 0;
+          const drinkEarnings = -drinkCost; // negative cost = positive earnings
+          const earnings = headacheEarnings + drinkEarnings;
           
           const roundData = {
             roundNumber: currentRound,
@@ -424,6 +528,7 @@
                 setCurrentDrank(null);
                 setCurrentOutcome(null);
                 setCoinFading(false);
+                roundStartTimeRef.current = Date.now();
                 setTimeout(startRound, 300);
               }, 1000);
             }, 1500);
@@ -431,6 +536,36 @@
         }, 800);
       }, [currentRound, currentCraving, startRound]);
       
+      // Show loading screen while waiting for Qualtrics config
+      if (!ready) {
+        return (
+          <div className="min-h-screen bg-white flex items-center justify-center">
+            <div className="text-gray-700 text-xl">Loading...</div>
+          </div>
+        );
+      }
+
+      // Send final data when game completes
+      if (phase === 'complete' && history.length === CONFIG.totalRounds && !dataSentRef.current) {
+        dataSentRef.current = true;
+
+        sendDataToQualtrics('FINAL_DATA', {
+          history: history.map(r => ({
+            craving: r.craving ? 1 : 0,
+            drank: r.drank ? 1 : 0,
+            noHeadache: r.noHeadache ? 1 : 0,
+            earnings: r.earnings
+          })),
+          roundTimes: roundTimesRef.current,
+          selectedPaymentRound: selectedPaymentRound,
+          totalEarnings: totalEarnings
+        });
+
+        setTimeout(() => {
+          sendDataToQualtrics('GAME_COMPLETE', { completed: true });
+        }, 500);
+      }
+
       // Complete screen
       if (phase === 'complete') {
         const paymentRoundData = history[selectedPaymentRound - 1];

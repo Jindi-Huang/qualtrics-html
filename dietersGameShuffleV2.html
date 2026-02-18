@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scenario Reveal</title>
+  <style>
+    :root {
+      --size: 120px;
+      --gap: 20px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      background: #ffffff;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      padding: 4px 20px 20px 20px;
+    }
+
+    h1 {
+      color: #1e293b;
+      margin-bottom: 30px;
+      font-size: 1.8rem;
+      text-align: center;
+    }
+
+    #container {
+      position: relative;
+      width: calc(var(--size) * 3 + var(--gap) * 2);
+      height: calc(var(--size) * 3 + var(--gap) * 2);
+    }
+
+    .tile {
+      position: absolute;
+      width: var(--size);
+      height: var(--size);
+      perspective: 600px;
+      transition: left 0.3s ease-in-out, top 0.3s ease-in-out, opacity 0.4s ease, transform 0.5s ease;
+      cursor: default;
+    }
+
+    .tile.faded {
+      opacity: 0.15;
+      transform: scale(0.9);
+    }
+
+    .tile.chosen {
+      z-index: 100;
+      transform: scale(1.8);
+      left: calc(50% - var(--size) / 2) !important;
+      top: calc(50% - var(--size) / 2) !important;
+    }
+
+    .inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.6s ease-in-out;
+      transform-style: preserve-3d;
+    }
+
+    .tile.flipped .inner {
+      transform: rotateY(180deg);
+    }
+
+    .face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .back {
+      background: linear-gradient(145deg,
+        hsl(var(--hue), 50%, 92%),
+        hsl(var(--hue), 40%, 85%));
+      border: 3px solid hsl(var(--hue), 60%, 70%);
+    }
+
+    .back::after {
+      content: '?';
+      font-size: 3rem;
+      color: hsl(var(--hue), 40%, 60%);
+      font-weight: bold;
+    }
+
+    .front {
+      background: linear-gradient(145deg, #ffffff, #f8fafc);
+      border: 3px solid hsl(var(--hue), 60%, 65%);
+      transform: rotateY(180deg);
+      padding: 8px;
+    }
+
+    .tile.chosen .front {
+      padding: 15px;
+    }
+
+    .drink-icon {
+      font-size: 2.2rem;
+      margin-bottom: 4px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+    }
+
+    .tile.chosen .drink-icon {
+      font-size: 3rem;
+      margin-bottom: 8px;
+    }
+
+    .drink-name {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: hsl(var(--hue), 70%, 35%);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+
+    .tile.chosen .drink-name {
+      font-size: 1rem;
+      margin-bottom: 5px;
+    }
+
+    .chemical-name {
+      font-size: 0.6rem;
+      font-weight: 600;
+      color: #64748b;
+      background: #e2e8f0;
+      padding: 2px 6px;
+      border-radius: 8px;
+    }
+
+    .tile.chosen .chemical-name {
+      font-size: 0.85rem;
+      padding: 4px 12px;
+    }
+
+    .divider {
+      width: 60%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, hsl(var(--hue), 60%, 70%), transparent);
+      margin: 4px 0;
+    }
+
+    .tile.chosen .divider {
+      margin: 8px 0;
+    }
+
+    #continueBtn {
+      display: none;
+      margin-top: 10px;
+      padding: 14px 40px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: white;
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+      transition: all 0.3s ease;
+    }
+
+    #continueBtn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+    }
+
+    #message {
+      color: #64748b;
+      margin-top: 20px;
+      font-size: 1rem;
+      text-align: center;
+      min-height: 24px;
+    }
+
+  </style>
+</head>
+<body>
+  <h2 id="studyCounter" style="color: #1e293b; margin-bottom: 24px; font-size: 1.8rem; text-align: center;"></h2>
+  <h1 id="title"></h1>
+  <ul id="bonusInfo" style="color: #475569; font-size: 1.2rem; text-align: left; margin: 0 auto 20px auto; max-width: 600px; line-height: 1.6;"></ul>
+  <p id="newStudyNote" style="display: none; color: #64748b; font-size: 1rem; text-align: center; margin-bottom: 20px;"></p>
+  <div id="container"></div>
+  <div id="message"></div>
+  <button id="continueBtn">Continue</button>
+
+  <script>
+    // =============== QUALTRICS COMMUNICATION ===============
+    let participantId = null;
+    let gameId = null;
+
+    window.addEventListener('message', function(event) {
+      if (event.data.type === 'INIT') {
+        console.log('Received INIT from Qualtrics:', event.data);
+        participantId = event.data.participantId;
+        gameId = event.data.gameId;
+
+        if (event.data.gameConfig) {
+          const qConfig = event.data.gameConfig;
+          if (qConfig.playerName0) CONFIG.playerName0 = qConfig.playerName0;
+          if (qConfig.playerName1) CONFIG.playerName1 = qConfig.playerName1;
+          if (qConfig.playerIcon0) CONFIG.playerIcon0 = qConfig.playerIcon0;
+          if (qConfig.gameCounter !== undefined) {
+            CONFIG.gameCounter = qConfig.gameCounter;
+          }
+          if (qConfig.nSupergames !== undefined) {
+            CONFIG.nSupergames = qConfig.nSupergames;
+          }
+          if (qConfig.yBonus !== undefined) CONFIG.yBonus = qConfig.yBonus;
+          if (qConfig.aCost !== undefined) CONFIG.aCost = qConfig.aCost;
+          if (qConfig.currency) CONFIG.currency = qConfig.currency;
+          console.log('Applied config:', CONFIG);
+        }
+
+        markInitialized();
+      }
+    });
+
+    function sendDataToQualtrics(dataType, data) {
+      if (window.parent !== window) {
+        window.parent.postMessage({
+          type: 'GAME_DATA',
+          gameId: gameId,
+          dataType: dataType,
+          data: data,
+          participantId: participantId,
+          timestamp: new Date().toISOString()
+        }, '*');
+      }
+      console.log('Sent to Qualtrics:', dataType, data);
+    }
+
+    let isInitialized = false;
+    let initCallbacks = [];
+
+    function onInitialized(callback) {
+      if (isInitialized) callback();
+      else initCallbacks.push(callback);
+    }
+
+    function markInitialized() {
+      isInitialized = true;
+      initCallbacks.forEach(cb => cb());
+      initCallbacks = [];
+    }
+
+    // =============== CONFIGURATION ===============
+    const CONFIG = {
+      playerName0: 'Driftwell',  // Drink name (A)
+      playerName1: 'Qivaryn',   // Chemical name (X)
+      playerIcon0: '🥤',        // Icon for drink action (A)
+      gameCounter: 1,            // Current game number
+      nSupergames: 1,            // Total number of games
+      yBonus: 0.10,              // Bonus for feeling good
+      aCost: 0.05,               // Cost of drinking
+      currency: '$'              // Currency symbol
+    };
+
+    function updateTitle() {
+      const counterEl = document.getElementById('studyCounter');
+      if (counterEl) {
+        counterEl.textContent = `Study ${CONFIG.gameCounter}`;
+      }
+      const titleEl = document.getElementById('title');
+      if (titleEl) {
+        titleEl.innerHTML = `<span style="font-weight: normal">This study is about</span> drinking ${CONFIG.playerName0}<span style="font-weight: normal">, your</span> ${CONFIG.playerName1} levels <span style="font-weight: normal">and</span> how you feel.`;
+      }
+      const bonusEl = document.getElementById('bonusInfo');
+      if (bonusEl) {
+        bonusEl.innerHTML = `<li>If you feel good at the end of the day, you receive an additional ${CONFIG.currency}${Number(CONFIG.yBonus).toFixed(2)} bonus. If you feel bad, you don't.</li>` +
+          `<li>If you consume the drink, you pay ${CONFIG.currency}${Number(CONFIG.aCost).toFixed(2)} for it (deducted from your baseline bonus).</li>`;
+      }
+      const noteEl = document.getElementById('newStudyNote');
+      if (noteEl && CONFIG.gameCounter >= 2) {
+        noteEl.textContent = 'This beverage and this blood chemical have nothing to do with what you experienced in the previous study.';
+        noteEl.style.display = 'block';
+      }
+    }
+
+    const defaultHue = 220; // Consistent blue color for all tiles
+
+    // =============== GENERATE TILE HTML ===============
+    function generateTileHTML(scenario, size = 'default') {
+      const hue = 220;
+
+      // Size configurations
+      const sizes = {
+        small: {
+          width: 100, height: 100, padding: 8, borderWidth: 2, borderRadius: 12,
+          iconSize: '1.5rem', iconMargin: 4,
+          nameSize: '0.6rem', nameMargin: 3,
+          dividerMargin: 3,
+          chemSize: '0.55rem', chemPadding: '2px 6px'
+        },
+        default: {
+          width: 160, height: 160, padding: 15, borderWidth: 3, borderRadius: 16,
+          iconSize: '2.5rem', iconMargin: 8,
+          nameSize: '0.9rem', nameMargin: 6,
+          dividerMargin: 6,
+          chemSize: '0.8rem', chemPadding: '4px 12px'
+        },
+        large: {
+          width: 220, height: 220, padding: 20, borderWidth: 4, borderRadius: 20,
+          iconSize: '3.5rem', iconMargin: 12,
+          nameSize: '1.1rem', nameMargin: 8,
+          dividerMargin: 10,
+          chemSize: '0.95rem', chemPadding: '6px 16px'
+        }
+      };
+
+      const s = sizes[size] || sizes.default;
+
+      return `<div style="
+        width: ${s.width}px;
+        height: ${s.height}px;
+        background: linear-gradient(145deg, #ffffff, #f0f4f8);
+        border: ${s.borderWidth}px solid hsl(${hue}, 70%, 50%);
+        border-radius: ${s.borderRadius}px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: ${s.padding}px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        box-sizing: border-box;
+      ">
+        <div style="
+          font-size: ${s.iconSize};
+          margin-bottom: ${s.iconMargin}px;
+          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+        ">${scenario.drinkIcon}</div>
+        <div style="
+          font-size: ${s.nameSize};
+          font-weight: 700;
+          color: hsl(${hue}, 70%, 35%);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: ${s.nameMargin}px;
+        ">${scenario.drinkName.toUpperCase()}</div>
+        <div style="
+          width: 70%;
+          height: 2px;
+          background: linear-gradient(90deg, transparent, hsl(${hue}, 60%, 70%), transparent);
+          margin: ${s.dividerMargin}px 0;
+        "></div>
+        <div style="
+          font-size: ${s.chemSize};
+          font-weight: 600;
+          color: #64748b;
+          background: #e2e8f0;
+          padding: ${s.chemPadding};
+          border-radius: 10px;
+        ">${scenario.chemicalName}</div>
+      </div>`;
+    }
+
+    // =============== MAIN LOGIC ===============
+    function startReveal() {
+      const container = document.getElementById('container');
+      const message = document.getElementById('message');
+      const continueBtn = document.getElementById('continueBtn');
+
+      if (!container) return;
+      container.textContent = "";
+
+      const chosenScenario = {
+        drinkName: CONFIG.playerName0,
+        drinkIcon: CONFIG.playerIcon0,
+        chemicalName: CONFIG.playerName1
+      };
+
+      // Update title with scenario info
+      updateTitle();
+
+      // Create single tile for the chosen scenario - centered
+      const tile = document.createElement('div');
+      tile.className = 'tile flipped';
+      tile.style.setProperty('--hue', defaultHue);
+      tile.style.position = 'absolute';
+      tile.style.left = '50%';
+      tile.style.top = '50%';
+      tile.style.transform = 'translate(-50%, -50%) scale(1.8)';
+
+      // Create tile structure
+      const inner = document.createElement('div');
+      inner.className = 'inner';
+      inner.style.transform = 'rotateY(180deg)';
+
+      const front = document.createElement('div');
+      front.className = 'face front';
+
+      // Add content to front face
+      const drinkIcon = document.createElement('div');
+      drinkIcon.className = 'drink-icon';
+      drinkIcon.textContent = chosenScenario.drinkIcon;
+
+      const drinkName = document.createElement('div');
+      drinkName.className = 'drink-name';
+      drinkName.textContent = chosenScenario.drinkName;
+
+      const divider = document.createElement('div');
+      divider.className = 'divider';
+
+      const chemicalName = document.createElement('div');
+      chemicalName.className = 'chemical-name';
+      chemicalName.textContent = chosenScenario.chemicalName;
+
+      front.appendChild(drinkIcon);
+      front.appendChild(drinkName);
+      front.appendChild(divider);
+      front.appendChild(chemicalName);
+
+      inner.appendChild(front);
+      tile.appendChild(inner);
+
+      // Keep container size for centering
+      container.style.position = 'relative';
+      container.style.width = '300px';
+      container.style.height = '300px';
+      container.appendChild(tile);
+
+      // Hide the message
+      message.textContent = '';
+
+      // Generate HTML for the tile (self-contained with inline styles)
+      const tileHTML = generateTileHTML(chosenScenario);
+
+      // Show continue button immediately
+      continueBtn.style.display = 'block';
+
+      // Send data to Qualtrics
+      sendDataToQualtrics('SCENARIO_REVEALED', {
+        drinkName: chosenScenario.drinkName,
+        drinkIcon: chosenScenario.drinkIcon,
+        chemicalName: chosenScenario.chemicalName,
+        tileHTML: tileHTML
+      });
+
+      // Continue button handler
+      continueBtn.addEventListener('click', () => {
+        sendDataToQualtrics('SCENARIO_COMPLETE', {
+          drinkName: chosenScenario.drinkName,
+          drinkIcon: chosenScenario.drinkIcon,
+          chemicalName: chosenScenario.chemicalName,
+          tileHTML: tileHTML
+        });
+      });
+    }
+
+    // Start after initialization or timeout
+    const timeout = setTimeout(() => {
+      if (!isInitialized) {
+        console.log('Timeout: starting with default config');
+        startReveal();
+      }
+    }, 3000);
+
+    onInitialized(() => {
+      clearTimeout(timeout);
+      startReveal();
+    });
+  </script>
+</body>
+</html>
