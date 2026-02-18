@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Scenario Reveal</title>
+  <title>Case Reveal</title>
   <style>
     :root {
       --size: 120px;
@@ -194,7 +194,7 @@
 <body>
   <h2 id="studyCounter" style="color: #1e293b; margin-bottom: 24px; font-size: 1.8rem; text-align: center;"></h2>
   <h1 id="title"></h1>
-  <ul id="bonusInfo" style="color: #475569; font-size: 1.2rem; text-align: left; margin: 0 auto 20px auto; max-width: 600px; line-height: 1.6;"></ul>
+  <ul id="bonusInfo" style="color: #475569; font-size: 1.2rem; text-align: left; margin: 0 auto 20px auto; max-width: 900px; line-height: 1.6;"></ul>
   <p id="newStudyNote" style="display: none; color: #64748b; font-size: 1rem; text-align: center; margin-bottom: 20px;"></p>
   <div id="container"></div>
   <div id="message"></div>
@@ -223,7 +223,8 @@
             CONFIG.nSupergames = qConfig.nSupergames;
           }
           if (qConfig.yBonus !== undefined) CONFIG.yBonus = qConfig.yBonus;
-          if (qConfig.aCost !== undefined) CONFIG.aCost = qConfig.aCost;
+          if (qConfig.aCost0 !== undefined) CONFIG.aCost0 = qConfig.aCost0;
+          if (qConfig.aCost1 !== undefined) CONFIG.aCost1 = qConfig.aCost1;
           if (qConfig.currency) CONFIG.currency = qConfig.currency;
           console.log('Applied config:', CONFIG);
         }
@@ -268,27 +269,29 @@
       gameCounter: 1,            // Current game number
       nSupergames: 1,            // Total number of games
       yBonus: 0.10,              // Bonus for feeling good
-      aCost: 0.05,               // Cost of drinking
+      aCost0: 1.00,              // Cost of drinking when no craving (positive = pay)
+      aCost1: -1.00,             // Cost of drinking when craving (negative = receive)
       currency: '$'              // Currency symbol
     };
 
     function updateTitle() {
       const counterEl = document.getElementById('studyCounter');
       if (counterEl) {
-        counterEl.textContent = `Scenario ${CONFIG.gameCounter}`;
+        counterEl.textContent = `Case ${CONFIG.gameCounter}`;
       }
       const titleEl = document.getElementById('title');
       if (titleEl) {
-        titleEl.innerHTML = `<span style="font-weight: normal">This scenario is about</span> drinking ${CONFIG.playerName0} <span style="font-weight: normal">and</span> how you feel.`;
+        titleEl.innerHTML = `<span style="font-weight: normal">This case is about</span> drinking ${CONFIG.playerName0} <span style="font-weight: normal">and</span> how you feel.`;
       }
       const bonusEl = document.getElementById('bonusInfo');
       if (bonusEl) {
         bonusEl.innerHTML = `<li>If you feel good at the end of the day, you receive an additional ${CONFIG.currency}${Number(CONFIG.yBonus).toFixed(2)} bonus. If you feel bad, you don't.</li>` +
-          `<li>If you consume the drink, you pay ${CONFIG.currency}${Number(CONFIG.aCost).toFixed(2)} for it (deducted from your baseline bonus).</li>`;
+          `<li>If you have a craving, you <span style="color: #16a34a; font-weight: 600;">get ${CONFIG.currency}${Math.abs(CONFIG.aCost1).toFixed(2)}</span> for consuming the drink (added to your baseline bonus).</li>` +
+          `<li>If you don't have a craving, you <span style="color: #dc2626; font-weight: 600;">pay ${CONFIG.currency}${Math.abs(CONFIG.aCost0).toFixed(2)}</span> for consuming the drink (deducted from your baseline bonus).</li>`;
       }
       const noteEl = document.getElementById('newStudyNote');
       if (noteEl && CONFIG.gameCounter >= 2) {
-        noteEl.textContent = 'This beverage has nothing to do with what you experienced in the previous scenario.';
+        noteEl.textContent = 'This beverage has nothing to do with what you experienced in the previous case.';
         noteEl.style.display = 'block';
       }
     }
@@ -352,22 +355,7 @@
           color: hsl(${hue}, 70%, 35%);
           text-transform: uppercase;
           letter-spacing: 0.5px;
-          margin-bottom: ${s.nameMargin}px;
         ">${scenario.drinkName.toUpperCase()}</div>
-        <div style="
-          width: 70%;
-          height: 2px;
-          background: linear-gradient(90deg, transparent, hsl(${hue}, 60%, 70%), transparent);
-          margin: ${s.dividerMargin}px 0;
-        "></div>
-        <div style="
-          font-size: ${s.chemSize};
-          font-weight: 600;
-          color: #64748b;
-          background: #e2e8f0;
-          padding: ${s.chemPadding};
-          border-radius: 10px;
-        ">${scenario.chemicalName}</div>
       </div>`;
     }
 
@@ -380,7 +368,7 @@
       if (!container) return;
       container.textContent = "";
 
-      const chosenScenario = {
+      const chosenCase = {
         drinkName: CONFIG.playerName0,
         drinkIcon: CONFIG.playerIcon0,
         chemicalName: CONFIG.playerName1
@@ -409,23 +397,14 @@
       // Add content to front face
       const drinkIcon = document.createElement('div');
       drinkIcon.className = 'drink-icon';
-      drinkIcon.textContent = chosenScenario.drinkIcon;
+      drinkIcon.textContent = chosenCase.drinkIcon;
 
       const drinkName = document.createElement('div');
       drinkName.className = 'drink-name';
-      drinkName.textContent = chosenScenario.drinkName;
-
-      const divider = document.createElement('div');
-      divider.className = 'divider';
-
-      const chemicalName = document.createElement('div');
-      chemicalName.className = 'chemical-name';
-      chemicalName.textContent = chosenScenario.chemicalName;
+      drinkName.textContent = chosenCase.drinkName;
 
       front.appendChild(drinkIcon);
       front.appendChild(drinkName);
-      front.appendChild(divider);
-      front.appendChild(chemicalName);
 
       inner.appendChild(front);
       tile.appendChild(inner);
@@ -440,25 +419,25 @@
       message.textContent = '';
 
       // Generate HTML for the tile (self-contained with inline styles)
-      const tileHTML = generateTileHTML(chosenScenario);
+      const tileHTML = generateTileHTML(chosenCase);
 
       // Show continue button immediately
       continueBtn.style.display = 'block';
 
       // Send data to Qualtrics
       sendDataToQualtrics('SCENARIO_REVEALED', {
-        drinkName: chosenScenario.drinkName,
-        drinkIcon: chosenScenario.drinkIcon,
-        chemicalName: chosenScenario.chemicalName,
+        drinkName: chosenCase.drinkName,
+        drinkIcon: chosenCase.drinkIcon,
+        chemicalName: chosenCase.chemicalName,
         tileHTML: tileHTML
       });
 
       // Continue button handler
       continueBtn.addEventListener('click', () => {
         sendDataToQualtrics('SCENARIO_COMPLETE', {
-          drinkName: chosenScenario.drinkName,
-          drinkIcon: chosenScenario.drinkIcon,
-          chemicalName: chosenScenario.chemicalName,
+          drinkName: chosenCase.drinkName,
+          drinkIcon: chosenCase.drinkIcon,
+          chemicalName: chosenCase.chemicalName,
           tileHTML: tileHTML
         });
       });
