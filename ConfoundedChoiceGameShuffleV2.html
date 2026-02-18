@@ -275,11 +275,11 @@
     function updateTitle() {
       const counterEl = document.getElementById('studyCounter');
       if (counterEl) {
-        counterEl.textContent = `Study ${CONFIG.gameCounter}`;
+        counterEl.textContent = `Scenario ${CONFIG.gameCounter}`;
       }
       const titleEl = document.getElementById('title');
       if (titleEl) {
-        titleEl.innerHTML = `<span style="font-weight: normal">This study is about</span> drinking ${CONFIG.playerName0}<span style="font-weight: normal">, your</span> ${CONFIG.playerName1} levels <span style="font-weight: normal">and</span> how you feel.`;
+        titleEl.innerHTML = `<span style="font-weight: normal">This scenario is about</span> drinking ${CONFIG.playerName0} <span style="font-weight: normal">and</span> how you feel.`;
       }
       const bonusEl = document.getElementById('bonusInfo');
       if (bonusEl) {
@@ -288,7 +288,7 @@
       }
       const noteEl = document.getElementById('newStudyNote');
       if (noteEl && CONFIG.gameCounter >= 2) {
-        noteEl.textContent = 'This beverage and this blood chemical have nothing to do with what you experienced in the previous study.';
+        noteEl.textContent = 'This beverage has nothing to do with what you experienced in the previous scenario.';
         noteEl.style.display = 'block';
       }
     }
