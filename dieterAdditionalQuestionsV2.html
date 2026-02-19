@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Additional Questions</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; background: #ffffff; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script>
+    // =============== IFRAME HEIGHT REPORTING ===============
+    function reportHeight() {
+      if (window.parent !== window) {
+        const height = document.body.scrollHeight || document.documentElement.scrollHeight;
+        window.parent.postMessage({ iframeHeight: height }, '*');
+      }
+    }
+    window.addEventListener('load', () => {
+      reportHeight();
+      setTimeout(reportHeight, 500);
+      setTimeout(reportHeight, 1000);
+    });
+    window.addEventListener('resize', reportHeight);
+    const observer = new MutationObserver(reportHeight);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+
+    // =============== QUALTRICS COMMUNICATION ===============
+    let participantId = null;
+    let gameId = null;
+
+    window.addEventListener('message', function(event) {
+      if (event.data.type === 'INIT') {
+        console.log('Received INIT from Qualtrics:', event.data);
+        participantId = event.data.participantId;
+        gameId = event.data.gameId;
+
+        if (event.data.gameConfig) {
+          const qConfig = event.data.gameConfig;
+          if (qConfig.playerName0) CONFIG.playerName0 = qConfig.playerName0;
+          if (qConfig.playerName1) CONFIG.playerName1 = qConfig.playerName1;
+          if (qConfig.playerName2Pos) CONFIG.playerName2Pos = qConfig.playerName2Pos;
+          if (qConfig.playerName2) CONFIG.playerName2 = qConfig.playerName2;
+          if (qConfig.playerPronoun2) CONFIG.playerPronoun2 = qConfig.playerPronoun2;
+          if (qConfig.playerIcon0) CONFIG.playerIcon0 = qConfig.playerIcon0;
+          if (qConfig.nRounds !== undefined) CONFIG.nRounds = qConfig.nRounds;
+          if (qConfig.currentSymbol) CONFIG.currentSymbol = qConfig.currentSymbol;
+          if (qConfig.gameCounter !== undefined) CONFIG.gameCounter = qConfig.gameCounter;
+          if (qConfig.gameVersionsDescriptionOrderDieter1) CONFIG.gameVersionsDescriptionOrderDieter1 = qConfig.gameVersionsDescriptionOrderDieter1;
+          if (qConfig.gameVersionsDescriptionOrderDieter2) CONFIG.gameVersionsDescriptionOrderDieter2 = qConfig.gameVersionsDescriptionOrderDieter2;
+          console.log('Applied config:', CONFIG);
+        }
+
+        markInitialized();
+        sendDataToQualtrics('QUESTIONS_START', { started: true });
+      }
+    });
+
+    function sendDataToQualtrics(dataType, data) {
+      if (window.parent !== window) {
+        window.parent.postMessage({
+          type: 'GAME_DATA',
+          gameId: gameId,
+          dataType: dataType,
+          data: data,
+          participantId: participantId,
+          timestamp: new Date().toISOString()
+        }, '*');
+      }
+      console.log('Sent to Qualtrics:', dataType, data);
+    }
+
+    let isInitialized = false;
+    let initCallbacks = [];
+
+    function onInitialized(callback) {
+      if (isInitialized) callback();
+      else initCallbacks.push(callback);
+    }
+
+    function markInitialized() {
+      isInitialized = true;
+      initCallbacks.forEach(cb => cb());
+      initCallbacks = [];
+    }
+
+    // =============== CONFIGURATION ===============
+    const CONFIG = {
+      playerName0: 'Driftwell',
+      playerName1: 'Qivaryn',
+      playerName2Pos: 'energetic',
+      playerName2: 'Qivaryn',
+      playerPronoun2: 'it',
+      playerIcon0: '🥤',
+      nRounds: 30,
+      currentSymbol: '1',
+      gameCounter: 1,
+      gameVersionsDescriptionOrderDieter1: 'A',
+      gameVersionsDescriptionOrderDieter2: 'B'
+    };
+  </script>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const PERCENTAGE_OPTIONS = [
+      '0 - 10%',
+      '11 - 20%',
+      '21 - 30%',
+      '31 - 40%',
+      '41 - 50%',
+      '51 - 60%',
+      '61 - 70%',
+      '71 - 80%',
+      '81 - 90%',
+      '91 - 100%'
+    ];
+
+    function RadioQuestion({ questionNumber, questionText, introText, options, selectedValue, onChange }) {
+      const optionList = options || PERCENTAGE_OPTIONS;
+      return (
+        <div className="mb-8">
+          {introText && (
+            <p className="text-base text-gray-600 mb-3" dangerouslySetInnerHTML={{ __html: introText }} />
+          )}
+          <p className="text-base text-gray-800 mb-4" dangerouslySetInnerHTML={{ __html: `Q${questionNumber}. ${questionText}` }} />
+          <div className="space-y-2 ml-4">
+            {optionList.map((option, idx) => (
+              <label key={idx} className="flex items-start gap-3 cursor-pointer py-1 px-3 rounded-lg hover:bg-gray-50 transition-colors">
+                <input
+                  type="radio"
+                  name={`q${questionNumber}`}
+                  value={typeof option === 'string' ? option : option.value}
+                  checked={selectedValue === (typeof option === 'string' ? option : option.value)}
+                  onChange={() => onChange(typeof option === 'string' ? option : option.value)}
+                  className="w-4 h-4 text-blue-600 cursor-pointer mt-0.5 flex-shrink-0"
+                />
+                {typeof option === 'string' ? (
+                  <span className="text-sm text-gray-700">{option}</span>
+                ) : (
+                  <span className="text-sm text-gray-700" dangerouslySetInnerHTML={{ __html: option.label }} />
+                )}
+              </label>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function App() {
+      const [answers, setAnswers] = useState({
+        q1: null,
+        q2: null,
+        q3: null,
+        q4: null,
+        q5: null,
+        q7: '',
+        q8: ''
+      });
+      const [page, setPage] = useState(1);
+      const [error, setError] = useState('');
+      const [submitted, setSubmitted] = useState(false);
+      const [ready, setReady] = useState(false);
+
+      useEffect(() => {
+        onInitialized(() => setReady(true));
+        const timeout = setTimeout(() => {
+          if (!isInitialized) {
+            console.log('Timeout: starting with default config');
+            setReady(true);
+          }
+        }, 3000);
+        return () => clearTimeout(timeout);
+      }, []);
+
+      const handleChange = (key, value) => {
+        setAnswers(prev => ({ ...prev, [key]: value }));
+        setError('');
+      };
+
+      const handleNextPage = (requiredKeys, nextPage) => {
+        const unanswered = requiredKeys.filter(k => answers[k] === null);
+        if (unanswered.length > 0) {
+          const nums = unanswered.map(k => k.replace('q', 'Q'));
+          setError(`Please answer all questions. Missing: ${nums.join(', ')}`);
+          return;
+        }
+        setError('');
+        setPage(nextPage);
+        window.scrollTo(0, 0);
+        // Tell parent to scroll to top (for iframe embedding)
+        if (window.parent !== window) {
+          window.parent.postMessage({ type: 'SCROLL_TO_TOP' }, '*');
+        }
+      };
+
+      const handleSubmit = () => {
+        const missing = [];
+        if (!answers.q7.trim()) missing.push('Q6');
+        if (!answers.q8.trim()) missing.push('Q7');
+        if (missing.length > 0) {
+          setError(`Please answer all questions. Missing: ${missing.join(', ')}`);
+          return;
+        }
+
+        setSubmitted(true);
+        // Convert to numerical indices (0-9)
+        const pctIndex = (val) => PERCENTAGE_OPTIONS.indexOf(val);
+
+        sendDataToQualtrics('QUESTIONS_COMPLETE', {
+          dieterPA: pctIndex(answers.q1),
+          dieterPX: pctIndex(answers.q2),
+          dieterPY: pctIndex(answers.q3),
+          dieterSameNo: pctIndex(answers.q4),
+          dieterSameYes: pctIndex(answers.q5),
+          dieterVersion: null,
+          dieterOwnWords: answers.q7,
+          dieterOwnWordsDAG: answers.q8
+        });
+      };
+
+      if (!ready) {
+        return (
+          <div className="min-h-screen bg-white flex items-center justify-center">
+            <p className="text-gray-500 text-lg">Loading...</p>
+          </div>
+        );
+      }
+
+
+      const page1Questions = [
+        {
+          key: 'q1',
+          text: `How often did <strong>you drink ${CONFIG.playerName0}</strong> ${CONFIG.playerIcon0} <span style="color: #64748b; font-style: italic;">(what percentage of the weeks)</span>?`
+        },
+        {
+          key: 'q2',
+          text: `How often was your <strong>${CONFIG.playerName1}</strong> level normal <span style="color: #64748b; font-style: italic;">(what percentage of the weeks)</span>?`
+        },
+        {
+          key: 'q3',
+          text: `How often did you feel <strong>${CONFIG.playerName2Pos}</strong> <span style="color: #64748b; font-style: italic;">(what percentage of the weeks)</span>?`
+        }
+      ];
+
+      const q4 = {
+        key: 'q4',
+        text: `<strong>Whenever you did NOT drink ${CONFIG.playerName0}</strong>, how often was your ${CONFIG.playerName1} level normal and you also felt ${CONFIG.playerName2Pos}?`
+      };
+
+      const q5 = {
+        key: 'q5',
+        text: `<strong>Whenever you did drink ${CONFIG.playerName0}</strong>, how often was your ${CONFIG.playerName1} level normal and you also felt ${CONFIG.playerName2Pos}?`
+      };
+
+      return (
+        <div className="min-h-screen bg-white pt-0 pb-10 px-4">
+          <div className="max-w-5xl mx-auto">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4 text-center">
+              Questions about Study {CONFIG.gameCounter}
+            </h1>
+
+            {page === 1 && (
+              <>
+                <p className="text-base text-gray-600 mb-8 text-center">
+                  Now, please answer some questions about {CONFIG.playerName0}, {CONFIG.playerName1} and how you feel.
+                </p>
+
+                <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
+                  {page1Questions.map((q) => (
+                    <RadioQuestion
+                      key={q.key}
+                      questionNumber={parseInt(q.key.replace('q', ''))}
+                      questionText={q.text}
+                      selectedValue={answers[q.key]}
+                      onChange={(val) => handleChange(q.key, val)}
+                    />
+                  ))}
+
+                  {error && (
+                    <p className="text-red-600 font-medium mb-4">{error}</p>
+                  )}
+
+                  <button
+                    onClick={() => handleNextPage(['q1', 'q2', 'q3'], 2)}
+                    className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg"
+                  >
+                    Next
+                  </button>
+                </div>
+              </>
+            )}
+
+            {page === 2 && (
+              <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
+                <RadioQuestion
+                  questionNumber={4}
+                  questionText={q4.text}
+                  selectedValue={answers.q4}
+                  onChange={(val) => handleChange('q4', val)}
+                />
+
+                <RadioQuestion
+                  questionNumber={5}
+                  questionText={q5.text}
+                  selectedValue={answers.q5}
+                  onChange={(val) => handleChange('q5', val)}
+                />
+
+                {error && (
+                  <p className="text-red-600 font-medium mb-4">{error}</p>
+                )}
+
+                <button
+                  onClick={() => handleNextPage(['q4', 'q5'], 3)}
+                  className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+
+            {page === 3 && (
+              <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
+                <div className="mb-8">
+                  <p className="text-base text-gray-800 mb-4">
+                    Q6. In your own words, please describe how you usually chose between "drink {CONFIG.playerName0} {CONFIG.playerIcon0}" and "Skip" in study {CONFIG.currentSymbol}. How did your decision making evolve over time?
+                  </p>
+                  <textarea
+                    value={answers.q7}
+                    onChange={(e) => handleChange('q7', e.target.value)}
+                    className="w-full h-40 p-4 border border-gray-300 rounded-lg text-sm text-gray-700 resize-y focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+                  />
+                </div>
+
+                <div className="mb-8">
+                  <p className="text-base text-gray-800 mb-4">
+                    Q7. In your own words, describe how your choice to drink {CONFIG.playerName0}, your {CONFIG.playerName1} level, and how you feel influence each other, and in what ways.
+                  </p>
+                  <textarea
+                    value={answers.q8}
+                    onChange={(e) => handleChange('q8', e.target.value)}
+                    className="w-full h-40 p-4 border border-gray-300 rounded-lg text-sm text-gray-700 resize-y focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+                  />
+                </div>
+
+                {error && (
+                  <p className="text-red-600 font-medium mb-4">{error}</p>
+                )}
+
+                <button
+                  onClick={handleSubmit}
+                  className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg"
+                >
+                  Submit
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
