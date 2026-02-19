@@ -352,22 +352,7 @@
           color: hsl(${hue}, 70%, 35%);
           text-transform: uppercase;
           letter-spacing: 0.5px;
-          margin-bottom: ${s.nameMargin}px;
         ">${scenario.drinkName.toUpperCase()}</div>
-        <div style="
-          width: 70%;
-          height: 2px;
-          background: linear-gradient(90deg, transparent, hsl(${hue}, 60%, 70%), transparent);
-          margin: ${s.dividerMargin}px 0;
-        "></div>
-        <div style="
-          font-size: ${s.chemSize};
-          font-weight: 600;
-          color: #64748b;
-          background: #e2e8f0;
-          padding: ${s.chemPadding};
-          border-radius: 10px;
-        ">${scenario.chemicalName}</div>
       </div>`;
     }
 
@@ -415,17 +400,8 @@
       drinkName.className = 'drink-name';
       drinkName.textContent = chosenScenario.drinkName;
 
-      const divider = document.createElement('div');
-      divider.className = 'divider';
-
-      const chemicalName = document.createElement('div');
-      chemicalName.className = 'chemical-name';
-      chemicalName.textContent = chosenScenario.chemicalName;
-
       front.appendChild(drinkIcon);
       front.appendChild(drinkName);
-      front.appendChild(divider);
-      front.appendChild(chemicalName);
 
       inner.appendChild(front);
       tile.appendChild(inner);
