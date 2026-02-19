@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DAG Elicitation</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 0; background: #ffffff; }
+
+    .slider-hidden-thumb::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      opacity: 0;
+    }
+    .slider-hidden-thumb::-moz-range-thumb {
+      opacity: 0;
+    }
+
+    .pulse-highlight {
+      animation: pulseHighlight 1s ease-in-out infinite;
+      transform-origin: center;
+    }
+
+    @keyframes pulseHighlight {
+      0%, 100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.8));
+      }
+      50% {
+        transform: scale(1.08);
+        filter: drop-shadow(0 0 16px rgba(251, 191, 36, 1));
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script>
+    // =============== CONFIGURATION ===============
+    const CONFIG = {
+      playerName0: 'Driftwell',
+      playerName1: 'Qivaryn',
+      playerIcon0: '🥤',
+      noConfirmation: null,  // If 1, skip confirmation step and go directly to confidence
+      nRounds: 30,
+    };
+
+    // =============== QUALTRICS/PARENT COMMUNICATION ===============
+    let parentOrigin = '*';
+
+    // Report iframe height to parent for responsive sizing
+    function reportHeight() {
+      if (window.parent !== window) {
+        const height = document.body.scrollHeight || document.documentElement.scrollHeight;
+        window.parent.postMessage({ iframeHeight: height }, '*');
+      }
+    }
+
+    // Report height on load and resize
+    window.addEventListener('load', () => {
+      reportHeight();
+      // Also report after a short delay to catch any late renders
+      setTimeout(reportHeight, 500);
+      setTimeout(reportHeight, 1000);
+    });
+    window.addEventListener('resize', reportHeight);
+
+    // Use MutationObserver to detect DOM changes and report height
+    const observer = new MutationObserver(reportHeight);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+
+    let isInitialized = false;
+
+    window.addEventListener('message', function(event) {
+      if (event.data.type === 'INIT') {
+        console.log('Received INIT:', event.data);
+
+        if (event.data.gameConfig) {
+          const qConfig = event.data.gameConfig;
+          if (qConfig.playerName0) CONFIG.playerName0 = qConfig.playerName0;
+          if (qConfig.playerName1) CONFIG.playerName1 = qConfig.playerName1;
+          if (qConfig.playerIcon0) CONFIG.playerIcon0 = qConfig.playerIcon0;
+          if (qConfig.noConfirmation !== undefined) CONFIG.noConfirmation = qConfig.noConfirmation;
+          if (qConfig.nRounds !== undefined) CONFIG.nRounds = parseInt(qConfig.nRounds) || CONFIG.nRounds;
+        }
+
+        if (!isInitialized) {
+          isInitialized = true;
+          renderApp();
+        } else {
+          renderApp();
+        }
+        setTimeout(reportHeight, 100);
+      }
+    });
+
+    // Wait up to 3 seconds for INIT, then render with defaults
+    setTimeout(function() {
+      if (!isInitialized) {
+        console.log('Timeout: starting with default config');
+        isInitialized = true;
+        renderApp();
+      }
+    }, 3000);
+
+    function sendToParent(dataType, data) {
+      if (window.parent !== window) {
+        window.parent.postMessage({
+          type: 'DAG_DATA',
+          dataType: dataType,
+          data: data,
+          timestamp: new Date().toISOString()
+        }, parentOrigin);
+      }
+      console.log('Sent to parent:', dataType, data);
+    }
+  </script>
+
+  <script type="text/babel">
+    const { useState, useRef } = React;
+
+    // DAG Drawing Component
+    function DAGDrawer({ onComplete, playerName0, playerName1, playerIcon0 }) {
+      const svgRef = useRef(null);
+      const [edges, setEdges] = useState([]);
+      const [dragging, setDragging] = useState(null);
+      const [tempLine, setTempLine] = useState(null);
+      const [confirmMode, setConfirmMode] = useState(false);
+      const [confirmIndex, setConfirmIndex] = useState(0);
+      const [initialEdges, setInitialEdges] = useState(null);
+      const [showChangeOptions, setShowChangeOptions] = useState(false);
+      const [selectedOption, setSelectedOption] = useState(null);
+      const [showConfidence, setShowConfidence] = useState(false);
+      const [confidence, setConfidence] = useState(null);
+      const [showDetails, setShowDetails] = useState(false);
+      const [finalEdges, setFinalEdges] = useState(null);
+      const alertCountRef = useRef(0);
+      const pageEnteredRef = useRef(Date.now());
+      const dagTimesRef = useRef({ initialDAGTime: 0, finalDAGTime: 0, confidenceTime: 0 });
+
+      // Node definitions
+      const nodes = [
+        { id: 'A', label: `Drink ${playerName0}`, x: 200, y: 100, icon: playerIcon0 },
+        { id: 'X', label: `${playerName1} Level`, x: 500, y: 100, icon: '📟' },
+        { id: 'Y', label: 'How You Feel', x: 350, y: 300, icon: '😶' }
+      ];
+
+      // Node pairs for confirmation
+      const nodePairs = [
+        { nodeA: 'A', nodeB: 'X' },
+        { nodeA: 'A', nodeB: 'Y' },
+        { nodeA: 'X', nodeB: 'Y' }
+      ];
+
+      const nodeNames = {
+        'A': `Drink ${playerName0}`,
+        'X': `${playerName1} Level`,
+        'Y': 'How You Feel'
+      };
+
+      const getNode = (id) => nodes.find(n => n.id === id);
+
+      const hasEdge = (from, to) => edges.some(e => e.from === from && e.to === to);
+
+      const addEdge = (from, to) => {
+        if (from === to || hasEdge(from, to)) return;
+        if (to === 'A') {
+          const sourceLabel = from === 'X' ? `your ${playerName1} level` : 'how you feel';
+          alertCountRef.current++;
+          alert(`Alert #${alertCountRef.current}: You choose whether to drink ${playerName0} first. Hence, ${sourceLabel} cannot affect your choice to drink ${playerName0} within any given round. You can double-click an arrow to delete it.`);
+        }
+        setEdges(prev => [...prev, { from, to }]);
+      };
+
+      const removeEdge = (from, to) => {
+        setEdges(prev => prev.filter(e => !(e.from === from && e.to === to)));
+      };
+
+      const handleMouseDown = (nodeId, e) => {
+        if (confirmMode) return;
+        e.preventDefault();
+        setDragging(nodeId);
+      };
+
+      const handleMouseMove = (e) => {
+        if (!dragging || !svgRef.current) return;
+        const svg = svgRef.current;
+        const rect = svg.getBoundingClientRect();
+        const x = (e.clientX - rect.left) * (700 / rect.width);
+        const y = (e.clientY - rect.top) * (400 / rect.height);
+        const startNode = getNode(dragging);
+        setTempLine({ x1: startNode.x, y1: startNode.y, x2: x, y2: y });
+      };
+
+      const handleMouseUp = (e) => {
+        if (!dragging) return;
+
+        const svg = svgRef.current;
+        const rect = svg.getBoundingClientRect();
+        const x = (e.clientX - rect.left) * (700 / rect.width);
+        const y = (e.clientY - rect.top) * (400 / rect.height);
+
+        const targetNode = nodes.find(n => {
+          const dx = x - n.x;
+          const dy = y - n.y;
+          return Math.sqrt(dx*dx + dy*dy) < 50;
+        });
+
+        if (targetNode && targetNode.id !== dragging) {
+          addEdge(dragging, targetNode.id);
+        }
+
+        setDragging(null);
+        setTempLine(null);
+      };
+
+      const handleEdgeDoubleClick = (from, to) => {
+        if (confirmMode) return;
+        removeEdge(from, to);
+      };
+
+      const handleReset = () => {
+        if (confirmMode) return;
+        setEdges([]);
+      };
+
+      const handleConfirm = () => {
+        const now = Date.now();
+        dagTimesRef.current.initialDAGTime = (now - pageEnteredRef.current) / 1000;
+        pageEnteredRef.current = now;
+
+        setInitialEdges([...edges]);
+
+        // If noConfirmation is set, skip confirmation and go directly to confidence
+        if (CONFIG.noConfirmation === 1) {
+          setFinalEdges([...edges]);
+          recordConfirmationEnd();
+          setShowConfidence(true);
+        } else {
+          setConfirmMode(true);
+          setConfirmIndex(0);
+        }
+      };
+
+      const getCurrentPairState = (pair) => {
+        const hasAtoB = hasEdge(pair.nodeA, pair.nodeB);
+        const hasBtoA = hasEdge(pair.nodeB, pair.nodeA);
+        if (hasAtoB && hasBtoA) return 'both';
+        if (hasAtoB) return 'AtoB';
+        if (hasBtoA) return 'BtoA';
+        return 'none';
+      };
+
+      const currentPair = nodePairs[confirmIndex];
+      const currentPairState = currentPair ? getCurrentPairState(currentPair) : null;
+
+      const handleConfirmChoice = () => {
+        setShowChangeOptions(false);
+        setSelectedOption(null);
+        if (confirmIndex < nodePairs.length - 1) {
+          setConfirmIndex(prev => prev + 1);
+        } else {
+          setFinalEdges([...edges]);
+          recordConfirmationEnd();
+          setShowConfidence(true);
+        }
+      };
+
+      const handleChangeChoice = () => {
+        setShowChangeOptions(true);
+        setSelectedOption(null);
+      };
+
+      const handleApplyChange = () => {
+        if (selectedOption === null) return;
+
+        const pair = currentPair;
+        setEdges(prev => prev.filter(e =>
+          !((e.from === pair.nodeA && e.to === pair.nodeB) ||
+            (e.from === pair.nodeB && e.to === pair.nodeA))
+        ));
+
+        setTimeout(() => {
+          if (selectedOption === 'AtoB' || selectedOption === 'both') {
+            setEdges(prev => [...prev, { from: pair.nodeA, to: pair.nodeB }]);
+          }
+          if (selectedOption === 'BtoA' || selectedOption === 'both') {
+            setEdges(prev => [...prev, { from: pair.nodeB, to: pair.nodeA }]);
+          }
+
+          setShowChangeOptions(false);
+          setSelectedOption(null);
+          if (confirmIndex < nodePairs.length - 1) {
+            setConfirmIndex(prev => prev + 1);
+          } else {
+            setFinalEdges([...edges]);
+            recordConfirmationEnd();
+            setShowConfidence(true);
+          }
+        }, 50);
+      };
+
+      const handleCancelChange = () => {
+        setShowChangeOptions(false);
+        setSelectedOption(null);
+      };
+
+      const recordConfirmationEnd = () => {
+        const now = Date.now();
+        dagTimesRef.current.finalDAGTime = (now - pageEnteredRef.current) / 1000;
+        pageEnteredRef.current = now;
+      };
+
+      const handleConfidenceSubmit = () => {
+        if (confidence === null) return;
+        dagTimesRef.current.confidenceTime = (Date.now() - pageEnteredRef.current) / 1000;
+        onComplete(initialEdges, finalEdges || edges, confidence, alertCountRef.current, dagTimesRef.current);
+      };
+
+      // Draw curved arrow path
+      const getArrowPath = (from, to, curveDirection = 1) => {
+        const fromNode = getNode(from);
+        const toNode = getNode(to);
+        const dx = toNode.x - fromNode.x;
+        const dy = toNode.y - fromNode.y;
+        const len = Math.sqrt(dx*dx + dy*dy);
+        const nx = dx / len;
+        const ny = dy / len;
+
+        // Start and end points (on circle edge)
+        const startX = fromNode.x + nx * 45;
+        const startY = fromNode.y + ny * 45;
+        const endX = toNode.x - nx * 45;
+        const endY = toNode.y - ny * 45;
+
+        // Use a FIXED perpendicular direction based on sorted node IDs
+        // This ensures both arrows in a bidirectional pair use the same perpendicular reference
+        const sortedIds = [from, to].sort();
+        const refFrom = getNode(sortedIds[0]);
+        const refTo = getNode(sortedIds[1]);
+        const refDx = refTo.x - refFrom.x;
+        const refDy = refTo.y - refFrom.y;
+        const refLen = Math.sqrt(refDx*refDx + refDy*refDy);
+        const refNy = refDy / refLen;
+        const refNx = refDx / refLen;
+        const perpX = -refNy;
+        const perpY = refNx;
+
+        // Control point for quadratic bezier - always curved
+        // curveDirection determines which side of the line to curve
+        const curveAmount = len * 0.15 * curveDirection;
+        const midX = (startX + endX) / 2 + perpX * curveAmount;
+        const midY = (startY + endY) / 2 + perpY * curveAmount;
+
+        // SVG path string for quadratic bezier
+        const pathD = `M ${startX} ${startY} Q ${midX} ${midY} ${endX} ${endY}`;
+
+        return { startX, startY, endX, endY, midX, midY, pathD };
+      };
+
+      const hasAnyEdge = edges.length > 0;
+
+      // Confidence question screen - shows final DAG and confidence slider below
+      if (showConfidence) {
+        // Get the edges to display (finalEdges or current edges)
+        const displayEdges = finalEdges || edges;
+
+        return (
+          <div className="min-h-screen bg-white px-4 pt-0 pb-4">
+            <div className="max-w-4xl mx-auto">
+              <div className="bg-white rounded-2xl p-6">
+                {/* Display the final DAG */}
+                <div className="mb-6 flex justify-center">
+                  <svg
+                    viewBox="0 0 700 400"
+                    className="w-full max-w-xl bg-gray-50 rounded-xl border-2 border-gray-200"
+                  >
+                    <defs>
+                      <marker id="arrowhead-final" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#dc2626" />
+                      </marker>
+                    </defs>
+
+                    {/* Edges */}
+                    {displayEdges.map((edge, idx) => {
+                      const hasBothWays = displayEdges.some(e => e.from === edge.to && e.to === edge.from);
+                      let curveDir = 1;
+                      if (hasBothWays) {
+                        const sortedPair = [edge.from, edge.to].sort().join('-');
+                        const isFirstDirection = edge.from + '-' + edge.to === sortedPair;
+                        curveDir = isFirstDirection ? 1 : -1;
+                      }
+                      const path = getArrowPath(edge.from, edge.to, curveDir);
+
+                      return (
+                        <path
+                          key={`${edge.from}-${edge.to}`}
+                          d={path.pathD}
+                          fill="none"
+                          stroke="#dc2626"
+                          strokeWidth={3}
+                          markerEnd="url(#arrowhead-final)"
+                        />
+                      );
+                    })}
+
+                    {/* Nodes */}
+                    {nodes.map(node => (
+                      <g key={node.id}>
+                        <circle
+                          cx={node.x}
+                          cy={node.y}
+                          r={40}
+                          fill="white"
+                          stroke="#374151"
+                          strokeWidth={2}
+                        />
+                        <text
+                          x={node.x}
+                          y={node.y}
+                          textAnchor="middle"
+                          dominantBaseline="central"
+                          className="text-4xl pointer-events-none"
+                        >
+                          {node.icon}
+                        </text>
+                        <text
+                          x={node.x}
+                          y={node.y + 60}
+                          textAnchor="middle"
+                          className="text-lg font-bold fill-gray-700 pointer-events-none"
+                        >
+                          {node.label}
+                        </text>
+                      </g>
+                    ))}
+                  </svg>
+                </div>
+
+                {/* Confidence slider */}
+                <div className="max-w-2xl mx-auto">
+                  <h2 className="text-2xl font-bold text-gray-800 mb-3 text-center">
+                    How confident are you in your diagram?
+                  </h2>
+                  <p className="text-gray-600 text-center mb-4">
+                    That is, what is the chance it correctly shows how these factors influenced each other?
+                  </p>
+                  <p className="text-sm text-gray-500 text-center mb-4">
+                    The payment mechanism is set up such that you will earn the most by answering truthfully.{' '}
+                    <button
+                      onClick={() => setShowDetails(!showDetails)}
+                      className="text-blue-600 hover:text-blue-800 underline"
+                    >
+                      {showDetails ? 'Hide details' : 'Show details'}
+                    </button>
+                  </p>
+
+                  {showDetails && (
+                    <div className="bg-gray-50 rounded-lg p-4 mb-4 text-sm text-gray-700">
+                      <p className="mb-2">Here's how the payment system works:</p>
+                      <ol className="list-decimal list-inside space-y-2">
+                        <li>After you enter your confidence, we will randomly draw a number <strong>X</strong> between 0 and 100.</li>
+                        <li>If your stated confidence is <strong>greater than X%</strong>:
+                          <ul className="list-disc list-inside ml-4 mt-1">
+                            <li>You will receive a bonus if the "who influences whom" relationship you provided is correct.</li>
+                          </ul>
+                        </li>
+                        <li>If your stated confidence is <strong>less than X</strong>:
+                          <ul className="list-disc list-inside ml-4 mt-1">
+                            <li>You will have a X% chance of receiving the bonus, regardless of whether your answer was correct.</li>
+                          </ul>
+                        </li>
+                      </ol>
+                      <p className="mt-3">
+                        This setup ensures that <strong>you maximize your expected payment by reporting your true confidence</strong>.
+                        Overstating or understating your confidence will only reduce your chance of earning the bonus.
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="mb-6">
+                    {/* Tick marks */}
+                    <div className="flex justify-between text-xs text-gray-500 mb-1 px-1">
+                      {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(val => (
+                        <span key={val} className={val % 50 === 0 ? 'font-medium' : 'text-gray-400'}>{val}</span>
+                      ))}
+                    </div>
+                    {/* Grid lines */}
+                    <div
+                      className="relative cursor-pointer"
+                      onClick={(e) => {
+                        // Calculate click position and set confidence
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const percent = Math.round(((e.clientX - rect.left) / rect.width) * 100);
+                        setConfidence(Math.max(0, Math.min(100, percent)));
+                      }}
+                    >
+                      <div className="absolute inset-0 flex justify-between px-1 pointer-events-none">
+                        {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(val => (
+                          <div key={val} className={`w-px ${val % 50 === 0 ? 'h-4 bg-gray-400' : 'h-2 bg-gray-300'}`} style={{marginTop: val % 50 === 0 ? '0' : '4px'}} />
+                        ))}
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value={confidence !== null ? confidence : 50}
+                        onChange={(e) => setConfidence(parseInt(e.target.value))}
+                        className={`w-full h-4 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600 relative z-10 ${confidence === null ? 'slider-hidden-thumb' : ''}`}
+                        style={{ pointerEvents: confidence === null ? 'none' : 'auto' }}
+                      />
+                    </div>
+                    <div className="text-center mt-3">
+                      <span className="text-3xl font-bold text-blue-600">
+                        {confidence !== null ? `${confidence}%` : '—'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleConfidenceSubmit}
+                    disabled={confidence === null}
+                    className={`w-full py-3 rounded-lg font-medium text-lg ${
+                      confidence !== null
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    Continue
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="min-h-screen bg-white px-4 pt-0 pb-4">
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white rounded-2xl p-6">
+              <div className="mb-4">
+                <h2 className="text-2xl font-bold text-gray-800 mb-3 text-center">
+                  {CONFIG.noConfirmation !== 1 && `Before we complete the final ${Math.floor(CONFIG.nRounds / 2)} rounds of this game, `}How do you think these factors influenced each other?
+                </h2>
+                <ul className="text-gray-600 space-y-2 text-base list-disc list-inside">
+                  <li>Please draw arrows between the three factors below. An arrow from one factor to another means the former could influence the latter. Make an arrow if you think there was an influence, regardless of whether the influence was strong or weak.</li>
+                  <li>To draw an arrow, click on a factor, hold your mouse pressed, and move it to another factor.</li>
+                  <li>To delete an arrow, double-click it.</li>
+                </ul>
+              </div>
+
+              <div className="flex gap-4 justify-center">
+                {/* SVG Canvas */}
+                <div className="flex-1 max-w-xl">
+                  <svg
+                    ref={svgRef}
+                    viewBox="0 0 700 400"
+                    className="w-full bg-gray-50 rounded-xl border-2 border-gray-200"
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
+                    onMouseLeave={() => { setDragging(null); setTempLine(null); }}
+                  >
+                    <defs>
+                      <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#dc2626" />
+                      </marker>
+                      <marker id="arrowhead-preview" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#dc2626" opacity="0.5" />
+                      </marker>
+                      <marker id="arrowhead-new" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#dc2626" />
+                      </marker>
+                    </defs>
+
+                    {/* Edges */}
+                    {edges.map((edge, idx) => {
+                      const hasBothWays = hasEdge(edge.to, edge.from);
+                      // Curve direction: opposite directions for bidirectional
+                      // Use node ID comparison to ensure consistent opposite curves
+                      let curveDir = 1;
+                      if (hasBothWays) {
+                        // Sort node IDs to determine which curves which way
+                        const sortedPair = [edge.from, edge.to].sort().join('-');
+                        const isFirstDirection = edge.from + '-' + edge.to === sortedPair;
+                        curveDir = isFirstDirection ? 1 : -1;
+                      }
+                      const path = getArrowPath(edge.from, edge.to, curveDir);
+                      const isHighlighted = confirmMode && currentPair &&
+                        ((edge.from === currentPair.nodeA && edge.to === currentPair.nodeB) ||
+                         (edge.from === currentPair.nodeB && edge.to === currentPair.nodeA));
+
+                      return (
+                        <path
+                          key={`${edge.from}-${edge.to}`}
+                          d={path.pathD}
+                          fill="none"
+                          stroke={isHighlighted ? "#dc2626" : "#dc2626"}
+                          strokeWidth={isHighlighted ? 4 : 3}
+                          markerEnd="url(#arrowhead)"
+                          className="cursor-pointer"
+                          onDoubleClick={() => handleEdgeDoubleClick(edge.from, edge.to)}
+                          style={{ strokeDasharray: 'none' }}
+                        />
+                      );
+                    })}
+
+                    {/* Temp line while dragging */}
+                    {tempLine && (() => {
+                      const dx = tempLine.x2 - tempLine.x1;
+                      const dy = tempLine.y2 - tempLine.y1;
+                      const len = Math.sqrt(dx*dx + dy*dy) || 1;
+                      const perpX = -dy / len;
+                      const perpY = dx / len;
+                      const curveAmount = len * 0.15;
+                      const midX = (tempLine.x1 + tempLine.x2) / 2 + perpX * curveAmount;
+                      const midY = (tempLine.y1 + tempLine.y2) / 2 + perpY * curveAmount;
+                      const pathD = `M ${tempLine.x1} ${tempLine.y1} Q ${midX} ${midY} ${tempLine.x2} ${tempLine.y2}`;
+                      return (
+                        <path
+                          d={pathD}
+                          fill="none"
+                          stroke="#dc2626"
+                          strokeWidth={2}
+                          strokeDasharray="5,5"
+                          markerEnd="url(#arrowhead-preview)"
+                        />
+                      );
+                    })()}
+
+                    {/* Preview of selected change option */}
+                    {showChangeOptions && selectedOption && currentPair && (() => {
+                      const nodeA = getNode(currentPair.nodeA);
+                      const nodeB = getNode(currentPair.nodeB);
+                      const midX = (nodeA.x + nodeB.x) / 2;
+                      const midY = (nodeA.y + nodeB.y) / 2;
+
+                      // Check which edges currently exist for this pair
+                      const hasAtoB = hasEdge(currentPair.nodeA, currentPair.nodeB);
+                      const hasBtoA = hasEdge(currentPair.nodeB, currentPair.nodeA);
+
+                      const previewElements = [];
+
+                      // If "none" selected, show X over existing edges
+                      if (selectedOption === 'none') {
+                        if (hasAtoB || hasBtoA) {
+                          previewElements.push(
+                            <g key="cross">
+                              <line x1={midX - 20} y1={midY - 20} x2={midX + 20} y2={midY + 20} stroke="#dc2626" strokeWidth={4} strokeDasharray="6,4" />
+                              <line x1={midX + 20} y1={midY - 20} x2={midX - 20} y2={midY + 20} stroke="#dc2626" strokeWidth={4} strokeDasharray="6,4" />
+                            </g>
+                          );
+                        }
+                      }
+
+                      // Show dashed preview for new edges
+                      // Curve direction rules to match existing edge rendering:
+                      // - Single edges always use curveDir = 1
+                      // - When adding a second edge (opposite exists), use curveDir = -1
+                      // - When adding both edges at once, use sorted-based directions
+
+                      if (selectedOption === 'AtoB' || selectedOption === 'both') {
+                        if (!hasAtoB) {
+                          let curveDir;
+                          if (hasBtoA) {
+                            // Opposite direction exists with curveDir=1, so use -1
+                            curveDir = -1;
+                          } else if (selectedOption === 'both') {
+                            // Adding both at once - use sorted-based direction
+                            const sortedNodes = [currentPair.nodeA, currentPair.nodeB].sort();
+                            curveDir = currentPair.nodeA === sortedNodes[0] ? 1 : -1;
+                          } else {
+                            // Adding single edge, no opposite exists
+                            curveDir = 1;
+                          }
+                          const path = getArrowPath(currentPair.nodeA, currentPair.nodeB, curveDir);
+                          previewElements.push(
+                            <path
+                              key="preview-AtoB"
+                              d={path.pathD}
+                              fill="none"
+                              stroke="#dc2626"
+                              strokeWidth={3}
+                              strokeDasharray="8,4"
+                              markerEnd="url(#arrowhead-new)"
+                            />
+                          );
+                        }
+                      }
+
+                      if (selectedOption === 'BtoA' || selectedOption === 'both') {
+                        if (!hasBtoA) {
+                          let curveDir;
+                          if (hasAtoB) {
+                            // Opposite direction exists with curveDir=1, so use -1
+                            curveDir = -1;
+                          } else if (selectedOption === 'both') {
+                            // Adding both at once - use sorted-based direction
+                            const sortedNodes = [currentPair.nodeA, currentPair.nodeB].sort();
+                            curveDir = currentPair.nodeB === sortedNodes[0] ? 1 : -1;
+                          } else {
+                            // Adding single edge, no opposite exists
+                            curveDir = 1;
+                          }
+                          const path = getArrowPath(currentPair.nodeB, currentPair.nodeA, curveDir);
+                          previewElements.push(
+                            <path
+                              key="preview-BtoA"
+                              d={path.pathD}
+                              fill="none"
+                              stroke="#dc2626"
+                              strokeWidth={3}
+                              strokeDasharray="8,4"
+                              markerEnd="url(#arrowhead-new)"
+                            />
+                          );
+                        }
+                      }
+
+                      return previewElements;
+                    })()}
+
+                    {/* Nodes */}
+                    {nodes.map(node => {
+                      const isHighlighted = confirmMode && currentPair &&
+                        (node.id === currentPair.nodeA || node.id === currentPair.nodeB);
+
+                      return (
+                        <g key={node.id}>
+                          {/* Circle and icon - animated when highlighted */}
+                          <g key={isHighlighted ? `pulse-${confirmIndex}` : 'static'} className={isHighlighted ? "pulse-highlight" : ""} style={isHighlighted ? { transformOrigin: `${node.x}px ${node.y}px` } : {}}>
+                            <circle
+                              cx={node.x}
+                              cy={node.y}
+                              r={40}
+                              fill="white"
+                              stroke={isHighlighted ? "#fbbf24" : "#374151"}
+                              strokeWidth={isHighlighted ? 4 : 2}
+                              className={confirmMode ? "" : "cursor-pointer hover:stroke-blue-500"}
+                              onMouseDown={(e) => handleMouseDown(node.id, e)}
+                            />
+                            <text
+                              x={node.x}
+                              y={node.y}
+                              textAnchor="middle"
+                              dominantBaseline="central"
+                              className="text-4xl pointer-events-none"
+                            >
+                              {node.icon}
+                            </text>
+                          </g>
+                          {/* Label - not animated */}
+                          <text
+                            x={node.x}
+                            y={node.y + 60}
+                            textAnchor="middle"
+                            className="text-lg font-bold fill-gray-700 pointer-events-none"
+                          >
+                            {node.label}
+                          </text>
+                        </g>
+                      );
+                    })}
+                  </svg>
+
+                  {/* Controls */}
+                  {!confirmMode && (
+                    <div className="mt-4 flex justify-end items-center">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleReset}
+                          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-700 font-medium"
+                        >
+                          Reset
+                        </button>
+                        <button
+                          onClick={handleConfirm}
+                          disabled={!hasAnyEdge}
+                          className={`px-6 py-2 rounded-lg font-medium ${
+                            hasAnyEdge
+                              ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          }`}
+                        >
+                          {CONFIG.noConfirmation === 1 ? 'Continue' : 'Confirm Choices'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Confirmation Panel */}
+                {confirmMode && (
+                  <div className="w-80 bg-blue-50 rounded-xl p-4 border border-blue-200">
+                    <div className="text-sm text-gray-600 mb-2">
+                      Question {confirmIndex + 1} of {nodePairs.length}
+                    </div>
+
+                    {!showChangeOptions ? (
+                      <>
+                        <div className="text-gray-800 mb-4">
+                          You indicated:{' '}
+                          {currentPairState === 'none' && <><strong>{nodeNames[currentPair.nodeA]} and {nodeNames[currentPair.nodeB]} cannot influence each other</strong> (no arrows).</>}
+                          {currentPairState === 'AtoB' && <><strong>{nodeNames[currentPair.nodeA]} can influence {nodeNames[currentPair.nodeB]}</strong> (arrow: {nodeNames[currentPair.nodeA]} → {nodeNames[currentPair.nodeB]}).</>}
+                          {currentPairState === 'BtoA' && <><strong>{nodeNames[currentPair.nodeB]} can influence {nodeNames[currentPair.nodeA]}</strong> (arrow: {nodeNames[currentPair.nodeB]} → {nodeNames[currentPair.nodeA]}).</>}
+                          {currentPairState === 'both' && <><strong>{nodeNames[currentPair.nodeA]} and {nodeNames[currentPair.nodeB]} can influence each other</strong> (arrows in both directions).</>}
+                        </div>
+
+                        <div className="flex gap-2">
+                          <button
+                            onClick={handleConfirmChoice}
+                            className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium"
+                          >
+                            Confirm
+                          </button>
+                          <button
+                            onClick={handleChangeChoice}
+                            className="flex-1 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium"
+                          >
+                            Change
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-sm text-gray-600 mb-3">Select the correct relationship:</div>
+                        <div className="space-y-2 mb-4">
+                          {['none', 'AtoB', 'BtoA', 'both'].filter(opt => opt !== currentPairState).map(opt => (
+                            <label
+                              key={opt}
+                              className={`block p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                                selectedOption === opt
+                                  ? 'bg-blue-100 border-blue-500'
+                                  : 'bg-white border-gray-200 hover:border-gray-300'
+                              }`}
+                            >
+                              <input
+                                type="radio"
+                                name="relationship"
+                                value={opt}
+                                checked={selectedOption === opt}
+                                onChange={() => setSelectedOption(opt)}
+                                className="mr-2"
+                              />
+                              <span className="text-sm">
+                                {opt === 'none' && <><strong>{nodeNames[currentPair.nodeA]} and {nodeNames[currentPair.nodeB]} cannot influence each other</strong> (no arrows)</>}
+                                {opt === 'AtoB' && <><strong>{nodeNames[currentPair.nodeA]} can influence {nodeNames[currentPair.nodeB]}</strong> (arrow: {nodeNames[currentPair.nodeA]} → {nodeNames[currentPair.nodeB]})</>}
+                                {opt === 'BtoA' && <><strong>{nodeNames[currentPair.nodeB]} can influence {nodeNames[currentPair.nodeA]}</strong> (arrow: {nodeNames[currentPair.nodeB]} → {nodeNames[currentPair.nodeA]})</>}
+                                {opt === 'both' && <><strong>{nodeNames[currentPair.nodeA]} and {nodeNames[currentPair.nodeB]} can influence each other</strong> (arrows in both directions)</>}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+
+                        <div className="flex gap-2">
+                          <button
+                            onClick={handleApplyChange}
+                            disabled={selectedOption === null}
+                            className={`flex-1 px-4 py-2 rounded-lg font-medium ${
+                              selectedOption !== null
+                                ? 'bg-green-600 hover:bg-green-700 text-white'
+                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            }`}
+                          >
+                            Apply
+                          </button>
+                          <button
+                            onClick={handleCancelChange}
+                            className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-700 font-medium"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Main App
+    function App() {
+      const handleComplete = (initialEdges, finalEdges, confidence, dagAlertCount, dagTimes) => {
+        sendToParent('DAG_COMPLETE', {
+          initialDAG: initialEdges,
+          finalDAG: finalEdges,
+          confidence: confidence,
+          DAGAlertCount: dagAlertCount,
+          initialDAGTime: dagTimes.initialDAGTime,
+          finalDAGTime: dagTimes.finalDAGTime,
+          confidenceTime: dagTimes.confidenceTime
+        });
+      };
+
+      return (
+        <DAGDrawer
+          onComplete={handleComplete}
+          playerName0={CONFIG.playerName0}
+          playerName1={CONFIG.playerName1}
+          playerIcon0={CONFIG.playerIcon0}
+        />
+      );
+    }
+
+    function renderApp() {
+      ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    }
+
+    // Render is triggered by INIT message or 3-second timeout
+  </script>
+</body>
+</html>
