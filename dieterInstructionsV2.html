@@ -34,9 +34,17 @@
           if (qConfig.aCost !== undefined) CONFIG.aCost = qConfig.aCost;
           if (qConfig.yBonus !== undefined) CONFIG.yBonus = qConfig.yBonus;
           if (qConfig.nRounds !== undefined) CONFIG.nRounds = qConfig.nRounds;
-          if (qConfig.playerName0) CONFIG.playerName0 = qConfig.playerName0;
-          if (qConfig.playerName1) CONFIG.playerName1 = qConfig.playerName1;
-          if (qConfig.playerIcon0) CONFIG.playerIcon0 = qConfig.playerIcon0;
+          if (qConfig.playerName0_1) CONFIG.playerName0_1 = qConfig.playerName0_1;
+          if (qConfig.playerName1_1) CONFIG.playerName1_1 = qConfig.playerName1_1;
+          if (qConfig.playerIcon0_1) CONFIG.playerIcon0_1 = qConfig.playerIcon0_1;
+          if (qConfig.playerName0_2) CONFIG.playerName0_2 = qConfig.playerName0_2;
+          if (qConfig.playerName1_2) CONFIG.playerName1_2 = qConfig.playerName1_2;
+          if (qConfig.playerIcon0_2) CONFIG.playerIcon0_2 = qConfig.playerIcon0_2;
+          // Update EXAMPLES with new config values
+          EXAMPLES = [
+            { drink: CONFIG.playerName0_1, chemical: CONFIG.playerName1_1, icon: CONFIG.playerIcon0_1 },
+            { drink: CONFIG.playerName0_2, chemical: CONFIG.playerName1_2, icon: CONFIG.playerIcon0_2 }
+          ];
           console.log('Applied config:', CONFIG);
         }
 
@@ -79,16 +87,18 @@
       aCost: 0.00,
       yBonus: 2.00,
       nRounds: 10,
-      playerName0: 'Driftwell',
-      playerName1: 'Qivaryn',
-      playerIcon0: '🥤'
+      playerName0_1: 'Driftwell',
+      playerName1_1: 'Qivaryn',
+      playerIcon0_1: '🥤',
+      playerName0_2: 'Clearhaven',
+      playerName1_2: 'Zerqalase',
+      playerIcon0_2: '🍵'
     };
 
-    // Example drink-chemical pairs for illustration
-    const EXAMPLES = [
-      { drink: 'Driftwell', chemical: 'Qivaryn', icon: '🥤' },
-      { drink: 'Clearhaven', chemical: 'Zerqalase', icon: '🍵' },
-      { drink: 'Melloway', chemical: 'Melythor', icon: '🍶' }
+    // Example drink-chemical pairs for illustration (will be updated from Qualtrics config)
+    let EXAMPLES = [
+      { drink: CONFIG.playerName0_1, chemical: CONFIG.playerName1_1, icon: CONFIG.playerIcon0_1 },
+      { drink: CONFIG.playerName0_2, chemical: CONFIG.playerName1_2, icon: CONFIG.playerIcon0_2 }
     ];
   </script>
 
@@ -251,21 +261,17 @@
         comprehTimesRef.current.push(elapsed);
         recordPageTime(currentPage);
         const q1Selected = q1All.filter(id => comprehension[id]);
-        const q2Selected = q2All.filter(id => comprehension[id]);
         const q1Ok = checkAnswer(q1All, q1Correct);
-        const q2Ok = checkAnswer(q2All, q2Correct);
 
         let newWrongQ1 = wrongCountQ1;
-        let newWrongQ2 = wrongCountQ2;
         let newAllQ1 = [...allAnswersQ1];
-        let newAllQ2 = [...allAnswersQ2];
 
         if (!q1Ok) {
           newWrongQ1 = wrongCountQ1 + 1;
           setWrongCountQ1(newWrongQ1);
           newAllQ1 = [...allAnswersQ1, q1Selected];
           setAllAnswersQ1(newAllQ1);
-          setQ1Error('Your answer to Question 1 is incorrect. Please try again.');
+          setQ1Error('Your answer is incorrect. Please try again.');
         } else {
           setQ1Error(null);
           if (!allAnswersQ1.length || !q1Ok) {
@@ -274,29 +280,15 @@
           }
         }
 
-        if (!q2Ok) {
-          newWrongQ2 = wrongCountQ2 + 1;
-          setWrongCountQ2(newWrongQ2);
-          newAllQ2 = [...allAnswersQ2, q2Selected];
-          setAllAnswersQ2(newAllQ2);
-          setQ2Error('Your answer to Question 2 is incorrect. Please try again.');
-        } else {
-          setQ2Error(null);
-          if (!allAnswersQ2.length || !q2Ok) {
-            newAllQ2 = [...allAnswersQ2, q2Selected];
-            setAllAnswersQ2(newAllQ2);
-          }
-        }
-
-        if (q1Ok && q2Ok) {
+        if (q1Ok) {
           sendDataToQualtrics('INSTRUCTIONS_COMPLETE', {
             completed: true,
             attentionCheck: attentionCheck,
             comprehension: comprehension,
             wrongCountDieterQ1: newWrongQ1,
-            wrongCountDieterQ2: newWrongQ2,
+            wrongCountDieterQ2: null,
             allAnswersDieterQ1: newAllQ1,
-            allAnswersDieterQ2: newAllQ2,
+            allAnswersDieterQ2: null,
             pageTimes: pageTimesRef.current,
             comprehTimes: comprehTimesRef.current
           });
@@ -325,25 +317,32 @@
             <p className="text-gray-700">
               There are new products of two kinds:
             </p>
-            <ul className="list-disc list-inside space-y-2 text-gray-600 ml-4">
-              <li><strong className="text-gray-900">New functional beverages.</strong> These are drinks that have some effect on you, such as altering certain blood chemicals.</li>
-              <li><strong className="text-gray-900">A new smartphone extension called BioClip</strong> that measures these blood chemicals.</li>
+            <ul className="list-disc list-inside space-y-4 text-gray-600 ml-4">
+              <li>
+                <strong className="text-gray-900">New functional beverages.</strong> These are drinks that may or may not have effects on you, such as altering certain blood chemicals. For example:
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                  {EXAMPLES.map((ex, i) => (
+                    <div key={i} className="bg-white rounded-lg p-3 flex items-center justify-center gap-2 border border-gray-200 shadow-sm">
+                      <span className="text-2xl">{ex.icon}</span>
+                      <span className="text-gray-900 font-medium">{ex.drink}</span>
+                    </div>
+                  ))}
+                </div>
+              </li>
+              <li>
+                <strong className="text-gray-900">A new smartphone extension called BioClip</strong> that measures these blood chemicals. These blood chemicals may or may not have some effect on how you feel.
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                  {EXAMPLES.map((ex, i) => (
+                    <div key={i} className="bg-white rounded-lg p-3 flex items-center justify-center border border-gray-200 shadow-sm">
+                      <span className="text-gray-900 font-medium">{ex.chemical}</span>
+                    </div>
+                  ))}
+                </div>
+              </li>
             </ul>
             <p className="text-gray-700 mt-4">
-              It is known that each of the drinks affect one blood chemical. For instance,
+              You will see 2 different beverages and blood chemicals in this study. For each beverage, you will make decisions in {CONFIG.nRounds} rounds. Think of each round as one day in a week.
             </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
-              {EXAMPLES.map((ex, i) => (
-                <div key={i} className="bg-white rounded-lg p-4 flex items-center gap-3 border border-gray-200 shadow-sm">
-                  <span className="text-2xl">{ex.icon}</span>
-                  <div>
-                    <div className="text-gray-900 font-medium">{ex.drink}</div>
-                    <div className="text-gray-500 text-sm">affects {ex.chemical}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
         </section>,
 
@@ -399,7 +398,7 @@
               </div>
             </div>
             <p className="text-gray-700 mt-4">
-              You make decisions only on Mondays. Because there's a whole week in between, what happens on one Monday does not affect what happens the next Monday..
+              You make decisions only on Mondays. Because there's a whole week in between, what happens on one Monday does not affect what happens the next Monday.
             </p>
             <p className="text-gray-600 mt-4">
               To show you are following this, click the word "Monday" in the first sentence above. If you do not, the survey will terminate.
@@ -529,29 +528,6 @@
             )}
           </div>
 
-          <div className="bg-gray-50 rounded-xl p-4 mt-6">
-            <p className="text-gray-900 font-bold mb-4">
-              Which of the following statements about the study are correct? <span className="font-normal text-gray-600">Select all that apply.</span>
-            </p>
-            <div className="space-y-3">
-              {q2Items.map(item => (
-                <label key={item.id} className="flex items-start gap-3 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={!!comprehension[item.id]}
-                    onChange={() => setComprehension(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
-                    className="mt-1 w-5 h-5 rounded border-gray-300 bg-white text-blue-600 cursor-pointer flex-shrink-0"
-                  />
-                  <span className="text-gray-600 group-hover:text-gray-900 transition-colors">
-                    {item.underline ? (<>{item.text}<span className="underline">{item.underline}</span>{item.after}</>) : item.text}
-                  </span>
-                </label>
-              ))}
-            </div>
-            {q2Error && (
-              <p className="text-red-600 mt-3 font-medium">{q2Error}</p>
-            )}
-          </div>
         </section>
       ];
 
