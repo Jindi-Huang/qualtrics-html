@@ -314,32 +314,40 @@
             <p className="text-gray-700">
               For this study, imagine the following:
             </p>
-            <p className="text-gray-700">
-              In this study, you will encounter 2 different beverages and their associated blood chemicals. For each beverage, you will make decisions in {CONFIG.nRounds} rounds. Think of each round as one day in a week.
-            </p>
             <ul className="list-disc list-inside space-y-4 text-gray-600 ml-4">
               <li>
                 <strong className="text-gray-900">New functional beverages.</strong> These are drinks that may or may not have effects on you, such as altering certain blood chemicals.
-                <div className="grid grid-cols-2 gap-3 mt-3">
+              </li>
+              <li>
+                <strong className="text-gray-900">A new smartphone extension called BioClip</strong> that measures these blood chemicals. These blood chemicals may or may not have some effect on how you feel.
+              </li>
+            </ul>
+            <p className="text-gray-700">
+              You will see two different beverages and two blood chemicals in this study. For each beverage, you will make decisions in {CONFIG.nRounds} rounds. Think of each round as one day in a week.
+            </p>
+            <div className="grid grid-cols-2 gap-6 mt-4">
+              <div>
+                <p className="text-gray-500 text-sm font-medium mb-2 text-center">Beverages</p>
+                <div className="space-y-2">
                   {EXAMPLES.map((ex, i) => (
-                    <div key={i} className="bg-white rounded-lg p-3 flex items-center justify-center gap-2 border border-gray-200 shadow-sm">
+                    <div key={i} className="bg-white rounded-lg p-3 flex items-center justify-center gap-2 border border-gray-200 shadow-sm h-12">
                       <span className="text-2xl">{ex.icon}</span>
                       <span className="text-gray-900 font-medium">{ex.drink}</span>
                     </div>
                   ))}
                 </div>
-              </li>
-              <li>
-                <strong className="text-gray-900">A new smartphone extension called BioClip</strong> that measures these blood chemicals. These blood chemicals may or may not have some effect on how you feel.
-                <div className="grid grid-cols-2 gap-3 mt-3">
+              </div>
+              <div>
+                <p className="text-gray-500 text-sm font-medium mb-2 text-center">Blood Chemicals</p>
+                <div className="space-y-2">
                   {EXAMPLES.map((ex, i) => (
-                    <div key={i} className="bg-white rounded-lg p-3 flex items-center justify-center border border-gray-200 shadow-sm">
+                    <div key={i} className="bg-white rounded-lg p-3 flex items-center justify-center border border-gray-200 shadow-sm h-12">
                       <span className="text-gray-900 font-medium">{ex.chemical}</span>
                     </div>
                   ))}
                 </div>
-              </li>
-            </ul>
+              </div>
+            </div>
           </div>
         </section>,
 
@@ -404,31 +412,17 @@
           </div>
         </section>,
 
-        // Page 3: What You Know
+        // Page 3: What You Don't Know
         <section>
           <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
             <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">3</span>
-            What You Know vs. Don't Know
+            What You Don't Know
           </h2>
           <div className="bg-gray-50 rounded-xl p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-green-50 border border-green-300 rounded-xl p-4">
-                <h3 className="text-green-600 font-bold mb-2 flex items-center gap-2">
-                  <span>✓</span> What You Know
-                </h3>
-                <p className="text-gray-600">
-                  Consuming a drink makes it <strong className="text-gray-900">more likely</strong> that your blood chemical level will be <strong className="text-green-600">normal</strong>.
-                </p>
-              </div>
-              <div className="bg-amber-50 border border-amber-300 rounded-xl p-4">
-                <h3 className="text-amber-600 font-bold mb-2 flex items-center gap-2">
-                  <span>?</span> What You Don't Know
-                </h3>
-                <p className="text-gray-600">
-                  Whether having a normal or abnormal chemical level affects how you <strong className="text-gray-900">feel later that day</strong>.
-                </p>
-              </div>
-            </div>
+            <ul className="list-disc list-inside space-y-3 text-gray-600 ml-4">
+              <li>Whether drinking the beverage affects your chemical level.</li>
+              <li>Whether having a normal or abnormal chemical level affects how you feel later that day.</li>
+            </ul>
           </div>
         </section>,
 
@@ -440,7 +434,7 @@
           </h2>
           <div className="bg-gray-50 rounded-xl p-4">
             <p className="text-gray-600">
-              Because many things are going on in your body at any time, <strong className="text-gray-900">even effective decisions will not work 100% of the time</strong>. For instance, even though the beverage usually affects your blood chemical level:
+              Because many things are going on in your body at any time, <strong className="text-gray-900">even effective decisions will not work 100% of the time</strong>. For instance, even if the beverage affects your blood chemical level:
             </p>
             <ul className="list-disc list-inside space-y-2 text-gray-600 mt-3 ml-4">
               <li>Sometimes it will be normal even if you don't drink the beverage</li>
