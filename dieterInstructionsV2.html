@@ -187,10 +187,10 @@
       const [allAnswersQ2, setAllAnswersQ2] = useState([]);
       const [q1Error, setQ1Error] = useState(null);
       const [q2Error, setQ2Error] = useState(null);
-      const totalPages = 6;
+      const totalPages = 5;
 
       // Track time spent on each page (in seconds)
-      const pageTimesRef = React.useRef(Array(6).fill(0));
+      const pageTimesRef = React.useRef(Array(5).fill(0));
       const pageEnteredRef = React.useRef(Date.now());
 
       // Track time per comprehension check attempt
@@ -415,24 +415,10 @@
           </div>
         </section>,
 
-        // Page 3: What You Don't Know
+        // Page 3: Note
         <section>
           <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
             <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">3</span>
-            What You Don't Know
-          </h2>
-          <div className="bg-gray-50 rounded-xl p-4">
-            <ul className="list-disc list-inside space-y-3 text-gray-600 ml-4">
-              <li>Whether drinking the beverage affects your chemical level.</li>
-              <li>Whether having a normal or abnormal chemical level affects how you feel later that day.</li>
-            </ul>
-          </div>
-        </section>,
-
-        // Page 4: Note
-        <section>
-          <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
-            <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">4</span>
             Note
           </h2>
           <div className="bg-gray-50 rounded-xl p-4">
@@ -449,10 +435,10 @@
           </div>
         </section>,
 
-        // Page 5: Payment
+        // Page 4: Payment
         <section>
           <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
-            <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">5</span>
+            <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">4</span>
             Payment
           </h2>
           <div className="bg-gray-50 rounded-xl p-4">
@@ -496,7 +482,7 @@
           </div>
         </section>,
 
-        // Page 6: Comprehension Check
+        // Page 5: Comprehension Check
         <section>
           <div className="bg-gray-50 rounded-xl p-4">
             <p className="text-gray-900 font-bold mb-4">
@@ -533,10 +519,10 @@
             {/* Main Content Card */}
             <div className="bg-white rounded-2xl px-6 pb-6 pt-2">
               <h1 className="text-3xl font-bold text-gray-900 mb-2 text-center">
-                {currentPage < 5 ? 'Instructions' : 'Comprehension Check'}
+                {currentPage < 4 ? 'Instructions' : 'Comprehension Check'}
               </h1>
 
-              {currentPage < 5 && (
+              {currentPage < 4 && (
                 <p className="text-gray-700 text-center mb-2">
                   Do <span className="text-red-500 font-semibold">NOT</span> click Next on any instructions page without having read all of it carefully. Otherwise, you will fail the attention check!
                 </p>
@@ -549,9 +535,9 @@
               )}
 
               {/* Page indicator - only on instruction pages */}
-              {currentPage < 5 && (
+              {currentPage < 4 && (
                 <div className="flex items-center justify-center gap-2 mb-6">
-                  {Array.from({ length: 5 }, (_, i) => (
+                  {Array.from({ length: 4 }, (_, i) => (
                     <div
                       key={i}
                       className={`w-3 h-3 rounded-full transition-all ${
@@ -559,7 +545,7 @@
                       }`}
                     />
                   ))}
-                  <span className="text-gray-500 text-sm ml-2">Page {currentPage + 1} of 5</span>
+                  <span className="text-gray-500 text-sm ml-2">Page {currentPage + 1} of 4</span>
                 </div>
               )}
 
