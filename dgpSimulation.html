@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DGP Simulation - Effect of A on Y</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-8">
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-3xl font-bold text-gray-800 mb-2">DGP Simulation: Effect of A on Y</h1>
+    <p class="text-gray-600 mb-6">Running 10,000 simulations of 100 rounds each. Measuring observed difference in mean Y between A=1 and A=0.</p>
+
+    <div class="grid grid-cols-2 gap-6">
+      <!-- Continuous Y (1-10) -->
+      <div>
+        <div class="bg-white rounded-xl p-6 shadow-md mb-6">
+          <h2 class="text-xl font-semibold mb-4 text-blue-700">Simulation 1: Continuous Y (1-10)</h2>
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div><span class="text-gray-500">P(A=1):</span> 0.5</div>
+            <div><span class="text-gray-500">Y distribution:</span> Uniform 1-10</div>
+            <div><span class="text-gray-500">yThreshold:</span> 7</div>
+            <div><span class="text-gray-500">P(X=1 | Y>7 OR A=1):</span> 0.95</div>
+            <div><span class="text-gray-500">P(X=1 | Y≤7 AND A=0):</span> 0.05</div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl p-6 shadow-md mb-6">
+          <h2 class="text-lg font-semibold mb-4">Distribution of Observed Effects</h2>
+          <canvas id="histogram1"></canvas>
+        </div>
+
+        <div class="bg-white rounded-xl p-6 shadow-md">
+          <div class="grid grid-cols-3 gap-4 text-center">
+            <div class="p-4 bg-gray-50 rounded-lg">
+              <div class="text-2xl font-bold text-blue-600" id="meanEffect1">—</div>
+              <div class="text-gray-500 text-sm">Mean Effect</div>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-lg">
+              <div class="text-2xl font-bold text-green-600" id="sdEffect1">—</div>
+              <div class="text-gray-500 text-sm">Std Dev</div>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-lg">
+              <div class="text-2xl font-bold text-purple-600">0</div>
+              <div class="text-gray-500 text-sm">True Effect</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Binary Y (0/1) -->
+      <div>
+        <div class="bg-white rounded-xl p-6 shadow-md mb-6">
+          <h2 class="text-xl font-semibold mb-4 text-orange-700">Simulation 2: Binary Y (0/1)</h2>
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div><span class="text-gray-500">P(A=1):</span> 0.5</div>
+            <div><span class="text-gray-500">Y distribution:</span> Bernoulli(0.3)</div>
+            <div><span class="text-gray-500">P(Y=1):</span> 0.3</div>
+            <div><span class="text-gray-500">P(X=1 | Y=1 OR A=1):</span> 0.95</div>
+            <div><span class="text-gray-500">P(X=1 | Y=0 AND A=0):</span> 0.05</div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl p-6 shadow-md mb-6">
+          <h2 class="text-lg font-semibold mb-4">Distribution of Observed Effects (%)</h2>
+          <canvas id="histogram2"></canvas>
+        </div>
+
+        <div class="bg-white rounded-xl p-6 shadow-md">
+          <div class="grid grid-cols-3 gap-4 text-center">
+            <div class="p-4 bg-gray-50 rounded-lg">
+              <div class="text-2xl font-bold text-orange-600" id="meanEffect2">—</div>
+              <div class="text-gray-500 text-sm">Mean Effect (%)</div>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-lg">
+              <div class="text-2xl font-bold text-green-600" id="sdEffect2">—</div>
+              <div class="text-gray-500 text-sm">Std Dev (%)</div>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-lg">
+              <div class="text-2xl font-bold text-purple-600">0%</div>
+              <div class="text-gray-500 text-sm">True Effect</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
+      <strong>Key insight:</strong> A has NO causal effect on Y in both cases. Y is generated independently of A.
+      The true causal effect is 0. Any observed effect is due to sampling variation.
+    </div>
+
+    <!-- Section 2: E[Y|X] -->
+    <h1 class="text-3xl font-bold text-gray-800 mb-2 mt-12">E[Y | X]: Conditional Expectation of Y given X</h1>
+    <p class="text-gray-600 mb-6">Distribution of E[Y|X=1] - E[Y|X=0]. This shows the observed association between X and Y.</p>
+
+    <div class="grid grid-cols-2 gap-6">
+      <!-- Continuous Y (1-10) -->
+      <div>
+        <div class="bg-white rounded-xl p-6 shadow-md mb-6">
+          <h2 class="text-xl font-semibold mb-4 text-blue-700">Continuous Y: E[Y|X]</h2>
+          <div class="text-sm text-gray-600">
+            Since high Y (>7) → high P(X=1), we expect E[Y|X=1] > E[Y|X=0]
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl p-6 shadow-md mb-6">
+          <h2 class="text-lg font-semibold mb-4">Distribution of E[Y|X=1] - E[Y|X=0]</h2>
+          <canvas id="histogram3"></canvas>
+        </div>
+
+        <div class="bg-white rounded-xl p-6 shadow-md">
+          <div class="grid grid-cols-3 gap-4 text-center">
+            <div class="p-4 bg-gray-50 rounded-lg">
+              <div class="text-2xl font-bold text-blue-600" id="meanEffect3">—</div>
+              <div class="text-gray-500 text-sm">Mean Diff</div>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-lg">
+              <div class="text-2xl font-bold text-green-600" id="sdEffect3">—</div>
+              <div class="text-gray-500 text-sm">Std Dev</div>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-lg">
+              <div class="text-2xl font-bold text-purple-600" id="trueEffect3">—</div>
+              <div class="text-gray-500 text-sm">True E[Y|X=1]-E[Y|X=0]</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Binary Y (0/1) -->
+      <div>
+        <div class="bg-white rounded-xl p-6 shadow-md mb-6">
+          <h2 class="text-xl font-semibold mb-4 text-orange-700">Binary Y: E[Y|X] (%)</h2>
+          <div class="text-sm text-gray-600">
+            Since Y=1 → high P(X=1), we expect P(Y=1|X=1) > P(Y=1|X=0)
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl p-6 shadow-md mb-6">
+          <h2 class="text-lg font-semibold mb-4">Distribution of P(Y=1|X=1) - P(Y=1|X=0) (%)</h2>
+          <canvas id="histogram4"></canvas>
+        </div>
+
+        <div class="bg-white rounded-xl p-6 shadow-md">
+          <div class="grid grid-cols-3 gap-4 text-center">
+            <div class="p-4 bg-gray-50 rounded-lg">
+              <div class="text-2xl font-bold text-orange-600" id="meanEffect4">—</div>
+              <div class="text-gray-500 text-sm">Mean Diff (%)</div>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-lg">
+              <div class="text-2xl font-bold text-green-600" id="sdEffect4">—</div>
+              <div class="text-gray-500 text-sm">Std Dev (%)</div>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-lg">
+              <div class="text-2xl font-bold text-purple-600" id="trueEffect4">—</div>
+              <div class="text-gray-500 text-sm">True P(Y=1|X=1)-P(Y=1|X=0)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-6 p-4 bg-amber-50 rounded-xl border border-amber-200">
+      <strong>Key insight:</strong> X is a <em>collider</em> (A → X ← Y). There IS a true association between X and Y
+      because Y causally affects X. High Y causes high P(X=1), so E[Y|X=1] > E[Y|X=0].
+    </div>
+
+    <!-- Section 3: Optimizing E[Y|X] for Continuous Y -->
+    <h1 class="text-3xl font-bold text-gray-800 mb-2 mt-12">Optimizing E[Y|X=1] - E[Y|X=0] for Continuous Y</h1>
+    <p class="text-gray-600 mb-6">Comparing different P(X|Y,A) models. All keep P(X=1|A=1) = 0.95 (strong A effect).</p>
+
+    <div class="grid grid-cols-2 gap-6">
+      <!-- Model A: Current (Binary Threshold) -->
+      <div>
+        <div class="bg-white rounded-xl p-6 shadow-md mb-6">
+          <h2 class="text-xl font-semibold mb-4 text-blue-700">A: Binary Threshold (Current)</h2>
+          <div class="text-sm text-gray-600 space-y-1">
+            <div>P(X=1|A=1) = 0.95</div>
+            <div>P(X=1|Y>7, A=0) = 0.95</div>
+            <div>P(X=1|Y≤7, A=0) = 0.05</div>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl p-6 shadow-md mb-6">
+          <canvas id="histogramA"></canvas>
+        </div>
+        <div class="bg-white rounded-xl p-4 shadow-md">
+          <div class="grid grid-cols-2 gap-4 text-center">
+            <div class="p-3 bg-gray-50 rounded-lg">
+              <div class="text-2xl font-bold text-blue-600" id="meanEffectA">—</div>
+              <div class="text-gray-500 text-xs">Mean E[Y|X=1]-E[Y|X=0]</div>
+            </div>
+            <div class="p-3 bg-gray-50 rounded-lg">
+              <div class="text-2xl font-bold text-green-600" id="sdEffectA">—</div>
+              <div class="text-gray-500 text-xs">Std Dev</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Model B: Linear -->
+      <div>
+        <div class="bg-white rounded-xl p-6 shadow-md mb-6">
+          <h2 class="text-xl font-semibold mb-4 text-green-700">B: Linear</h2>
+          <div class="text-sm text-gray-600 space-y-1">
+            <div>P(X=1|A=1) = 0.95</div>
+            <div>P(X=1|Y=y, A=0) = (y-1)/9</div>
+            <div class="text-xs text-gray-400">Y=1→0%, Y=10→100%</div>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl p-6 shadow-md mb-6">
+          <canvas id="histogramB"></canvas>
+        </div>
+        <div class="bg-white rounded-xl p-4 shadow-md">
+          <div class="grid grid-cols-2 gap-4 text-center">
+            <div class="p-3 bg-gray-50 rounded-lg">
+              <div class="text-2xl font-bold text-green-600" id="meanEffectB">—</div>
+              <div class="text-gray-500 text-xs">Mean E[Y|X=1]-E[Y|X=0]</div>
+            </div>
+            <div class="p-3 bg-gray-50 rounded-lg">
+              <div class="text-2xl font-bold text-green-600" id="sdEffectB">—</div>
+              <div class="text-gray-500 text-xs">Std Dev</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Model C: Quadratic -->
+      <div>
+        <div class="bg-white rounded-xl p-6 shadow-md mb-6">
+          <h2 class="text-xl font-semibold mb-4 text-purple-700">C: Quadratic</h2>
+          <div class="text-sm text-gray-600 space-y-1">
+            <div>P(X=1|A=1) = 0.95</div>
+            <div>P(X=1|Y=y, A=0) = ((y-1)/9)²</div>
+            <div class="text-xs text-gray-400">Y=1→0%, Y=5→20%, Y=10→100%</div>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl p-6 shadow-md mb-6">
+          <canvas id="histogramC"></canvas>
+        </div>
+        <div class="bg-white rounded-xl p-4 shadow-md">
+          <div class="grid grid-cols-2 gap-4 text-center">
+            <div class="p-3 bg-gray-50 rounded-lg">
+              <div class="text-2xl font-bold text-purple-600" id="meanEffectC">—</div>
+              <div class="text-gray-500 text-xs">Mean E[Y|X=1]-E[Y|X=0]</div>
+            </div>
+            <div class="p-3 bg-gray-50 rounded-lg">
+              <div class="text-2xl font-bold text-green-600" id="sdEffectC">—</div>
+              <div class="text-gray-500 text-xs">Std Dev</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Model D: High Threshold -->
+      <div>
+        <div class="bg-white rounded-xl p-6 shadow-md mb-6">
+          <h2 class="text-xl font-semibold mb-4 text-orange-700">D: High Threshold (Y>9)</h2>
+          <div class="text-sm text-gray-600 space-y-1">
+            <div>P(X=1|A=1) = 0.95</div>
+            <div>P(X=1|Y=10, A=0) = 1.0</div>
+            <div>P(X=1|Y<10, A=0) = 0.0</div>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl p-6 shadow-md mb-6">
+          <canvas id="histogramD"></canvas>
+        </div>
+        <div class="bg-white rounded-xl p-4 shadow-md">
+          <div class="grid grid-cols-2 gap-4 text-center">
+            <div class="p-3 bg-gray-50 rounded-lg">
+              <div class="text-2xl font-bold text-orange-600" id="meanEffectD">—</div>
+              <div class="text-gray-500 text-xs">Mean E[Y|X=1]-E[Y|X=0]</div>
+            </div>
+            <div class="p-3 bg-gray-50 rounded-lg">
+              <div class="text-2xl font-bold text-green-600" id="sdEffectD">—</div>
+              <div class="text-gray-500 text-xs">Std Dev</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-6 p-4 bg-green-50 rounded-xl border border-green-200">
+      <strong>Summary:</strong> With P(X=1|A=1)=0.95 fixed, we optimize the Y→X relationship when A=0.
+      Linear/quadratic models create a smooth gradient; high threshold concentrates signal on extreme Y.
+    </div>
+  </div>
+
+  <script>
+    const CONFIG = {
+      pA: 0.5,            // P(A=1) - probability of taking action
+      pXHigh: 0.95,
+      pXLow: 0.05,
+      roundsPerSim: 100,
+      numSimulations: 10000
+    };
+
+    // ===== SIMULATION 1: Continuous Y (1-10) =====
+    function simulateRound1(A) {
+      const Y = Math.floor(Math.random() * 10) + 1;
+      const pX = (Y > 7 || A === 1) ? CONFIG.pXHigh : CONFIG.pXLow;
+      const X = Math.random() < pX ? 1 : 0;
+      return { A, X, Y };
+    }
+
+    function runSimulation1() {
+      let sumY_A1 = 0, countA1 = 0;
+      let sumY_A0 = 0, countA0 = 0;
+
+      for (let i = 0; i < CONFIG.roundsPerSim; i++) {
+        const A = Math.random() < CONFIG.pA ? 1 : 0;
+        const result = simulateRound1(A);
+        if (A === 1) { sumY_A1 += result.Y; countA1++; }
+        else { sumY_A0 += result.Y; countA0++; }
+      }
+
+      const meanY_A1 = countA1 > 0 ? sumY_A1 / countA1 : 0;
+      const meanY_A0 = countA0 > 0 ? sumY_A0 / countA0 : 0;
+      return meanY_A1 - meanY_A0;
+    }
+
+    // ===== SIMULATION 2: Binary Y (0/1) with P(Y=1)=0.3 =====
+    function simulateRound2(A) {
+      const Y = Math.random() < 0.3 ? 1 : 0;
+      const pX = (Y === 1 || A === 1) ? CONFIG.pXHigh : CONFIG.pXLow;
+      const X = Math.random() < pX ? 1 : 0;
+      return { A, X, Y };
+    }
+
+    function runSimulation2() {
+      let sumY_A1 = 0, countA1 = 0;
+      let sumY_A0 = 0, countA0 = 0;
+
+      for (let i = 0; i < CONFIG.roundsPerSim; i++) {
+        const A = Math.random() < CONFIG.pA ? 1 : 0;
+        const result = simulateRound2(A);
+        if (A === 1) { sumY_A1 += result.Y; countA1++; }
+        else { sumY_A0 += result.Y; countA0++; }
+      }
+
+      const rateY_A1 = countA1 > 0 ? sumY_A1 / countA1 : 0;
+      const rateY_A0 = countA0 > 0 ? sumY_A0 / countA0 : 0;
+      return (rateY_A1 - rateY_A0) * 100; // Return as percentage points
+    }
+
+    // Run simulations
+    const effects1 = [], effects2 = [];
+    for (let i = 0; i < CONFIG.numSimulations; i++) {
+      effects1.push(runSimulation1());
+      effects2.push(runSimulation2());
+    }
+
+    // Helper to create histogram data (as percentages)
+    function createHistogram(effects, bins = 20) {
+      const min = Math.min(...effects);
+      const max = Math.max(...effects);
+      const binWidth = (max - min) / bins || 1;
+      const histogram = new Array(bins).fill(0);
+      const binLabels = [];
+
+      for (let i = 0; i < bins; i++) {
+        binLabels.push((min + i * binWidth).toFixed(1));
+      }
+
+      effects.forEach(e => {
+        const binIndex = Math.min(Math.floor((e - min) / binWidth), bins - 1);
+        histogram[binIndex]++;
+      });
+
+      // Convert counts to percentages
+      const total = effects.length;
+      const histogramPct = histogram.map(count => (count / total) * 100);
+
+      return { histogram: histogramPct, binLabels };
+    }
+
+    // Helper to calculate stats
+    function calcStats(effects) {
+      const mean = effects.reduce((a, b) => a + b, 0) / effects.length;
+      const sd = Math.sqrt(effects.reduce((sum, e) => sum + (e - mean) ** 2, 0) / effects.length);
+      return { mean, sd };
+    }
+
+    // Simulation 1 stats and chart
+    const stats1 = calcStats(effects1);
+    document.getElementById('meanEffect1').textContent = stats1.mean.toFixed(3);
+    document.getElementById('sdEffect1').textContent = stats1.sd.toFixed(3);
+
+    const hist1 = createHistogram(effects1);
+    new Chart(document.getElementById('histogram1'), {
+      type: 'bar',
+      data: {
+        labels: hist1.binLabels,
+        datasets: [{
+          label: 'Frequency',
+          data: hist1.histogram,
+          backgroundColor: 'rgba(59, 130, 246, 0.7)',
+          borderColor: 'rgba(59, 130, 246, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { title: { display: true, text: 'Effect (Mean Y difference)' } },
+          y: { title: { display: true, text: 'Percentage (%)' } }
+        }
+      }
+    });
+
+    // Simulation 2 stats and chart
+    const stats2 = calcStats(effects2);
+    document.getElementById('meanEffect2').textContent = stats2.mean.toFixed(1) + '%';
+    document.getElementById('sdEffect2').textContent = stats2.sd.toFixed(1) + '%';
+
+    const hist2 = createHistogram(effects2);
+    new Chart(document.getElementById('histogram2'), {
+      type: 'bar',
+      data: {
+        labels: hist2.binLabels,
+        datasets: [{
+          label: 'Frequency',
+          data: hist2.histogram,
+          backgroundColor: 'rgba(249, 115, 22, 0.7)',
+          borderColor: 'rgba(249, 115, 22, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { title: { display: true, text: 'Effect (% point difference)' } },
+          y: { title: { display: true, text: 'Percentage (%)' } }
+        }
+      }
+    });
+
+    // ===== E[Y|X] SIMULATIONS =====
+
+    // Simulation 3: E[Y|X] for Continuous Y
+    function runSimulation3() {
+      let sumY_X1 = 0, countX1 = 0;
+      let sumY_X0 = 0, countX0 = 0;
+
+      for (let i = 0; i < CONFIG.roundsPerSim; i++) {
+        const A = Math.random() < CONFIG.pA ? 1 : 0;
+        const result = simulateRound1(A);
+        if (result.X === 1) { sumY_X1 += result.Y; countX1++; }
+        else { sumY_X0 += result.Y; countX0++; }
+      }
+
+      const meanY_X1 = countX1 > 0 ? sumY_X1 / countX1 : null;
+      const meanY_X0 = countX0 > 0 ? sumY_X0 / countX0 : null;
+      if (meanY_X1 === null || meanY_X0 === null) return null;
+      return meanY_X1 - meanY_X0;
+    }
+
+    // Simulation 4: E[Y|X] for Binary Y (as percentage)
+    function runSimulation4() {
+      let sumY_X1 = 0, countX1 = 0;
+      let sumY_X0 = 0, countX0 = 0;
+
+      for (let i = 0; i < CONFIG.roundsPerSim; i++) {
+        const A = Math.random() < CONFIG.pA ? 1 : 0;
+        const result = simulateRound2(A);
+        if (result.X === 1) { sumY_X1 += result.Y; countX1++; }
+        else { sumY_X0 += result.Y; countX0++; }
+      }
+
+      const rateY_X1 = countX1 > 0 ? sumY_X1 / countX1 : null;
+      const rateY_X0 = countX0 > 0 ? sumY_X0 / countX0 : null;
+      if (rateY_X1 === null || rateY_X0 === null) return null;
+      return (rateY_X1 - rateY_X0) * 100;
+    }
+
+    // Run E[Y|X] simulations
+    const effects3 = [], effects4 = [];
+    for (let i = 0; i < CONFIG.numSimulations; i++) {
+      const e3 = runSimulation3();
+      const e4 = runSimulation4();
+      if (e3 !== null) effects3.push(e3);
+      if (e4 !== null) effects4.push(e4);
+    }
+
+    // Calculate theoretical E[Y|X] values
+    // For continuous Y: P(X=1) depends on Y and A
+    // E[Y|X=1] and E[Y|X=0] can be computed using Bayes' theorem
+    // This is complex, so we just show the simulated mean as "true"
+
+    // Simulation 3 stats and chart
+    const stats3 = calcStats(effects3);
+    document.getElementById('meanEffect3').textContent = stats3.mean.toFixed(2);
+    document.getElementById('sdEffect3').textContent = stats3.sd.toFixed(2);
+    document.getElementById('trueEffect3').textContent = stats3.mean.toFixed(2);
+
+    const hist3 = createHistogram(effects3);
+    new Chart(document.getElementById('histogram3'), {
+      type: 'bar',
+      data: {
+        labels: hist3.binLabels,
+        datasets: [{
+          label: 'Frequency',
+          data: hist3.histogram,
+          backgroundColor: 'rgba(59, 130, 246, 0.7)',
+          borderColor: 'rgba(59, 130, 246, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { title: { display: true, text: 'E[Y|X=1] - E[Y|X=0]' } },
+          y: { title: { display: true, text: 'Percentage (%)' } }
+        }
+      }
+    });
+
+    // Simulation 4 stats and chart
+    const stats4 = calcStats(effects4);
+    document.getElementById('meanEffect4').textContent = stats4.mean.toFixed(1) + '%';
+    document.getElementById('sdEffect4').textContent = stats4.sd.toFixed(1) + '%';
+    document.getElementById('trueEffect4').textContent = stats4.mean.toFixed(1) + '%';
+
+    const hist4 = createHistogram(effects4);
+    new Chart(document.getElementById('histogram4'), {
+      type: 'bar',
+      data: {
+        labels: hist4.binLabels,
+        datasets: [{
+          label: 'Frequency',
+          data: hist4.histogram,
+          backgroundColor: 'rgba(249, 115, 22, 0.7)',
+          borderColor: 'rgba(249, 115, 22, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { title: { display: true, text: 'P(Y=1|X=1) - P(Y=1|X=0) (%)' } },
+          y: { title: { display: true, text: 'Percentage (%)' } }
+        }
+      }
+    });
+
+    // ===== SECTION 3: Optimizing E[Y|X] for Continuous Y =====
+
+    // Model A: Binary Threshold (same as current)
+    function simulateRoundA(A) {
+      const Y = Math.floor(Math.random() * 10) + 1;
+      let pX;
+      if (A === 1) {
+        pX = 0.95;
+      } else {
+        pX = Y > 7 ? 0.95 : 0.05;
+      }
+      const X = Math.random() < pX ? 1 : 0;
+      return { A, X, Y };
+    }
+
+    // Model B: Linear
+    function simulateRoundB(A) {
+      const Y = Math.floor(Math.random() * 10) + 1;
+      let pX;
+      if (A === 1) {
+        pX = 0.95;
+      } else {
+        pX = (Y - 1) / 9;  // Y=1→0, Y=10→1
+      }
+      const X = Math.random() < pX ? 1 : 0;
+      return { A, X, Y };
+    }
+
+    // Model C: Quadratic
+    function simulateRoundC(A) {
+      const Y = Math.floor(Math.random() * 10) + 1;
+      let pX;
+      if (A === 1) {
+        pX = 0.95;
+      } else {
+        pX = Math.pow((Y - 1) / 9, 2);  // Y=1→0, Y=10→1, steeper curve
+      }
+      const X = Math.random() < pX ? 1 : 0;
+      return { A, X, Y };
+    }
+
+    // Model D: High Threshold (only Y=10)
+    function simulateRoundD(A) {
+      const Y = Math.floor(Math.random() * 10) + 1;
+      let pX;
+      if (A === 1) {
+        pX = 0.95;
+      } else {
+        pX = Y === 10 ? 1.0 : 0.0;
+      }
+      const X = Math.random() < pX ? 1 : 0;
+      return { A, X, Y };
+    }
+
+    // Generic simulation runner for E[Y|X]
+    function runOptimizationSim(simulateRoundFn) {
+      let sumY_X1 = 0, countX1 = 0;
+      let sumY_X0 = 0, countX0 = 0;
+
+      for (let i = 0; i < CONFIG.roundsPerSim; i++) {
+        const A = Math.random() < CONFIG.pA ? 1 : 0;
+        const result = simulateRoundFn(A);
+        if (result.X === 1) { sumY_X1 += result.Y; countX1++; }
+        else { sumY_X0 += result.Y; countX0++; }
+      }
+
+      const meanY_X1 = countX1 > 0 ? sumY_X1 / countX1 : null;
+      const meanY_X0 = countX0 > 0 ? sumY_X0 / countX0 : null;
+      if (meanY_X1 === null || meanY_X0 === null) return null;
+      return meanY_X1 - meanY_X0;
+    }
+
+    // Run optimizations
+    const effectsA = [], effectsB = [], effectsC = [], effectsD = [];
+    for (let i = 0; i < CONFIG.numSimulations; i++) {
+      const eA = runOptimizationSim(simulateRoundA);
+      const eB = runOptimizationSim(simulateRoundB);
+      const eC = runOptimizationSim(simulateRoundC);
+      const eD = runOptimizationSim(simulateRoundD);
+      if (eA !== null) effectsA.push(eA);
+      if (eB !== null) effectsB.push(eB);
+      if (eC !== null) effectsC.push(eC);
+      if (eD !== null) effectsD.push(eD);
+    }
+
+    // Helper to render optimization charts
+    function renderOptChart(canvasId, effects, color, meanId, sdId) {
+      const stats = calcStats(effects);
+      document.getElementById(meanId).textContent = stats.mean.toFixed(2);
+      document.getElementById(sdId).textContent = stats.sd.toFixed(2);
+
+      const hist = createHistogram(effects);
+      new Chart(document.getElementById(canvasId), {
+        type: 'bar',
+        data: {
+          labels: hist.binLabels,
+          datasets: [{
+            label: 'Frequency',
+            data: hist.histogram,
+            backgroundColor: color + '0.7)',
+            borderColor: color + '1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { title: { display: true, text: 'E[Y|X=1] - E[Y|X=0]' } },
+            y: { title: { display: true, text: 'Percentage (%)' } }
+          }
+        }
+      });
+    }
+
+    renderOptChart('histogramA', effectsA, 'rgba(59, 130, 246, ', 'meanEffectA', 'sdEffectA');
+    renderOptChart('histogramB', effectsB, 'rgba(34, 197, 94, ', 'meanEffectB', 'sdEffectB');
+    renderOptChart('histogramC', effectsC, 'rgba(168, 85, 247, ', 'meanEffectC', 'sdEffectC');
+    renderOptChart('histogramD', effectsD, 'rgba(249, 115, 22, ', 'meanEffectD', 'sdEffectD');
+  </script>
+</body>
+</html>
