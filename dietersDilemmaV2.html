@@ -110,7 +110,7 @@
     const CONFIG = {
       yBonus: 2.00,           // Bonus when Y=1
       aCost: 0.00,            // Cost of drinking (A=1)
-      totalRounds: 10,
+      totalRounds: 2,
       currency: '$',
       id: 1,
       
@@ -134,7 +134,7 @@
       order: 'AXY',            // 'AXY' shows all, 'AY' hides X
 
       // Price elicitation prices (low to high)
-      priceElicitationPrices: [0.00, 0.40, 0.80, 1.20, 1.60, 2.00],
+      priceElicitationPrices: [0, 0.5, 1, 1.5, 2, 2.5, 3],
 
       playerName0: 'Driftwell', // Drink name (A)
       playerName1: 'Qivaryn',   // Chemical name (X)
@@ -662,7 +662,7 @@
             </h1>
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-8 text-left">
               <p className="text-gray-700 text-lg mb-4">
-                In the next few pages, you will make <strong>6 important choices</strong> about whether to drink {CONFIG.playerName0}.
+                In the next few pages, you will make <strong>{CONFIG.priceElicitationPrices.length} high-stake choices</strong> about whether to drink {CONFIG.playerName0}.
               </p>
               <p className="text-gray-700 text-lg mb-4">
                 The <strong>price of the drink will vary</strong> from low to high across these choices.
@@ -682,8 +682,38 @@
       );
     }
 
-    // Price Elicitation Decision Panel
-    function PriceElicitationPanel({ price, roundNumber, totalRounds, onChoice, stats }) {
+    // Price Divider Page (shown between price elicitation rounds)
+    function PriceDividerPage({ nextPrice, nextRound, totalRounds, onContinue }) {
+      return (
+        <div className="min-h-screen bg-white flex items-center justify-center px-4">
+          <div className="max-w-2xl mx-auto text-center">
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">
+              Next Choice
+            </h1>
+            <p className="text-gray-600 text-lg mb-6">
+              Choice {nextRound} of {totalRounds}
+            </p>
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-8">
+              <p className="text-gray-700 text-lg">
+                The price of {CONFIG.playerName0} is now:
+              </p>
+              <div className="text-4xl font-bold text-amber-600 mt-3">
+                {nextPrice === 0 ? 'Free' : `${CONFIG.currency}${nextPrice.toFixed(2)}`}
+              </div>
+            </div>
+            <button
+              onClick={onContinue}
+              className="px-8 py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all"
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Price Elicitation Decision Panel (modified DrinkDecisionPanel with highlighted price)
+    function PriceElicitationDecisionPanel({ price, onChoice, stats }) {
       const A1Y1Rate = stats.A1.total > 0
         ? Math.round(stats.A1.Y1 / stats.A1.total * 100)
         : null;
@@ -692,63 +722,122 @@
         : null;
 
       return (
-        <div className="min-h-screen bg-white flex items-center justify-center px-4">
-          <div className="max-w-3xl mx-auto">
-            <div className="text-center mb-6">
-              <span className="inline-block px-4 py-2 bg-blue-50 text-blue-700 rounded-full text-sm font-medium border border-blue-200">
-                Choice {roundNumber} of {totalRounds}
-              </span>
-            </div>
-
-            <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">
-              Would you drink {CONFIG.playerName0} at this price?
-            </h2>
-
-            <div className="bg-white rounded-2xl p-8 border-2 border-gray-200 shadow-lg mb-8">
-              <div className="flex justify-center gap-8">
-                <button
-                  onClick={() => onChoice(1)}
-                  className="w-48 py-6 px-6 rounded-xl font-bold transition-all bg-blue-600 hover:bg-blue-500 text-white shadow-lg hover:shadow-xl cursor-pointer flex flex-col items-center gap-3"
-                >
-                  <span className="text-4xl">{CONFIG.playerIcon0}</span>
-                  <div className="text-xl">Drink {CONFIG.playerName0}</div>
-                  <div className="mt-2 px-4 py-2 bg-amber-400 text-amber-900 rounded-lg text-2xl font-bold animate-pulse">
-                    -{CONFIG.currency}{price.toFixed(2)}
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => onChoice(0)}
-                  className="w-48 py-6 px-6 rounded-xl font-bold transition-all bg-gray-100 hover:bg-gray-200 text-gray-700 shadow-lg hover:shadow-xl cursor-pointer flex flex-col items-center gap-3"
-                >
-                  <span className="text-4xl">⊘</span>
-                  <div className="text-xl">Skip</div>
-                  <div className="mt-2 px-4 py-2 bg-gray-200 text-gray-600 rounded-lg text-2xl font-bold">
-                    {CONFIG.currency}0.00
-                  </div>
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-              <h4 className="text-gray-500 text-sm font-medium mb-3 text-center">Your Experience from the Study</h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white rounded-lg p-3 text-center border border-gray-200">
-                  <div className="text-green-600 font-medium">{CONFIG.playerName0} ⇢ {CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}</div>
-                  <div className="text-2xl font-bold text-gray-900">
-                    {A1Y1Rate !== null ? `${A1Y1Rate}%` : '—'}
-                  </div>
-                </div>
-                <div className="bg-white rounded-lg p-3 text-center border border-gray-200">
-                  <div className="text-red-600 font-medium">Skip ⇢ {CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}</div>
-                  <div className="text-2xl font-bold text-gray-900">
-                    {A0Y1Rate !== null ? `${A0Y1Rate}%` : '—'}
-                  </div>
+        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+          <h4 className="text-gray-500 text-sm font-medium mb-3 text-center">Your Decision</h4>
+          <div className="flex justify-center gap-3">
+            <button
+              onClick={() => onChoice(1)}
+              className="w-32 h-24 px-4 py-3 rounded-lg font-bold transition-all bg-blue-600 hover:bg-blue-500 text-white shadow-lg hover:shadow-xl cursor-pointer flex items-center justify-center gap-2"
+            >
+              <span className="text-xl">{CONFIG.playerIcon0}</span>
+              <div className="text-left">
+                <div>Drink</div>
+                <div>{CONFIG.playerName0}</div>
+                <div className="text-sm bg-amber-400 text-amber-900 rounded px-2 py-0.5 mt-1 font-bold">
+                  {price === 0 ? 'Free' : `-${CONFIG.currency}${price.toFixed(2)}`}
                 </div>
               </div>
-              <div className="mt-3 text-center text-sm text-gray-500">
-                Remember: If you feel {CONFIG.playerName2Pos}, you receive +{CONFIG.currency}{CONFIG.yBonus.toFixed(2)} bonus
+            </button>
+            <button
+              onClick={() => onChoice(0)}
+              className="w-32 h-24 px-4 py-3 rounded-lg font-bold transition-all bg-blue-600 hover:bg-blue-500 text-white shadow-lg hover:shadow-xl cursor-pointer flex flex-col items-center justify-center"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-xl">⊘</span>
+                <span>Skip</span>
               </div>
+              <div className="text-xs opacity-70">{CONFIG.currency}0</div>
+            </button>
+          </div>
+
+          <div className="mt-3 space-y-2">
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="bg-gray-50 rounded p-2 text-center border border-gray-200">
+                <div className="text-green-600">{CONFIG.playerName0} ⇢ {CONFIG.playerName1}</div>
+                <div className="text-gray-900 font-bold">
+                  {CONFIG.order === 'AY'
+                    ? '—'
+                    : stats.A1.total > 0
+                      ? `${Math.round(stats.A1.X1 / stats.A1.total * 100)}% normal`
+                      : '—'}
+                </div>
+              </div>
+              <div className="bg-gray-50 rounded p-2 text-center border border-gray-200">
+                <div className="text-red-600">Skip ⇢ {CONFIG.playerName1}</div>
+                <div className="text-gray-900 font-bold">
+                  {CONFIG.order === 'AY'
+                    ? '—'
+                    : stats.A0.total > 0
+                      ? `${Math.round(stats.A0.X1 / stats.A0.total * 100)}% normal`
+                      : '—'}
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="bg-gray-50 rounded p-2 text-center border border-gray-200">
+                <div className="text-green-600">{CONFIG.playerName0} ⇢ {CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}</div>
+                <div className="text-gray-900 font-bold">
+                  {A1Y1Rate !== null ? `${A1Y1Rate}%` : '—'}
+                </div>
+              </div>
+              <div className="bg-gray-50 rounded p-2 text-center border border-gray-200">
+                <div className="text-red-600">Skip ⇢ {CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}</div>
+                <div className="text-gray-900 font-bold">
+                  {A0Y1Rate !== null ? `${A0Y1Rate}%` : '—'}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Price Elicitation Page (matches main game layout)
+    function PriceElicitationPanel({ price, roundNumber, totalRounds, onChoice, stats, history }) {
+      return (
+        <div className="min-h-screen bg-white px-4 pt-0 pb-4">
+          <div className="max-w-6xl mx-auto">
+            <div className="bg-gray-50 rounded-2xl p-6 mb-4 border border-gray-200 shadow-sm relative overflow-hidden">
+              <div className="text-center mb-4">
+                <span className="inline-block px-4 py-2 rounded-full text-sm font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                  High-Stakes Choice: Would you drink {CONFIG.playerName0} at this price?
+                </span>
+              </div>
+
+              <div className="absolute top-4 left-4 bg-amber-100 rounded-xl px-4 py-2 border border-amber-300 shadow-sm">
+                <div className="text-amber-700 font-medium text-sm mb-1">💰 High Stakes</div>
+                <div className="flex items-center gap-3">
+                  <div>
+                    <span className="text-amber-600 text-sm">Choice</span>
+                    <div className="text-amber-900 text-2xl font-bold">{roundNumber}</div>
+                  </div>
+                  <div className="text-amber-400 text-xl">/</div>
+                  <div className="text-amber-600 text-lg">{totalRounds}</div>
+                </div>
+                <div className="w-20 h-2 bg-amber-200 rounded-full mt-2 overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-amber-400 to-amber-600 transition-all duration-300"
+                    style={{ width: `${(roundNumber / totalRounds) * 100}%` }}
+                  />
+                </div>
+              </div>
+
+              <XYConnection
+                X={null}
+                Y={null}
+                stats={stats}
+                hideRateBox={false}
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <PriceElicitationDecisionPanel
+                price={price}
+                onChoice={onChoice}
+                stats={stats}
+              />
+              <XStatsPanel stats={stats} currentX={null} />
+              <CompactHistory history={history} />
             </div>
           </div>
         </div>
@@ -776,6 +865,7 @@
       // Price elicitation state
       const [priceElicitationRound, setPriceElicitationRound] = useState(0);
       const [priceElicitationChoices, setPriceElicitationChoices] = useState([]);
+      const [showPriceDivider, setShowPriceDivider] = useState(false);
       
       const roundTimesRef = useRef([]);
       const roundStartTimeRef = useRef(Date.now());
@@ -862,7 +952,8 @@
       
       // Handle price elicitation intro continue
       const handlePriceIntroContinue = useCallback(() => {
-        setPriceElicitationRound(1);
+        setPriceElicitationRound(0);
+        setShowPriceDivider(true);
         setPhase('priceElicitation');
       }, []);
 
@@ -876,9 +967,20 @@
           // All price elicitation rounds done
           setPhase('complete');
         } else {
-          setPriceElicitationRound(prev => prev + 1);
+          // Show divider before next price
+          setShowPriceDivider(true);
         }
       }, [priceElicitationRound, priceElicitationChoices]);
+
+      // Handle price divider continue
+      const handlePriceDividerContinue = useCallback(() => {
+        setShowPriceDivider(false);
+        if (priceElicitationRound === 0) {
+          setPriceElicitationRound(1);
+        } else {
+          setPriceElicitationRound(prev => prev + 1);
+        }
+      }, [priceElicitationRound]);
 
       // Handle DAG completion
       const handleDAGComplete = useCallback((initialDAG, finalDAG, confidence, DAGAlertCount, initialDAGTime, finalDAGTime, confidenceTime) => {
@@ -970,6 +1072,20 @@
         return <PriceElicitationIntro onContinue={handlePriceIntroContinue} />;
       }
 
+      // Show price divider between rounds (and before first round)
+      if (phase === 'priceElicitation' && showPriceDivider) {
+        const nextRound = priceElicitationRound === 0 ? 1 : priceElicitationRound + 1;
+        const nextPrice = CONFIG.priceElicitationPrices[nextRound - 1];
+        return (
+          <PriceDividerPage
+            nextPrice={nextPrice}
+            nextRound={nextRound}
+            totalRounds={CONFIG.priceElicitationPrices.length}
+            onContinue={handlePriceDividerContinue}
+          />
+        );
+      }
+
       // Show price elicitation rounds
       if (phase === 'priceElicitation') {
         const currentPrice = CONFIG.priceElicitationPrices[priceElicitationRound - 1];
@@ -980,10 +1096,19 @@
             totalRounds={CONFIG.priceElicitationPrices.length}
             onChoice={handlePriceElicitationChoice}
             stats={stats}
+            history={history}
           />
         );
       }
-      
+
+      // Show blank page when complete
+      if (phase === 'complete') {
+        return (
+          <div className="min-h-screen bg-white">
+          </div>
+        );
+      }
+
       return (
         <div className="min-h-screen bg-white px-4 pt-0 pb-4">
           <div className="max-w-6xl mx-auto">
