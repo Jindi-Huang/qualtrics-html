@@ -169,13 +169,6 @@
     function simulateRound(A) {
       let X, Y;
 
-      // If order is AY, X is always 0 (not shown to participant)
-      if (CONFIG.order === 'AY') {
-        X = 0;
-        Y = Math.random() < CONFIG.pY ? 1 : 0;
-        return { A, X, Y };
-      }
-
       if (CONFIG.causal === 0) {
         // Collider: Y is independent, X depends on both A and Y
         const pX = [CONFIG.beta00, CONFIG.beta01, CONFIG.beta10, CONFIG.beta11];
@@ -187,6 +180,11 @@
         const pY = [CONFIG.rho0, CONFIG.rho1];
         X = Math.random() < pX[A] ? 1 : 0;
         Y = Math.random() < pY[X] ? 1 : 0;
+      }
+
+      // For AY order, set X to 0 for data recording (not shown to participant)
+      if (CONFIG.order === 'AY') {
+        X = 0;
       }
 
       return { A, X, Y };
