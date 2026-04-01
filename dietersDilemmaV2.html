@@ -315,8 +315,8 @@
           <div className="text-lg font-bold text-gray-900 mt-1">
             {mood === null ? 'Later this day...' : mood === 1 ? `${CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}!` : CONFIG.playerName2Neg.charAt(0).toUpperCase() + CONFIG.playerName2Neg.slice(1)}
           </div>
-          <div className={`text-lg font-bold mt-1 ${mood === null && !showBonus ? 'invisible' : mood === null ? 'text-green-600' : mood === 1 ? 'text-green-600' : 'text-red-600'}`}>
-            {mood === null ? (showBonus ? `+${CONFIG.currency}${bonusAmount}` : '\u00A0') : mood === 1 ? `+${CONFIG.currency}${bonusAmount}` : `${CONFIG.currency}0`}
+          <div className={`mt-1 ${mood === null && !showBonus ? 'invisible' : mood === null ? 'text-green-600 text-sm text-center' : mood === 1 ? 'text-green-600 text-lg font-bold' : 'text-red-600 text-lg font-bold'}`}>
+            {mood === null ? (showBonus ? <><div>If you feel good,</div><div>you receive a {CONFIG.currency}{bonusAmount} bonus</div></> : '\u00A0') : mood === 1 ? `+${CONFIG.currency}${bonusAmount}` : `${CONFIG.currency}0`}
           </div>
         </div>
       );
