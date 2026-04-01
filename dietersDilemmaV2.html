@@ -134,7 +134,8 @@
       order: 'AXY',            // 'AXY' shows all, 'AY' hides X
 
       // Price elicitation prices (low to high)
-      priceElicitationPrices: [0, 0.5, 1, 1.5, 2, 2.5, 3],
+      priceElicitationPrices: [0, 2.5, 5, 7.5, 9.5, 12, 14.5],
+      priceElicitationBonus: 50,
 
       playerName0: 'Driftwell', // Drink name (A)
       playerName1: 'Qivaryn',   // Chemical name (X)
@@ -260,7 +261,7 @@
       };
 
       return (
-        <div className="flex flex-col items-center">
+        <div className="flex flex-col items-center" style={{ minWidth: '140px' }}>
           <svg viewBox="0 0 120 160" className="w-32 h-44">
             <rect x="10" y="10" width="100" height="140" rx="12" fill="#0f172a" stroke="#334155" strokeWidth="2" />
             <rect x="18" y="20" width="84" height="100" rx="6" fill="#1e293b" />
@@ -302,7 +303,7 @@
     // Mood indicator (shows Y = feeling)
     function MoodLarge({ mood }) {
       return (
-        <div className="flex flex-col items-center mt-8">
+        <div className="flex flex-col items-center mt-8" style={{ minWidth: '140px' }}>
           <div className={`w-32 h-32 rounded-full flex items-center justify-center transition-all duration-500 ${
             mood === null ? 'bg-gray-200' : mood === 1 ? 'bg-gradient-to-br from-emerald-400 to-green-600' : 'bg-gradient-to-br from-rose-400 to-red-600'
           }`}>
@@ -365,7 +366,7 @@
             {!hideRateBox && (
               <div className={`bg-white border-2 rounded-xl px-4 py-3 z-10 transition-all duration-300 shadow-sm ${
                 showConnection ? (X === 1 ? 'border-green-500' : 'border-red-500') : 'border-gray-300'
-              }`}>
+              }`} style={{ minWidth: '120px' }}>
                 <div className="text-xs text-gray-500 text-center mb-1">
                   {isAYOrder ? 'Historical Rate' : X === null ? 'Historical Rate' : X === 1 ? 'When NORMAL' : 'When ABNORMAL'}
                 </div>
@@ -665,10 +666,13 @@
                 In the next few pages, you will make <strong>{CONFIG.priceElicitationPrices.length} high-stake choices</strong> about whether to drink {CONFIG.playerName0}.
               </p>
               <p className="text-gray-700 text-lg mb-4">
-                The <strong>price of the drink will vary</strong> from low to high across these choices.
+                For these choices, the <strong>bonus for feeling {CONFIG.playerName2Pos} is {CONFIG.currency}{CONFIG.priceElicitationBonus}</strong>.
+              </p>
+              <p className="text-gray-700 text-lg mb-4">
+                The <strong>price of the drink will vary</strong> from {CONFIG.currency}0 to {CONFIG.currency}{CONFIG.priceElicitationPrices[CONFIG.priceElicitationPrices.length - 1]} across these choices. You will be given {CONFIG.currency}15 as endowment.
               </p>
               <p className="text-gray-700 text-lg">
-                <strong>One of these choices will be randomly selected</strong> and added to your payment, so please consider each decision carefully.
+                <strong>One of these choices may be randomly selected</strong> and added to your payment, so please consider each decision carefully.
               </p>
             </div>
             <button
@@ -700,6 +704,9 @@
               <div className="text-4xl font-bold text-amber-600 mt-3">
                 {nextPrice === 0 ? 'Free' : `${CONFIG.currency}${nextPrice.toFixed(2)}`}
               </div>
+              <p className="text-gray-700 text-lg mt-4">
+                Bonus for feeling {CONFIG.playerName2Pos}: <span className="text-3xl font-bold text-green-600">{CONFIG.currency}{CONFIG.priceElicitationBonus}</span>
+              </p>
             </div>
             <button
               onClick={onContinue}
@@ -713,7 +720,7 @@
     }
 
     // Price Elicitation Decision Panel (modified DrinkDecisionPanel with highlighted price)
-    function PriceElicitationDecisionPanel({ price, onChoice, stats }) {
+    function PriceElicitationDecisionPanel({ price, onChoice, stats, isFirstRound }) {
       const A1Y1Rate = stats.A1.total > 0
         ? Math.round(stats.A1.Y1 / stats.A1.total * 100)
         : null;
@@ -727,7 +734,7 @@
           <div className="flex justify-center gap-3">
             <button
               onClick={() => onChoice(1)}
-              className="w-32 h-24 px-4 py-3 rounded-lg font-bold transition-all bg-blue-600 hover:bg-blue-500 text-white shadow-lg hover:shadow-xl cursor-pointer flex items-center justify-center gap-2"
+              className={`w-32 h-24 px-4 py-3 rounded-lg font-bold transition-all bg-blue-600 hover:bg-blue-500 text-white shadow-lg hover:shadow-xl cursor-pointer flex items-center justify-center gap-2 ${isFirstRound ? 'first-round-shine-panel' : ''}`}
             >
               <span className="text-xl">{CONFIG.playerIcon0}</span>
               <div className="text-left">
@@ -740,7 +747,7 @@
             </button>
             <button
               onClick={() => onChoice(0)}
-              className="w-32 h-24 px-4 py-3 rounded-lg font-bold transition-all bg-blue-600 hover:bg-blue-500 text-white shadow-lg hover:shadow-xl cursor-pointer flex flex-col items-center justify-center"
+              className={`w-32 h-24 px-4 py-3 rounded-lg font-bold transition-all bg-blue-600 hover:bg-blue-500 text-white shadow-lg hover:shadow-xl cursor-pointer flex flex-col items-center justify-center ${isFirstRound ? 'first-round-shine-panel' : ''}`}
             >
               <div className="flex items-center gap-2">
                 <span className="text-xl">⊘</span>
@@ -835,6 +842,7 @@
                 price={price}
                 onChoice={onChoice}
                 stats={stats}
+                isFirstRound={roundNumber === 1}
               />
               <XStatsPanel stats={stats} currentX={null} />
               <CompactHistory history={history} />
@@ -1000,26 +1008,19 @@
           completedAtRound: currentRound
         });
         
-        // Continue to next round
+        // Continue to next round - immediately show new day overlay
+        setCurrentA(null);
+        setCurrentX(null);
+        setCurrentY(null);
+        setNextDayNumber(currentRound + 1);
+        setShowNewDay(true);
+        setPhase('decision');
+
         setTimeout(() => {
-          setHideRateBox(true);
-          setNextDayNumber(currentRound + 1);
-          
-          setTimeout(() => {
-            setShowNewDay(true);
-            
-            setTimeout(() => {
-              setShowNewDay(false);
-              setHideRateBox(false);
-              setCurrentRound(prev => prev + 1);
-              setPhase('decision');
-              setCurrentA(null);
-              setCurrentX(null);
-              setCurrentY(null);
-              roundStartTimeRef.current = Date.now();
-            }, 1000);
-          }, 100);
-        }, 500);
+          setShowNewDay(false);
+          setCurrentRound(prev => prev + 1);
+          roundStartTimeRef.current = Date.now();
+        }, 1000);
       }, [currentRound]);
       
       // Show loading screen while waiting for Qualtrics config
