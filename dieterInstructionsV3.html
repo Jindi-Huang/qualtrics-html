@@ -34,17 +34,9 @@
           if (qConfig.aCost !== undefined) CONFIG.aCost = qConfig.aCost;
           if (qConfig.yBonus !== undefined) CONFIG.yBonus = qConfig.yBonus;
           if (qConfig.nRounds !== undefined) CONFIG.nRounds = qConfig.nRounds;
-          if (qConfig.playerName0_1) CONFIG.playerName0_1 = qConfig.playerName0_1;
-          if (qConfig.playerName1_1) CONFIG.playerName1_1 = qConfig.playerName1_1;
-          if (qConfig.playerIcon0_1) CONFIG.playerIcon0_1 = qConfig.playerIcon0_1;
-          if (qConfig.playerName0_2) CONFIG.playerName0_2 = qConfig.playerName0_2;
-          if (qConfig.playerName1_2) CONFIG.playerName1_2 = qConfig.playerName1_2;
-          if (qConfig.playerIcon0_2) CONFIG.playerIcon0_2 = qConfig.playerIcon0_2;
-          // Update EXAMPLES with new config values
-          EXAMPLES = [
-            { drink: CONFIG.playerName0_1, chemical: CONFIG.playerName1_1, icon: CONFIG.playerIcon0_1 },
-            { drink: CONFIG.playerName0_2, chemical: CONFIG.playerName1_2, icon: CONFIG.playerIcon0_2 }
-          ];
+          if (qConfig.playerName0) CONFIG.playerName0 = qConfig.playerName0;
+          if (qConfig.playerName1) CONFIG.playerName1 = qConfig.playerName1;
+          if (qConfig.playerIcon0) CONFIG.playerIcon0 = qConfig.playerIcon0;
           console.log('Applied config:', CONFIG);
         }
 
@@ -87,18 +79,16 @@
       aCost: 0.00,
       yBonus: 2.00,
       nRounds: 10,
-      playerName0_1: 'Driftwell',
-      playerName1_1: 'Qivaryn',
-      playerIcon0_1: '🥤',
-      playerName0_2: 'Clearhaven',
-      playerName1_2: 'Zerqalase',
-      playerIcon0_2: '🍵'
+      playerName0: 'Driftwell',
+      playerName1: 'Qivaryn',
+      playerIcon0: '🥤'
     };
 
-    // Example drink-chemical pairs for illustration (will be updated from Qualtrics config)
-    let EXAMPLES = [
-      { drink: CONFIG.playerName0_1, chemical: CONFIG.playerName1_1, icon: CONFIG.playerIcon0_1 },
-      { drink: CONFIG.playerName0_2, chemical: CONFIG.playerName1_2, icon: CONFIG.playerIcon0_2 }
+    // Example drink-chemical pairs for illustration
+    const EXAMPLES = [
+      { drink: 'Driftwell', chemical: 'Qivaryn', icon: '🥤' },
+      { drink: 'Clearhaven', chemical: 'Zerqalase', icon: '🍵' },
+      { drink: 'Melloway', chemical: 'Melythor', icon: '🍶' }
     ];
   </script>
 
@@ -187,10 +177,10 @@
       const [allAnswersQ2, setAllAnswersQ2] = useState([]);
       const [q1Error, setQ1Error] = useState(null);
       const [q2Error, setQ2Error] = useState(null);
-      const totalPages = 5;
+      const totalPages = 7;
 
       // Track time spent on each page (in seconds)
-      const pageTimesRef = React.useRef(Array(5).fill(0));
+      const pageTimesRef = React.useRef(Array(7).fill(0));
       const pageEnteredRef = React.useRef(Date.now());
 
       // Track time per comprehension check attempt
@@ -207,6 +197,13 @@
         'drinkNoPay', 'drinkCost', 'feelGoodBonus', 'oneRound', 'sumAll', 'bioClipPay'
       ]));
 
+      // Randomize order of two possibilities (1=cause, 2=response)
+      const [possibilityOrder] = useState(() => shuffleArray([1, 2]));
+      // gameVersionsDescriptionOrderDieter1: position of possibility 1 (cause) — 1 if shown first, 2 if shown second
+      const gameVersionsDescriptionOrderDieter1 = possibilityOrder.indexOf(1) + 1;
+      // gameVersionsDescriptionOrderDieter2: position of possibility 2 (response) — 1 if shown first, 2 if shown second
+      const gameVersionsDescriptionOrderDieter2 = possibilityOrder.indexOf(2) + 1;
+
       const q1ItemsMap = {
         drinkNoPay: { id: 'drinkNoPay', text: `Whether I drink the beverage or not does${'\u00A0'}`, underline: 'not', after: ` affect my payment.` },
         drinkCost: { id: 'drinkCost', text: `Drinking the beverage will cost ${CONFIG.currency}${CONFIG.aCost.toFixed(2)}.` },
@@ -218,19 +215,20 @@
       const q1Items = q1Order.map(id => q1ItemsMap[id]);
 
       const [q2Order] = useState(() => shuffleArray([
-        'normalCausesGood', 'normalNotCausesGood'
+        'normalCausesGood', 'normalNotCausesGood', 'twoVersions'
       ]));
 
       const q2ItemsMap = {
         normalCausesGood: { id: 'normalCausesGood', text: `If my BioClip shows a normal chemical level and I later feel good, this necessarily means that the normal chemical level caused me to feel good.` },
-        normalNotCausesGood: { id: 'normalNotCausesGood', text: `If my BioClip shows a normal chemical level and I later feel good, this does `, underline: 'not necessarily', after: ` mean that the normal chemical level caused me to feel good.` }
+        normalNotCausesGood: { id: 'normalNotCausesGood', text: `If my BioClip shows a normal chemical level and I later feel good, this does `, underline: 'not necessarily', after: ` mean that the normal chemical level caused me to feel good.` },
+        twoVersions: { id: 'twoVersions', text: `Each blood chemical has two possibilities: either it is a cause of how you feel, or is a response to how you feel. Different chemicals may work in different ways.` }
       };
       const q2Items = q2Order.map(id => q2ItemsMap[id]);
 
       const q1Correct = new Set(['drinkCost', 'feelGoodBonus', 'oneRound']);
       const q1All = ['drinkNoPay', 'drinkCost', 'feelGoodBonus', 'oneRound', 'sumAll', 'bioClipPay'];
-      const q2Correct = new Set(['normalNotCausesGood']);
-      const q2All = ['normalCausesGood', 'normalNotCausesGood'];
+      const q2Correct = new Set(['normalNotCausesGood', 'twoVersions']);
+      const q2All = ['normalCausesGood', 'normalNotCausesGood', 'twoVersions'];
 
       const checkAnswer = (items, correctSet) => {
         const selected = new Set(items.filter(id => comprehension[id]));
@@ -261,17 +259,21 @@
         comprehTimesRef.current.push(elapsed);
         recordPageTime(currentPage);
         const q1Selected = q1All.filter(id => comprehension[id]);
+        const q2Selected = q2All.filter(id => comprehension[id]);
         const q1Ok = checkAnswer(q1All, q1Correct);
+        const q2Ok = checkAnswer(q2All, q2Correct);
 
         let newWrongQ1 = wrongCountQ1;
+        let newWrongQ2 = wrongCountQ2;
         let newAllQ1 = [...allAnswersQ1];
+        let newAllQ2 = [...allAnswersQ2];
 
         if (!q1Ok) {
           newWrongQ1 = wrongCountQ1 + 1;
           setWrongCountQ1(newWrongQ1);
           newAllQ1 = [...allAnswersQ1, q1Selected];
           setAllAnswersQ1(newAllQ1);
-          setQ1Error('Your answer is incorrect. Please try again.');
+          setQ1Error('Your answer to Question 1 is incorrect. Please try again.');
         } else {
           setQ1Error(null);
           if (!allAnswersQ1.length || !q1Ok) {
@@ -280,17 +282,33 @@
           }
         }
 
-        if (q1Ok) {
+        if (!q2Ok) {
+          newWrongQ2 = wrongCountQ2 + 1;
+          setWrongCountQ2(newWrongQ2);
+          newAllQ2 = [...allAnswersQ2, q2Selected];
+          setAllAnswersQ2(newAllQ2);
+          setQ2Error('Your answer to Question 2 is incorrect. Please try again.');
+        } else {
+          setQ2Error(null);
+          if (!allAnswersQ2.length || !q2Ok) {
+            newAllQ2 = [...allAnswersQ2, q2Selected];
+            setAllAnswersQ2(newAllQ2);
+          }
+        }
+
+        if (q1Ok && q2Ok) {
           sendDataToQualtrics('INSTRUCTIONS_COMPLETE', {
             completed: true,
             attentionCheck: attentionCheck,
             comprehension: comprehension,
             wrongCountDieterQ1: newWrongQ1,
-            wrongCountDieterQ2: null,
+            wrongCountDieterQ2: newWrongQ2,
             allAnswersDieterQ1: newAllQ1,
-            allAnswersDieterQ2: null,
+            allAnswersDieterQ2: newAllQ2,
             pageTimes: pageTimesRef.current,
-            comprehTimes: comprehTimesRef.current
+            comprehTimes: comprehTimesRef.current,
+            gameVersionsDescriptionOrderDieter1: gameVersionsDescriptionOrderDieter1,
+            gameVersionsDescriptionOrderDieter2: gameVersionsDescriptionOrderDieter2
           });
         }
       };
@@ -317,42 +335,28 @@
             <p className="text-gray-700">
               There are new products of two kinds:
             </p>
-            <ul className="list-disc list-inside space-y-4 text-gray-600 ml-4">
-              <li>
-                <strong className="text-gray-900">New functional beverages.</strong> These are drinks that may or may not have effects on you, such as altering certain blood chemicals.
-              </li>
-              <li>
-                <strong className="text-gray-900">A new smartphone extension called BioClip</strong> that measures your blood chemicals. These blood chemicals may or may not have some effect on how you feel.
-              </li>
+            <ul className="list-disc list-inside space-y-2 text-gray-600 ml-4">
+              <li><strong className="text-gray-900">New functional beverages.</strong> These are drinks that have some effect on you, such as altering certain blood chemicals.</li>
+              <li><strong className="text-gray-900">A new smartphone extension called BioClip</strong> that measures these blood chemicals.</li>
             </ul>
-            <p className="text-gray-700">
-              You will see two different beverages and two blood chemicals in this study. <strong>Different beverages and chemicals may work in different ways.</strong> For each beverage, you will make decisions in {CONFIG.nRounds} rounds. Think of each round as one day in a week.
-            </p>
-            <div className="grid grid-cols-2 gap-6 mt-4">
-              <div>
-                <p className="text-gray-500 text-sm font-medium mb-2 text-center">Beverages</p>
-                <div className="space-y-2">
-                  {EXAMPLES.map((ex, i) => (
-                    <div key={i} className="bg-white rounded-lg p-3 flex items-center justify-center gap-2 border border-gray-200 shadow-sm h-12">
-                      <span className="text-2xl">{ex.icon}</span>
-                      <span className="text-gray-900 font-medium">{ex.drink}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className="text-gray-500 text-sm font-medium mb-2 text-center">Blood Chemicals</p>
-                <div className="space-y-2">
-                  {EXAMPLES.map((ex, i) => (
-                    <div key={i} className="bg-white rounded-lg p-3 flex items-center justify-center border border-gray-200 shadow-sm h-12">
-                      <span className="text-gray-900 font-medium">{ex.chemical}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
             <p className="text-gray-700 mt-4">
-              You have a trial subscription to the BioClip smartphone extension. During this trial, you can view the blood chemical levels for the first beverage shown to you. For the next two beverages, the trial will have expired, and you will no longer be able to see their blood chemical levels. The order in which the beverages appear is randomized.
+              It is known that each of the drinks affect one blood chemical. For instance,
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
+              {EXAMPLES.map((ex, i) => (
+                <div key={i} className="bg-white rounded-lg p-4 flex items-center gap-3 border border-gray-200 shadow-sm">
+                  <span className="text-2xl">{ex.icon}</span>
+                  <div>
+                    <div className="text-gray-900 font-medium">{ex.drink}</div>
+                    <div className="text-gray-500 text-sm">affects {ex.chemical}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <p className="text-gray-700 mt-4">
+              You will see three different beverages and three blood chemicals in this study. <strong>Different beverages and chemicals may work in different ways.</strong> For each beverage, you will make decisions in {CONFIG.nRounds} rounds. Think of each round as one day in a week.
             </p>
           </div>
         </section>,
@@ -415,18 +419,80 @@
               To show you are following this, click the word "Monday" in the first sentence above. If you do not, the survey will terminate.
               {attentionCheck === 1 && <span className="text-green-600 ml-2">✓</span>}
             </p>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+              <p className="text-gray-700">
+                <strong>Note:</strong> You have a trial subscription to the BioClip smartphone extension. During this trial, you can view the blood chemical levels for the first beverage shown to you. For the next two beverages, the trial will have expired, and you will no longer be able to see their blood chemical levels. The order in which the beverages appear is randomized.
+              </p>
+            </div>
           </div>
         </section>,
 
-        // Page 3: Note
+        // Page 3: What You Know
         <section>
           <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
             <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">3</span>
+            What You Know vs. Don't Know
+          </h2>
+          <div className="bg-gray-50 rounded-xl p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-green-50 border border-green-300 rounded-xl p-4">
+                <h3 className="text-green-600 font-bold mb-2 flex items-center gap-2">
+                  <span>✓</span> What You Know
+                </h3>
+                <p className="text-gray-600">
+                  Consuming a drink makes it <strong className="text-gray-900">more likely</strong> that your blood chemical level will be <strong className="text-green-600">normal</strong>.
+                </p>
+              </div>
+              <div className="bg-amber-50 border border-amber-300 rounded-xl p-4">
+                <h3 className="text-amber-600 font-bold mb-2 flex items-center gap-2">
+                  <span>?</span> What You Don't Know
+                </h3>
+                <p className="text-gray-600">
+                  Whether having a normal or abnormal chemical level affects how you <strong className="text-gray-900">feel later that day</strong>.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>,
+
+        // Page 4: Two Possibilities
+        <section>
+          <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
+            <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">4</span>
+            Two Possibilities
+          </h2>
+          <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+            <p className="text-gray-700">For each blood chemical in this study, there are two possibilities:</p>
+            {possibilityOrder.map((id, idx) => (
+              id === 1 ? (
+                <div key={id} className="bg-white rounded-xl p-4 border-l-4 border-blue-400">
+                  <h3 className="text-blue-600 font-bold mb-2">Possibility {idx + 1}: The chemical level <span className="underline">is a cause</span> of how you feel.</h3>
+                  <p className="text-gray-600">
+                    Hence, normalizing your chemical level (by consuming the drink) <strong className="text-gray-900">raises the chance that you will feel good</strong> later that day.
+                  </p>
+                </div>
+              ) : (
+                <div key={id} className="bg-white rounded-xl p-4 border-l-4 border-blue-400">
+                  <h3 className="text-blue-600 font-bold mb-2">Possibility {idx + 1}: The chemical level <span className="underline">is a response to</span> how you feel, but <span className="underline">not a cause</span>.</h3>
+                  <p className="text-gray-600">
+                    In this case, drinking the beverage will still make a normal chemical level more likely, but this <strong className="text-gray-900">will not affect how you feel</strong>.
+                  </p>
+                </div>
+              )
+            ))}
+          </div>
+        </section>,
+
+        // Page 5: Note
+        <section>
+          <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
+            <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">5</span>
             Note
           </h2>
           <div className="bg-gray-50 rounded-xl p-4">
             <p className="text-gray-600">
-              Because many things are going on in your body at any time, <strong className="text-gray-900">even effective decisions will not work 100% of the time</strong>. For instance, even if the beverage affects your blood chemical level:
+              Because many things are going on in your body at any time, <strong className="text-gray-900">even effective decisions will not work 100% of the time</strong>. For instance, even though the beverage usually affects your blood chemical level:
             </p>
             <ul className="list-disc list-inside space-y-2 text-gray-600 mt-3 ml-4">
               <li>Sometimes it will be normal even if you don't drink the beverage</li>
@@ -438,10 +504,10 @@
           </div>
         </section>,
 
-        // Page 4: Payment
+        // Page 6: Payment
         <section>
           <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
-            <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">4</span>
+            <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">6</span>
             Payment
           </h2>
           <div className="bg-gray-50 rounded-xl p-4">
@@ -485,7 +551,7 @@
           </div>
         </section>,
 
-        // Page 5: Comprehension Check
+        // Page 7: Comprehension Check
         <section>
           <div className="bg-gray-50 rounded-xl p-4">
             <p className="text-gray-900 font-bold mb-4">
@@ -511,6 +577,29 @@
             )}
           </div>
 
+          <div className="bg-gray-50 rounded-xl p-4 mt-6">
+            <p className="text-gray-900 font-bold mb-4">
+              Which of the following statements about the study are correct? <span className="font-normal text-gray-600">Select all that apply.</span>
+            </p>
+            <div className="space-y-3">
+              {q2Items.map(item => (
+                <label key={item.id} className="flex items-start gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={!!comprehension[item.id]}
+                    onChange={() => setComprehension(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                    className="mt-1 w-5 h-5 rounded border-gray-300 bg-white text-blue-600 cursor-pointer flex-shrink-0"
+                  />
+                  <span className="text-gray-600 group-hover:text-gray-900 transition-colors">
+                    {item.underline ? (<>{item.text}<span className="underline">{item.underline}</span>{item.after}</>) : item.text}
+                  </span>
+                </label>
+              ))}
+            </div>
+            {q2Error && (
+              <p className="text-red-600 mt-3 font-medium">{q2Error}</p>
+            )}
+          </div>
         </section>
       ];
 
@@ -522,25 +611,25 @@
             {/* Main Content Card */}
             <div className="bg-white rounded-2xl px-6 pb-6 pt-2">
               <h1 className="text-3xl font-bold text-gray-900 mb-2 text-center">
-                {currentPage < 4 ? 'Instructions' : 'Comprehension Check'}
+                {currentPage < 6 ? 'Instructions' : 'Comprehension Check'}
               </h1>
 
-              {currentPage < 4 && (
+              {currentPage < 6 && (
                 <p className="text-gray-700 text-center mb-2">
                   Do <span className="text-red-500 font-semibold">NOT</span> click Next on any instructions page without having read all of it carefully. Otherwise, you will fail the attention check!
                 </p>
               )}
 
-              {currentPage >= 5 && (
+              {currentPage >= 6 && (
                 <p className="text-gray-600 italic text-center mb-4">
                   To make sure you have understood these instructions, please answer the following questions.
                 </p>
               )}
 
               {/* Page indicator - only on instruction pages */}
-              {currentPage < 4 && (
+              {currentPage < 6 && (
                 <div className="flex items-center justify-center gap-2 mb-6">
-                  {Array.from({ length: 4 }, (_, i) => (
+                  {Array.from({ length: 6 }, (_, i) => (
                     <div
                       key={i}
                       className={`w-3 h-3 rounded-full transition-all ${
@@ -548,7 +637,7 @@
                       }`}
                     />
                   ))}
-                  <span className="text-gray-500 text-sm ml-2">Page {currentPage + 1} of 4</span>
+                  <span className="text-gray-500 text-sm ml-2">Page {currentPage + 1} of 6</span>
                 </div>
               )}
 
@@ -581,7 +670,7 @@
                     onClick={() => {
                       recordPageTime(currentPage);
                       if (currentPage === 1 && attentionCheck === 0) {
-                        sendDataToQualtrics('INSTRUCTIONS_COMPLETE', { completed: true, attentionCheck: 0, comprehension: {}, pageTimes: pageTimesRef.current, comprehTimes: comprehTimesRef.current });
+                        sendDataToQualtrics('INSTRUCTIONS_COMPLETE', { completed: true, attentionCheck: 0, comprehension: {}, pageTimes: pageTimesRef.current, comprehTimes: comprehTimesRef.current, gameVersionsDescriptionOrderDieter1: gameVersionsDescriptionOrderDieter1, gameVersionsDescriptionOrderDieter2: gameVersionsDescriptionOrderDieter2 });
                         return;
                       }
                       setCurrentPage(p => p + 1);
