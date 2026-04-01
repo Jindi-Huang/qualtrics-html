@@ -133,6 +133,9 @@
       // Display order
       order: 'AXY',            // 'AXY' shows all, 'AY' hides X
 
+      // Price elicitation prices (low to high)
+      priceElicitationPrices: [0.00, 0.40, 0.80, 1.20, 1.60, 2.00],
+
       playerName0: 'Driftwell', // Drink name (A)
       playerName1: 'Qivaryn',   // Chemical name (X)
       playerName2: 'Feeling',   // Outcome name (Y)
@@ -283,7 +286,7 @@
               </g>
             )}
             <text x="60" y="100" textAnchor="middle" fill={isAYOrder ? '#94a3b8' : status === null ? '#64748b' : 'white'} fontSize="11" fontWeight="bold">
-              {isAYOrder ? 'OUT OF ORDER' : status === null ? 'READING...' : status === 1 ? 'NORMAL' : 'ABNORMAL'}
+              {isAYOrder ? 'SUBSCRIPTION EXPIRED' : status === null ? 'READING...' : status === 1 ? 'NORMAL' : 'ABNORMAL'}
             </text>
             <rect x="30" y="126" width="60" height="18" rx="4" fill="#334155" />
             <text x="60" y="139" textAnchor="middle" fill="#94a3b8" fontSize="10" fontFamily="monospace">
@@ -648,6 +651,110 @@
       );
     }
 
+    // Price Elicitation Intro Page
+    function PriceElicitationIntro({ onContinue }) {
+      return (
+        <div className="min-h-screen bg-white flex items-center justify-center px-4">
+          <div className="max-w-2xl mx-auto text-center">
+            <div className="text-6xl mb-6">💰</div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-6">
+              High-Stakes Decisions
+            </h1>
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-8 text-left">
+              <p className="text-gray-700 text-lg mb-4">
+                In the next few pages, you will make <strong>6 important choices</strong> about whether to drink {CONFIG.playerName0}.
+              </p>
+              <p className="text-gray-700 text-lg mb-4">
+                The <strong>price of the drink will vary</strong> from low to high across these choices.
+              </p>
+              <p className="text-gray-700 text-lg">
+                <strong>One of these choices will be randomly selected</strong> and added to your payment, so please consider each decision carefully.
+              </p>
+            </div>
+            <button
+              onClick={onContinue}
+              className="px-8 py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all"
+            >
+              Continue to Choices
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Price Elicitation Decision Panel
+    function PriceElicitationPanel({ price, roundNumber, totalRounds, onChoice, stats }) {
+      const A1Y1Rate = stats.A1.total > 0
+        ? Math.round(stats.A1.Y1 / stats.A1.total * 100)
+        : null;
+      const A0Y1Rate = stats.A0.total > 0
+        ? Math.round(stats.A0.Y1 / stats.A0.total * 100)
+        : null;
+
+      return (
+        <div className="min-h-screen bg-white flex items-center justify-center px-4">
+          <div className="max-w-3xl mx-auto">
+            <div className="text-center mb-6">
+              <span className="inline-block px-4 py-2 bg-blue-50 text-blue-700 rounded-full text-sm font-medium border border-blue-200">
+                Choice {roundNumber} of {totalRounds}
+              </span>
+            </div>
+
+            <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">
+              Would you drink {CONFIG.playerName0} at this price?
+            </h2>
+
+            <div className="bg-white rounded-2xl p-8 border-2 border-gray-200 shadow-lg mb-8">
+              <div className="flex justify-center gap-8">
+                <button
+                  onClick={() => onChoice(1)}
+                  className="w-48 py-6 px-6 rounded-xl font-bold transition-all bg-blue-600 hover:bg-blue-500 text-white shadow-lg hover:shadow-xl cursor-pointer flex flex-col items-center gap-3"
+                >
+                  <span className="text-4xl">{CONFIG.playerIcon0}</span>
+                  <div className="text-xl">Drink {CONFIG.playerName0}</div>
+                  <div className="mt-2 px-4 py-2 bg-amber-400 text-amber-900 rounded-lg text-2xl font-bold animate-pulse">
+                    -{CONFIG.currency}{price.toFixed(2)}
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => onChoice(0)}
+                  className="w-48 py-6 px-6 rounded-xl font-bold transition-all bg-gray-100 hover:bg-gray-200 text-gray-700 shadow-lg hover:shadow-xl cursor-pointer flex flex-col items-center gap-3"
+                >
+                  <span className="text-4xl">⊘</span>
+                  <div className="text-xl">Skip</div>
+                  <div className="mt-2 px-4 py-2 bg-gray-200 text-gray-600 rounded-lg text-2xl font-bold">
+                    {CONFIG.currency}0.00
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+              <h4 className="text-gray-500 text-sm font-medium mb-3 text-center">Your Experience from the Study</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white rounded-lg p-3 text-center border border-gray-200">
+                  <div className="text-green-600 font-medium">{CONFIG.playerName0} ⇢ {CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}</div>
+                  <div className="text-2xl font-bold text-gray-900">
+                    {A1Y1Rate !== null ? `${A1Y1Rate}%` : '—'}
+                  </div>
+                </div>
+                <div className="bg-white rounded-lg p-3 text-center border border-gray-200">
+                  <div className="text-red-600 font-medium">Skip ⇢ {CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}</div>
+                  <div className="text-2xl font-bold text-gray-900">
+                    {A0Y1Rate !== null ? `${A0Y1Rate}%` : '—'}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-3 text-center text-sm text-gray-500">
+                Remember: If you feel {CONFIG.playerName2Pos}, you receive +{CONFIG.currency}{CONFIG.yBonus.toFixed(2)} bonus
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     // Main experiment component
     function BeverageExperiment() {
       const [ready, setReady] = useState(false);
@@ -665,6 +772,10 @@
       const [dagCompleted, setDagCompleted] = useState(false);
       const [dagData, setDagData] = useState({ initial: null, final: null, confidence: null, alertCount: null });
       const [hideRateBox, setHideRateBox] = useState(false);
+
+      // Price elicitation state
+      const [priceElicitationRound, setPriceElicitationRound] = useState(0);
+      const [priceElicitationChoices, setPriceElicitationChoices] = useState([]);
       
       const roundTimesRef = useRef([]);
       const roundStartTimeRef = useRef(Date.now());
@@ -712,7 +823,7 @@
 
             if (currentRound >= CONFIG.totalRounds) {
               setTimeout(() => {
-                setPhase('complete');
+                setPhase('priceIntro');
               }, 2000);
             } else {
               // Check if we're at the halfway point and haven't shown DAG yet (skip for AY order)
@@ -749,6 +860,26 @@
         }, 800);
       }, [currentRound]);
       
+      // Handle price elicitation intro continue
+      const handlePriceIntroContinue = useCallback(() => {
+        setPriceElicitationRound(1);
+        setPhase('priceElicitation');
+      }, []);
+
+      // Handle price elicitation choice
+      const handlePriceElicitationChoice = useCallback((choice) => {
+        const currentPrice = CONFIG.priceElicitationPrices[priceElicitationRound - 1];
+        const newChoices = [...priceElicitationChoices, { price: currentPrice, choice }];
+        setPriceElicitationChoices(newChoices);
+
+        if (priceElicitationRound >= CONFIG.priceElicitationPrices.length) {
+          // All price elicitation rounds done
+          setPhase('complete');
+        } else {
+          setPriceElicitationRound(prev => prev + 1);
+        }
+      }, [priceElicitationRound, priceElicitationChoices]);
+
       // Handle DAG completion
       const handleDAGComplete = useCallback((initialDAG, finalDAG, confidence, DAGAlertCount, initialDAGTime, finalDAGTime, confidenceTime) => {
         setDagData({ initial: initialDAG, final: finalDAG, confidence: confidence, alertCount: DAGAlertCount, initialDAGTime, finalDAGTime, confidenceTime });
@@ -799,7 +930,7 @@
       }
       
       // Send final data when game completes
-      if (phase === 'complete' && history.length === CONFIG.totalRounds && !dataSentRef.current) {
+      if (phase === 'complete' && history.length === CONFIG.totalRounds && priceElicitationChoices.length === CONFIG.priceElicitationPrices.length && !dataSentRef.current) {
         dataSentRef.current = true;
 
         sendDataToQualtrics('FINAL_DATA', {
@@ -812,9 +943,10 @@
           DAGAlertCount: dagData.alertCount,
           initialDAGTime: dagData.initialDAGTime,
           finalDAGTime: dagData.finalDAGTime,
-          confidenceTime: dagData.confidenceTime
+          confidenceTime: dagData.confidenceTime,
+          priceElicitation: priceElicitationChoices
         });
-        
+
         setTimeout(() => {
           sendDataToQualtrics('GAME_COMPLETE', { completed: true });
         }, 500);
@@ -829,6 +961,25 @@
             playerName1={CONFIG.playerName1}
             playerIcon0={CONFIG.playerIcon0}
             nRounds={CONFIG.totalRounds}
+          />
+        );
+      }
+
+      // Show price elicitation intro
+      if (phase === 'priceIntro') {
+        return <PriceElicitationIntro onContinue={handlePriceIntroContinue} />;
+      }
+
+      // Show price elicitation rounds
+      if (phase === 'priceElicitation') {
+        const currentPrice = CONFIG.priceElicitationPrices[priceElicitationRound - 1];
+        return (
+          <PriceElicitationPanel
+            price={currentPrice}
+            roundNumber={priceElicitationRound}
+            totalRounds={CONFIG.priceElicitationPrices.length}
+            onChoice={handlePriceElicitationChoice}
+            stats={stats}
           />
         );
       }
