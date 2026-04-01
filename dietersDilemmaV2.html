@@ -301,7 +301,8 @@
     }
 
     // Mood indicator (shows Y = feeling)
-    function MoodLarge({ mood }) {
+    function MoodLarge({ mood, showBonus }) {
+      const bonusAmount = showBonus || CONFIG.yBonus;
       return (
         <div className="flex flex-col items-center mt-8" style={{ minWidth: '140px' }}>
           <div className={`w-32 h-32 rounded-full flex items-center justify-center transition-all duration-500 ${
@@ -314,15 +315,15 @@
           <div className="text-lg font-bold text-gray-900 mt-1">
             {mood === null ? 'Later this day...' : mood === 1 ? `${CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}!` : CONFIG.playerName2Neg.charAt(0).toUpperCase() + CONFIG.playerName2Neg.slice(1)}
           </div>
-          <div className={`text-lg font-bold mt-1 ${mood === null ? 'invisible' : mood === 1 ? 'text-green-600' : 'text-red-600'}`}>
-            {mood === null ? '\u00A0' : mood === 1 ? `+${CONFIG.currency}${CONFIG.yBonus}` : `${CONFIG.currency}0`}
+          <div className={`text-lg font-bold mt-1 ${mood === null && !showBonus ? 'invisible' : mood === null ? 'text-green-600' : mood === 1 ? 'text-green-600' : 'text-red-600'}`}>
+            {mood === null ? (showBonus ? `+${CONFIG.currency}${bonusAmount}` : '\u00A0') : mood === 1 ? `+${CONFIG.currency}${bonusAmount}` : `${CONFIG.currency}0`}
           </div>
         </div>
       );
     }
 
     // Connection between X (chemical) and Y (feeling)
-    function XYConnection({ X, Y, stats, hideRateBox }) {
+    function XYConnection({ X, Y, stats, hideRateBox, showBonus }) {
       const isAYOrder = CONFIG.order === 'AY';
       const X1Y1Rate = stats.X1.total > 0
         ? Math.round((stats.X1.Y1 / stats.X1.total) * 100)
@@ -388,7 +389,7 @@
             )}
           </div>
 
-          <MoodLarge mood={Y} />
+          <MoodLarge mood={Y} showBonus={showBonus} />
         </div>
       );
     }
@@ -834,6 +835,7 @@
                 Y={null}
                 stats={stats}
                 hideRateBox={false}
+                showBonus={CONFIG.priceElicitationBonus}
               />
             </div>
 
