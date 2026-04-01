@@ -286,9 +286,16 @@
                 </line>
               </g>
             )}
-            <text x="60" y="100" textAnchor="middle" fill={isAYOrder ? '#94a3b8' : status === null ? '#64748b' : 'white'} fontSize="11" fontWeight="bold">
-              {isAYOrder ? 'SUBSCRIPTION EXPIRED' : status === null ? 'READING...' : status === 1 ? 'NORMAL' : 'ABNORMAL'}
-            </text>
+            {isAYOrder ? (
+              <text x="60" y="93" textAnchor="middle" fill="#94a3b8" fontSize="9" fontWeight="bold">
+                <tspan x="60" dy="0">SUBSCRIPTION</tspan>
+                <tspan x="60" dy="12">EXPIRED</tspan>
+              </text>
+            ) : (
+              <text x="60" y="100" textAnchor="middle" fill={status === null ? '#64748b' : 'white'} fontSize="11" fontWeight="bold">
+                {status === null ? 'READING...' : status === 1 ? 'NORMAL' : 'ABNORMAL'}
+              </text>
+            )}
             <rect x="30" y="126" width="60" height="18" rx="4" fill="#334155" />
             <text x="60" y="139" textAnchor="middle" fill="#94a3b8" fontSize="10" fontFamily="monospace">
               BioClip™
