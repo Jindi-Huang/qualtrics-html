@@ -674,6 +674,10 @@
                         return;
                       }
                       setCurrentPage(p => p + 1);
+                      window.scrollTo(0, 0);
+                      if (window.parent !== window) {
+                        window.parent.postMessage({ type: 'SCROLL_TO_TOP' }, '*');
+                      }
                     }}
                     className="px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
                   >
