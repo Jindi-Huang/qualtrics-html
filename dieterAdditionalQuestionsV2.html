@@ -56,6 +56,7 @@
           if (qConfig.gameCounter !== undefined) CONFIG.gameCounter = qConfig.gameCounter;
           if (qConfig.gameVersionsDescriptionOrderDieter1) CONFIG.gameVersionsDescriptionOrderDieter1 = qConfig.gameVersionsDescriptionOrderDieter1;
           if (qConfig.gameVersionsDescriptionOrderDieter2) CONFIG.gameVersionsDescriptionOrderDieter2 = qConfig.gameVersionsDescriptionOrderDieter2;
+          if (qConfig.order) CONFIG.order = qConfig.order;
           console.log('Applied config:', CONFIG);
         }
 
@@ -104,7 +105,8 @@
       currentSymbol: '1',
       gameCounter: 1,
       gameVersionsDescriptionOrderDieter1: 'A',
-      gameVersionsDescriptionOrderDieter2: 'B'
+      gameVersionsDescriptionOrderDieter2: 'B',
+      order: 'AY'  // 'AXY' shows all questions, 'AY' hides X-related questions
     };
   </script>
 
@@ -170,6 +172,8 @@
       const [submitted, setSubmitted] = useState(false);
       const [ready, setReady] = useState(false);
 
+      const isAYOrder = CONFIG.order === 'AY';
+
       useEffect(() => {
         onInitialized(() => setReady(true));
         const timeout = setTimeout(() => {
@@ -204,8 +208,8 @@
 
       const handleSubmit = () => {
         const missing = [];
-        if (!answers.q7.trim()) missing.push('Q6');
-        if (!answers.q8.trim()) missing.push('Q7');
+        if (!answers.q7.trim()) missing.push(isAYOrder ? 'Q5' : 'Q6');
+        if (!answers.q8.trim()) missing.push(isAYOrder ? 'Q6' : 'Q7');
         if (missing.length > 0) {
           setError(`Please answer all questions. Missing: ${missing.join(', ')}`);
           return;
@@ -235,16 +239,15 @@
         );
       }
 
-
       const page1Questions = [
         {
           key: 'q1',
           text: `How often did <strong>you drink ${CONFIG.playerName0}</strong> ${CONFIG.playerIcon0} <span style="color: #64748b; font-style: italic;">(what percentage of the weeks)</span>?`
         },
-        {
+        ...(isAYOrder ? [] : [{
           key: 'q2',
           text: `How often was your <strong>${CONFIG.playerName1}</strong> level normal <span style="color: #64748b; font-style: italic;">(what percentage of the weeks)</span>?`
-        },
+        }]),
         {
           key: 'q3',
           text: `How often did you feel <strong>${CONFIG.playerName2Pos}</strong> <span style="color: #64748b; font-style: italic;">(what percentage of the weeks)</span>?`
@@ -253,12 +256,16 @@
 
       const q4 = {
         key: 'q4',
-        text: `<strong>Whenever you did NOT drink ${CONFIG.playerName0}</strong>, how often was your ${CONFIG.playerName1} level normal and you also felt ${CONFIG.playerName2Pos}?`
+        text: isAYOrder
+          ? `<strong>Whenever you did NOT drink ${CONFIG.playerName0}</strong>, how often did you feel ${CONFIG.playerName2Pos}?`
+          : `<strong>Whenever you did NOT drink ${CONFIG.playerName0}</strong>, how often was your ${CONFIG.playerName1} level normal and you also felt ${CONFIG.playerName2Pos}?`
       };
 
       const q5 = {
         key: 'q5',
-        text: `<strong>Whenever you did drink ${CONFIG.playerName0}</strong>, how often was your ${CONFIG.playerName1} level normal and you also felt ${CONFIG.playerName2Pos}?`
+        text: isAYOrder
+          ? `<strong>Whenever you did drink ${CONFIG.playerName0}</strong>, how often did you feel ${CONFIG.playerName2Pos}?`
+          : `<strong>Whenever you did drink ${CONFIG.playerName0}</strong>, how often was your ${CONFIG.playerName1} level normal and you also felt ${CONFIG.playerName2Pos}?`
       };
 
       return (
@@ -271,14 +278,17 @@
             {page === 1 && (
               <>
                 <p className="text-base text-gray-600 mb-8 text-center">
-                  Now, please answer some questions about {CONFIG.playerName0}, {CONFIG.playerName1} and how you feel.
+                  {isAYOrder
+                    ? `Now, please answer some questions about ${CONFIG.playerName0} and how you feel.`
+                    : `Now, please answer some questions about ${CONFIG.playerName0}, ${CONFIG.playerName1} and how you feel.`
+                  }
                 </p>
 
                 <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
-                  {page1Questions.map((q) => (
+                  {page1Questions.map((q, idx) => (
                     <RadioQuestion
                       key={q.key}
-                      questionNumber={parseInt(q.key.replace('q', ''))}
+                      questionNumber={idx + 1}
                       questionText={q.text}
                       selectedValue={answers[q.key]}
                       onChange={(val) => handleChange(q.key, val)}
@@ -290,7 +300,7 @@
                   )}
 
                   <button
-                    onClick={() => handleNextPage(['q1', 'q2', 'q3'], 2)}
+                    onClick={() => handleNextPage(isAYOrder ? ['q1', 'q3'] : ['q1', 'q2', 'q3'], 2)}
                     className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg"
                   >
                     Next
@@ -302,14 +312,14 @@
             {page === 2 && (
               <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
                 <RadioQuestion
-                  questionNumber={4}
+                  questionNumber={isAYOrder ? 3 : 4}
                   questionText={q4.text}
                   selectedValue={answers.q4}
                   onChange={(val) => handleChange('q4', val)}
                 />
 
                 <RadioQuestion
-                  questionNumber={5}
+                  questionNumber={isAYOrder ? 4 : 5}
                   questionText={q5.text}
                   selectedValue={answers.q5}
                   onChange={(val) => handleChange('q5', val)}
@@ -332,7 +342,7 @@
               <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
                 <div className="mb-8">
                   <p className="text-base text-gray-800 mb-4">
-                    Q6. In your own words, please describe how you usually chose between "drink {CONFIG.playerName0} {CONFIG.playerIcon0}" and "Skip" in study {CONFIG.currentSymbol}. How did your decision making evolve over time?
+                    Q{isAYOrder ? 5 : 6}. In your own words, please describe how you usually chose between "drink {CONFIG.playerName0} {CONFIG.playerIcon0}" and "Skip" in study {CONFIG.currentSymbol}. How did your decision making evolve over time?
                   </p>
                   <textarea
                     value={answers.q7}
@@ -343,7 +353,10 @@
 
                 <div className="mb-8">
                   <p className="text-base text-gray-800 mb-4">
-                    Q7. In your own words, describe how your choice to drink {CONFIG.playerName0}, your {CONFIG.playerName1} level, and how you feel influence each other, and in what ways.
+                    {isAYOrder
+                      ? `Q6. In your own words, describe how your choice to drink ${CONFIG.playerName0} influence how you feel.`
+                      : `Q7. In your own words, describe how your choice to drink ${CONFIG.playerName0}, your ${CONFIG.playerName1} level, and how you feel influence each other, and in what ways.`
+                    }
                   </p>
                   <textarea
                     value={answers.q8}
