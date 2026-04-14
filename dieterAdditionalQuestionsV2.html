@@ -111,7 +111,7 @@
   </script>
 
   <script type="text/babel">
-    const { useState, useEffect } = React;
+    const { useState, useEffect, useRef } = React;
 
     const PERCENTAGE_OPTIONS = [
       '0 - 10%',
@@ -172,6 +172,38 @@
       const [submitted, setSubmitted] = useState(false);
       const [ready, setReady] = useState(false);
 
+      // Keystroke logging for open-ended questions
+      const keylogQ7 = useRef([]);
+      const keylogQ8 = useRef([]);
+      const lastLenQ7 = useRef(0);
+      const lastLenQ8 = useRef(0);
+
+      const handleKeyDown = (e, keylogRef) => {
+        keylogRef.current.push({
+          key: e.key,
+          time: Date.now()
+        });
+      };
+
+      const handleInputChange = (e, keylogRef, lastLenRef, key) => {
+        const value = e.target.value;
+        const len = value.length;
+        const jump = len - lastLenRef.current;
+
+        // Detect large input jumps (e.g., paste)
+        if (jump > 10) {
+          keylogRef.current.push({
+            key: "INPUT_JUMP",
+            time: Date.now(),
+            jump: jump,
+            total: len
+          });
+        }
+
+        lastLenRef.current = len;
+        handleChange(key, value);
+      };
+
       const isAYOrder = CONFIG.order === 'AY';
 
       useEffect(() => {
@@ -227,7 +259,9 @@
           dieterSameYes: pctIndex(answers.q5),
           dieterVersion: null,
           dieterOwnWords: answers.q7,
-          dieterOwnWordsDAG: answers.q8
+          dieterOwnWordsDAG: answers.q8,
+          keylogOwnWords: keylogQ7.current,
+          keylogOwnWordsDAG: keylogQ8.current
         });
       };
 
@@ -346,7 +380,8 @@
                   </p>
                   <textarea
                     value={answers.q7}
-                    onChange={(e) => handleChange('q7', e.target.value)}
+                    onChange={(e) => handleInputChange(e, keylogQ7, lastLenQ7, 'q7')}
+                    onKeyDown={(e) => handleKeyDown(e, keylogQ7)}
                     className="w-full h-40 p-4 border border-gray-300 rounded-lg text-sm text-gray-700 resize-y focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
                   />
                 </div>
@@ -360,7 +395,8 @@
                   </p>
                   <textarea
                     value={answers.q8}
-                    onChange={(e) => handleChange('q8', e.target.value)}
+                    onChange={(e) => handleInputChange(e, keylogQ8, lastLenQ8, 'q8')}
+                    onKeyDown={(e) => handleKeyDown(e, keylogQ8)}
                     className="w-full h-40 p-4 border border-gray-300 rounded-lg text-sm text-gray-700 resize-y focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
                   />
                 </div>

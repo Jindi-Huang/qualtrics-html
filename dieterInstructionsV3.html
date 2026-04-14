@@ -105,13 +105,18 @@
     }
 
     // Mini BioClip illustration (matches BioClipLarge from dietersDilemma.html)
+    // status: 1 = normal, 0 = abnormal, null = reading, 'expired' = subscription expired
     function BioClipMini({ status }) {
+      const isExpired = status === 'expired';
+
       const getStatusColor = () => {
+        if (isExpired) return '#475569';
         if (status === null) return '#64748b';
         return status === 1 ? '#22c55e' : '#ef4444';
       };
 
       const getStatusBg = () => {
+        if (isExpired) return '#1e293b';
         if (status === null) return '#1e293b';
         return status === 1 ? '#14532d' : '#7f1d1d';
       };
@@ -131,9 +136,16 @@
               <line x1="70" y1="45" x2="50" y2="65" />
             </g>
           )}
-          <text x="60" y="100" textAnchor="middle" fill={status === null ? '#64748b' : 'white'} fontSize="11" fontWeight="bold">
-            {status === null ? 'READING...' : status === 1 ? 'NORMAL' : 'ABNORMAL'}
-          </text>
+          {isExpired ? (
+            <text x="60" y="93" textAnchor="middle" fill="#94a3b8" fontSize="9" fontWeight="bold">
+              <tspan x="60" dy="0">SUBSCRIPTION</tspan>
+              <tspan x="60" dy="12">EXPIRED</tspan>
+            </text>
+          ) : (
+            <text x="60" y="100" textAnchor="middle" fill={status === null ? '#64748b' : 'white'} fontSize="11" fontWeight="bold">
+              {status === null ? 'READING...' : status === 1 ? 'NORMAL' : 'ABNORMAL'}
+            </text>
+          )}
           <rect x="30" y="126" width="60" height="18" rx="4" fill="#334155" />
           <text x="60" y="139" textAnchor="middle" fill="#94a3b8" fontSize="10" fontFamily="monospace">BioClip™</text>
           <path d="M0 50 L10 50 L10 110 L0 110 C-4 110 -6 105 -6 100 L-6 60 C-6 55 -4 50 0 50 Z" fill="#475569" />
@@ -177,10 +189,10 @@
       const [allAnswersQ2, setAllAnswersQ2] = useState([]);
       const [q1Error, setQ1Error] = useState(null);
       const [q2Error, setQ2Error] = useState(null);
-      const totalPages = 7;
+      const totalPages = 8;
 
       // Track time spent on each page (in seconds)
-      const pageTimesRef = React.useRef(Array(7).fill(0));
+      const pageTimesRef = React.useRef(Array(8).fill(0));
       const pageEnteredRef = React.useRef(Date.now());
 
       // Track time per comprehension check attempt
@@ -419,19 +431,32 @@
               To show you are following this, click the word "Monday" in the first sentence above. If you do not, the survey will terminate.
               {attentionCheck === 1 && <span className="text-green-600 ml-2">✓</span>}
             </p>
+          </div>
+        </section>,
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
-              <p className="text-gray-700">
-                <strong>Note:</strong> You only have a trial subscription to the BioClip smartphone extension. During this trial, you can view the blood chemical levels for the first beverage shown to you. For the next two beverages, the trial will have expired, and you will no longer be able to see their blood chemical levels. The order in which the beverages appear is randomized.
-              </p>
+        // Page 3: BioClip Trial Note
+        <section>
+          <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
+            <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">3</span>
+            You'll Only See BioClip Data for One Beverage
+          </h2>
+          <div className="bg-gray-50 rounded-xl p-4">
+            <p className="text-gray-700 mb-4">
+              You only have a trial subscription to the BioClip smartphone extension. You'll see three beverages in a random order, and you can only view blood chemical levels for the first one. The trial expires after that, so levels for the second and third beverages will be hidden.
+            </p>
+            <p className="text-gray-700 mb-4">
+              When the trial expires, the BioClip will display "Subscription Expired" as shown below:
+            </p>
+            <div className="flex justify-center">
+              <BioClipMini status="expired" />
             </div>
           </div>
         </section>,
 
-        // Page 3: What You Know
+        // Page 4: What You Know
         <section>
           <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
-            <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">3</span>
+            <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">4</span>
             What You Know vs. Don't Know
           </h2>
           <div className="bg-gray-50 rounded-xl p-4">
@@ -456,10 +481,10 @@
           </div>
         </section>,
 
-        // Page 4: Two Possibilities
+        // Page 5: Two Possibilities
         <section>
           <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
-            <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">4</span>
+            <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">5</span>
             Two Possibilities
           </h2>
           <div className="bg-gray-50 rounded-xl p-4 space-y-4">
@@ -484,10 +509,10 @@
           </div>
         </section>,
 
-        // Page 5: Note
+        // Page 6: Note
         <section>
           <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
-            <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">5</span>
+            <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">6</span>
             Note
           </h2>
           <div className="bg-gray-50 rounded-xl p-4">
@@ -504,10 +529,10 @@
           </div>
         </section>,
 
-        // Page 6: Payment
+        // Page 7: Payment
         <section>
           <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
-            <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">6</span>
+            <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">7</span>
             Payment
           </h2>
           <div className="bg-gray-50 rounded-xl p-4">
@@ -551,7 +576,7 @@
           </div>
         </section>,
 
-        // Page 7: Comprehension Check
+        // Page 8: Comprehension Check
         <section>
           <div className="bg-gray-50 rounded-xl p-4">
             <p className="text-gray-900 font-bold mb-4">
@@ -611,25 +636,25 @@
             {/* Main Content Card */}
             <div className="bg-white rounded-2xl px-6 pb-6 pt-2">
               <h1 className="text-3xl font-bold text-gray-900 mb-2 text-center">
-                {currentPage < 6 ? 'Instructions' : 'Comprehension Check'}
+                {currentPage < 7 ? 'Instructions' : 'Comprehension Check'}
               </h1>
 
-              {currentPage < 6 && (
+              {currentPage < 7 && (
                 <p className="text-gray-700 text-center mb-2">
                   Do <span className="text-red-500 font-semibold">NOT</span> click Next on any instructions page without having read all of it carefully. Otherwise, you will fail the attention check!
                 </p>
               )}
 
-              {currentPage >= 6 && (
+              {currentPage >= 7 && (
                 <p className="text-gray-600 italic text-center mb-4">
                   To make sure you have understood these instructions, please answer the following questions.
                 </p>
               )}
 
               {/* Page indicator - only on instruction pages */}
-              {currentPage < 6 && (
+              {currentPage < 7 && (
                 <div className="flex items-center justify-center gap-2 mb-6">
-                  {Array.from({ length: 6 }, (_, i) => (
+                  {Array.from({ length: 7 }, (_, i) => (
                     <div
                       key={i}
                       className={`w-3 h-3 rounded-full transition-all ${
@@ -637,7 +662,7 @@
                       }`}
                     />
                   ))}
-                  <span className="text-gray-500 text-sm ml-2">Page {currentPage + 1} of 6</span>
+                  <span className="text-gray-500 text-sm ml-2">Page {currentPage + 1} of 7</span>
                 </div>
               )}
 

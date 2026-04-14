@@ -104,9 +104,95 @@
       console.log('Sent to Qualtrics:', dataType, data);
     }
     
+    // =============== INTERACTION TRACKING ===============
+    const trackingStartTime = Date.now();
+    let mouseMoved = false;
+    let mouseMoveCount = 0;
+    let clickCount = 0;
+    let keyCount = 0;
+    let pasted = false;
+    let copied = false;
+    let tabHidden = false;
+    let windowBlurred = false;
+    let scrollEventCount = 0;
+    let eventLog = [];
+
+    // Mouse movement tracking
+    document.addEventListener("mousemove", () => {
+      mouseMoveCount += 1;
+      mouseMoved = true;
+    });
+
+    // Scroll tracking
+    document.addEventListener("scroll", () => {
+      scrollEventCount += 1;
+    }, { passive: true });
+
+    // Click tracking
+    document.addEventListener("click", () => {
+      clickCount += 1;
+    });
+
+    // Keyboard tracking
+    document.addEventListener("keydown", () => {
+      keyCount += 1;
+    });
+
+    // Paste tracking
+    document.addEventListener("paste", () => {
+      pasted = true;
+      eventLog.push({ event: "PASTE", time: Date.now() });
+    });
+
+    // Copy tracking
+    document.addEventListener("copy", () => {
+      copied = true;
+      eventLog.push({ event: "COPY", time: Date.now() });
+    });
+
+    // Tab visibility tracking
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        tabHidden = true;
+        eventLog.push({ event: "TAB_HIDDEN", time: Date.now() });
+      } else {
+        eventLog.push({ event: "TAB_VISIBLE", time: Date.now() });
+      }
+    });
+
+    // Window focus tracking
+    window.addEventListener("blur", () => {
+      windowBlurred = true;
+      eventLog.push({ event: "WINDOW_BLUR", time: Date.now() });
+    });
+
+    window.addEventListener("focus", () => {
+      eventLog.push({ event: "WINDOW_FOCUS", time: Date.now() });
+    });
+
+    // Function to get all tracking data
+    function getTrackingData() {
+      const endTime = Date.now();
+      const timeOnPage = Math.round((endTime - trackingStartTime) / 1000);
+      return {
+        start_time: trackingStartTime,
+        time_on_page: timeOnPage,
+        mouse_moved: mouseMoved,
+        mouse_move_count: mouseMoveCount,
+        click_count: clickCount,
+        total_keys: keyCount,
+        paste_detected: pasted,
+        copy_detected: copied,
+        tab_hidden: tabHidden,
+        window_blurred: windowBlurred,
+        scroll_event_count: scrollEventCount,
+        event_log: eventLog
+      };
+    }
+
     // Configuration (matches Qualtrics embedded data names)
     // A = drink decision (1=drink, 0=skip)
-    // X = chemical level (1=normal, 0=abnormal)  
+    // X = chemical level (1=normal, 0=abnormal)
     // Y = feeling (1=playerName2Pos, 0=playerName2Neg)
     const CONFIG = {
       yBonus: 2.00,           // Bonus when Y=1
@@ -1248,11 +1334,12 @@
           initialDAGTime: dagData.initialDAGTime,
           finalDAGTime: dagData.finalDAGTime,
           confidenceTime: dagData.confidenceTime,
-          priceElicitation: priceElicitationChoices
+          priceElicitation: priceElicitationChoices,
+          tracking: getTrackingData()
         });
 
         setTimeout(() => {
-          sendDataToQualtrics('GAME_COMPLETE', { completed: true });
+          sendDataToQualtrics('GAME_COMPLETE', { completed: true, tracking: getTrackingData() });
         }, 500);
       }
       
