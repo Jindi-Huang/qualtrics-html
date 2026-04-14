@@ -78,6 +78,7 @@
           if (qConfig.rho0 !== undefined) CONFIG.rho0 = qConfig.rho0;
           if (qConfig.rho1 !== undefined) CONFIG.rho1 = qConfig.rho1;
           if (qConfig.order) CONFIG.order = qConfig.order;
+          if (qConfig.increasingPrice !== undefined) CONFIG.increasingPrice = parseInt(qConfig.increasingPrice);
           console.log('Applied config:', CONFIG);
         }
         
@@ -131,11 +132,12 @@
       rho1: 0.80,             // P(Y=1 | X=1)
 
       // Display order
-      order: 'AXY',            // 'AXY' shows all, 'AY' hides X
+      order: 'AY',            // 'AXY' shows all, 'AY' hides X
 
       // Price elicitation prices (low to high)
       priceElicitationPrices: [0, 2.5, 5, 7.5, 9.5, 12, 14.5],
       priceElicitationBonus: 50,
+      increasingPrice: 0,       // 1 = low to high, 0 = high to low
 
       playerName0: 'Driftwell', // Drink name (A)
       playerName1: 'Qivaryn',   // Chemical name (X)
@@ -166,6 +168,48 @@
       isInitialized = true;
       initCallbacks.forEach(cb => cb());
       initCallbacks = [];
+    }
+
+    // Get price elicitation prices in correct order based on increasingPrice config
+    function getOrderedPrices() {
+      const prices = [...CONFIG.priceElicitationPrices];
+      return CONFIG.increasingPrice === 1 ? prices : prices.reverse();
+    }
+
+    // Check if choices are inconsistent
+    // For decreasing prices: inconsistent if user drinks at higher price but skips at lower price
+    // For increasing prices: inconsistent if user skips at lower price but drinks at higher price
+    function hasInconsistentChoices(sortedChoices) {
+      if (sortedChoices.length < 2) return false;
+
+      // For decreasing prices (high to low), rational behavior is: Skip...Skip, Drink...Drink
+      // Inconsistent: any switch from Drink (1) to Skip (0)
+      // For increasing prices (low to high), rational behavior is: Drink...Drink, Skip...Skip
+      // Inconsistent: any switch from Skip (0) to Drink (1)
+
+      const isDecreasing = CONFIG.increasingPrice === 0;
+
+      for (let i = 1; i < sortedChoices.length; i++) {
+        const prevChoice = sortedChoices[i - 1].choice;
+        const currChoice = sortedChoices[i].choice;
+
+        if (isDecreasing) {
+          // For decreasing prices: Drink then Skip is inconsistent
+          if (prevChoice === 1 && currChoice === 0) return true;
+        } else {
+          // For increasing prices: Skip then Drink is inconsistent
+          if (prevChoice === 0 && currChoice === 1) return true;
+        }
+      }
+
+      // Also check for multiple switches (back and forth)
+      let switches = 0;
+      for (let i = 1; i < sortedChoices.length; i++) {
+        if (sortedChoices[i].choice !== sortedChoices[i - 1].choice) {
+          switches++;
+        }
+      }
+      return switches > 1;
     }
 
     // Simulate one round based on DGP
@@ -322,9 +366,16 @@
           <div className="text-lg font-bold text-gray-900 mt-1">
             {mood === null ? 'Later this day...' : mood === 1 ? `${CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}!` : CONFIG.playerName2Neg.charAt(0).toUpperCase() + CONFIG.playerName2Neg.slice(1)}
           </div>
-          <div className={`mt-1 ${mood === null && !showBonus ? 'invisible' : mood === null ? 'text-green-600 text-sm text-center' : mood === 1 ? 'text-green-600 text-lg font-bold' : 'text-red-600 text-lg font-bold'}`}>
-            {mood === null ? (showBonus ? <><div>If you feel good,</div><div>you receive a {CONFIG.currency}{bonusAmount} bonus</div></> : '\u00A0') : mood === 1 ? `+${CONFIG.currency}${bonusAmount}` : `${CONFIG.currency}0`}
-          </div>
+          {mood === null && showBonus ? (
+            <div className="mt-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl px-4 py-2 shadow-lg flex items-center gap-2">
+              <div className="text-green-100 font-medium text-sm whitespace-nowrap">If {CONFIG.playerName2Pos}:</div>
+              <div className="text-white text-2xl font-bold">{CONFIG.currency}{bonusAmount}</div>
+            </div>
+          ) : (
+            <div className={`mt-1 ${mood === null ? 'invisible' : mood === 1 ? 'text-green-600 text-lg font-bold' : 'text-red-600 text-lg font-bold'}`}>
+              {mood === null ? '\u00A0' : mood === 1 ? `+${CONFIG.currency}${bonusAmount}` : `${CONFIG.currency}0`}
+            </div>
+          )}
         </div>
       );
     }
@@ -670,18 +721,30 @@
               High-Stakes Decisions
             </h1>
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-8 text-left">
-              <p className="text-gray-700 text-lg mb-4">
-                In the next few pages, you will make <strong>{CONFIG.priceElicitationPrices.length} high-stake choices</strong> about whether to drink {CONFIG.playerName0}.
+              <p className="text-gray-700 text-lg mb-2">
+                In the next few pages, you will make <strong>{CONFIG.priceElicitationPrices.length} high-stakes choices</strong> about whether to drink {CONFIG.playerName0}.
               </p>
-              <p className="text-gray-700 text-lg mb-4">
-                For these choices, the <strong>bonus for feeling {CONFIG.playerName2Pos} is {CONFIG.currency}{CONFIG.priceElicitationBonus}</strong>.
-              </p>
-              <p className="text-gray-700 text-lg mb-4">
-                The <strong>price of the drink will vary</strong> from {CONFIG.currency}0 to {CONFIG.currency}{CONFIG.priceElicitationPrices[CONFIG.priceElicitationPrices.length - 1]} across these choices. You will be given {CONFIG.currency}15 as endowment.
-              </p>
-              <p className="text-gray-700 text-lg">
-                <strong>One of these choices may be randomly selected</strong> and added to your payment, so please consider each decision carefully.
-              </p>
+
+              <h3 className="text-amber-800 font-bold text-lg mt-5 mb-3">What's Different</h3>
+              <ul className="text-gray-700 text-lg space-y-2 ml-1">
+                <li>
+                  <strong>The stakes are higher:</strong>
+                  <ul className="ml-6 mt-1 space-y-1 list-disc">
+                    <li>The bonus for feeling {CONFIG.playerName2Pos} is now <strong>{CONFIG.currency}{CONFIG.priceElicitationBonus}</strong></li>
+                    <li>The price of the drink will vary from {CONFIG.currency}0 to {CONFIG.currency}{CONFIG.priceElicitationPrices[CONFIG.priceElicitationPrices.length - 1]} across these choices</li>
+                    <li>You will be given <strong>{CONFIG.currency}15</strong> as endowment</li>
+                  </ul>
+                </li>
+                <li className="mt-3">
+                  <strong>You will not see how you feel after you make your choice.</strong> That is to say, there will be no feedback.
+                </li>
+              </ul>
+
+              <h3 className="text-amber-800 font-bold text-lg mt-5 mb-3">What Doesn't Change</h3>
+              <ul className="text-gray-700 text-lg space-y-2 list-disc ml-6">
+                <li>How {CONFIG.playerName0} affects how you feel will not change.</li>
+                <li>As before, one of these choices may be randomly selected to decide your bonus payment, so please consider each decision carefully.</li>
+              </ul>
             </div>
             <button
               onClick={onContinue}
@@ -695,32 +758,131 @@
     }
 
     // Price Divider Page (shown between price elicitation rounds)
-    function PriceDividerPage({ nextPrice, nextRound, totalRounds, onContinue }) {
+    function PriceDividerPage({ nextPrice, nextRound, totalRounds, onContinue, choices, onGoBack, isFinalReview }) {
+      const [isLoading, setIsLoading] = useState(true);
+      const orderedPrices = getOrderedPrices();
+
+      // Sort choices by ordered prices for consistent checking
+      const sortedChoices = orderedPrices
+        .map(price => choices.find(c => c.price === price))
+        .filter(c => c !== undefined);
+
+      const isInconsistent = hasInconsistentChoices(sortedChoices);
+
+      // Show loading for 1 second
+      useEffect(() => {
+        setIsLoading(true);
+        const timer = setTimeout(() => {
+          setIsLoading(false);
+        }, 1000);
+        return () => clearTimeout(timer);
+      }, [nextRound, isFinalReview]);
+
+      if (isLoading) {
+        return (
+          <div className="min-h-screen bg-white flex items-center justify-center">
+            <div className="text-center">
+              <div className="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+              <p className="text-gray-500">Loading...</p>
+            </div>
+          </div>
+        );
+      }
+
       return (
         <div className="min-h-screen bg-white px-4 pt-8">
           <div className="max-w-2xl mx-auto text-center">
             <h1 className="text-3xl font-bold text-gray-900 mb-4">
-              Next Choice
+              {isFinalReview ? 'Review Your Choices' : 'Next Choice'}
             </h1>
-            <p className="text-gray-600 text-lg mb-6">
-              Choice {nextRound} of {totalRounds}
-            </p>
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-8">
-              <p className="text-gray-700 text-lg">
-                The price of {CONFIG.playerName0} is now:
+            {!isFinalReview && (
+              <p className="text-gray-600 text-lg mb-6">
+                Choice {nextRound} of {totalRounds}
               </p>
-              <div className="text-4xl font-bold text-amber-600 mt-3">
-                {nextPrice === 0 ? 'Free' : `${CONFIG.currency}${nextPrice.toFixed(2)}`}
+            )}
+
+            {!isFinalReview && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-6">
+                <p className="text-gray-700 text-lg">
+                  The price of {CONFIG.playerName0} is now:
+                </p>
+                <div className="text-4xl font-bold text-amber-600 mt-3">
+                  {nextPrice === 0 ? 'Free' : `${CONFIG.currency}${nextPrice.toFixed(2)}`}
+                </div>
+                <p className="text-gray-700 text-lg mt-4">
+                  Bonus for feeling {CONFIG.playerName2Pos}: <span className="text-3xl font-bold text-green-600">{CONFIG.currency}{CONFIG.priceElicitationBonus}</span>
+                </p>
               </div>
-              <p className="text-gray-700 text-lg mt-4">
-                Bonus for feeling {CONFIG.playerName2Pos}: <span className="text-3xl font-bold text-green-600">{CONFIG.currency}{CONFIG.priceElicitationBonus}</span>
-              </p>
+            )}
+
+            {isFinalReview && (
+              <div className="bg-green-50 border border-green-200 rounded-xl p-6 mb-6">
+                <p className="text-gray-700 text-lg">
+                  You have completed all {totalRounds} choices.
+                </p>
+                <p className="text-gray-600 text-sm mt-2">
+                  Please review your choices below. If you're satisfied, click "Submit" to continue.
+                </p>
+              </div>
+            )}
+
+            {/* Choices so far */}
+            <div className="mb-6">
+              <p className="text-gray-500 text-sm mb-2">Your choices:</p>
+              <div className="flex flex-wrap justify-center gap-1.5">
+                {orderedPrices.map((price, idx) => {
+                  const choiceData = choices.find(c => c.price === price);
+                  const isNextChoice = !isFinalReview && idx === nextRound - 1;
+                  const isPastChoice = choiceData !== undefined;
+
+                  return (
+                    <button
+                      key={price}
+                      onClick={() => isPastChoice && onGoBack(idx + 1)}
+                      disabled={!isPastChoice}
+                      className={`px-2 py-1 rounded text-xs font-medium transition-all ${
+                        isNextChoice
+                          ? 'bg-amber-50 border border-amber-300 text-amber-600'
+                          : choiceData
+                            ? choiceData.choice === 1
+                              ? 'bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-100 cursor-pointer'
+                              : 'bg-gray-100 border border-gray-200 text-gray-500 hover:bg-gray-200 cursor-pointer'
+                            : 'bg-white border border-gray-100 text-gray-300'
+                      }`}
+                    >
+                      <div>{price === 0 ? 'Free' : `${CONFIG.currency}${price}`}</div>
+                      <div className="text-xs">
+                        {choiceData ? (choiceData.choice === 1 ? 'Drink' : 'Skip') : '—'}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              {choices.length > 0 && (
+                <p className="text-gray-400 text-xs mt-2">Click on any choice to change it</p>
+              )}
             </div>
+
+            {/* Inconsistent choices warning */}
+            {isInconsistent && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-6">
+                <div className="flex items-center justify-center gap-2 text-red-600 font-medium text-sm mb-1">
+                  <span>⚠️</span>
+                  <span>Please Double-Check Your Choices</span>
+                </div>
+                <p className="text-red-500 text-xs">
+                  Your choices seem inconsistent: you chose to drink {CONFIG.playerName0} at a higher price
+                  but skip it at a lower price. Usually, people are more willing to drink when the price is lower.
+                  Please click on any choice above to change it, or continue if this is intentional.
+                </p>
+              </div>
+            )}
+
             <button
               onClick={onContinue}
               className="px-8 py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all"
             >
-              Continue
+              {isFinalReview ? 'Submit' : 'Continue'}
             </button>
           </div>
         </div>
@@ -837,6 +999,7 @@
                 </div>
               </div>
 
+
               <XYConnection
                 X={null}
                 Y={null}
@@ -883,6 +1046,7 @@
       const [priceElicitationRound, setPriceElicitationRound] = useState(0);
       const [priceElicitationChoices, setPriceElicitationChoices] = useState([]);
       const [showPriceDivider, setShowPriceDivider] = useState(false);
+      const [priceElicitationReturnRound, setPriceElicitationReturnRound] = useState(null);
       
       const roundTimesRef = useRef([]);
       const roundStartTimeRef = useRef(Date.now());
@@ -969,25 +1133,53 @@
       
       // Handle price elicitation intro continue
       const handlePriceIntroContinue = useCallback(() => {
-        setPriceElicitationRound(0);
-        setShowPriceDivider(true);
+        setPriceElicitationRound(1);
+        setShowPriceDivider(false);
         setPhase('priceElicitation');
       }, []);
 
       // Handle price elicitation choice
       const handlePriceElicitationChoice = useCallback((choice) => {
-        const currentPrice = CONFIG.priceElicitationPrices[priceElicitationRound - 1];
-        const newChoices = [...priceElicitationChoices, { price: currentPrice, choice }];
+        const currentPrice = getOrderedPrices()[priceElicitationRound - 1];
+
+        // Check if we're editing an existing choice or adding a new one
+        const existingIndex = priceElicitationChoices.findIndex(c => c.price === currentPrice);
+        let newChoices;
+        const isEditing = existingIndex >= 0;
+
+        if (isEditing) {
+          // Editing existing choice - update it and keep all subsequent choices
+          newChoices = [...priceElicitationChoices];
+          newChoices[existingIndex] = { price: currentPrice, choice };
+        } else {
+          // Adding new choice
+          newChoices = [...priceElicitationChoices, { price: currentPrice, choice }];
+        }
+
         setPriceElicitationChoices(newChoices);
 
-        if (priceElicitationRound >= CONFIG.priceElicitationPrices.length) {
-          // All price elicitation rounds done
-          setPhase('complete');
+        // If we were editing and have a return round, go back to where we were
+        if (isEditing && priceElicitationReturnRound !== null) {
+          setPriceElicitationRound(priceElicitationReturnRound);
+          setPriceElicitationReturnRound(null);
+          setShowPriceDivider(true);
+        } else if (newChoices.length >= CONFIG.priceElicitationPrices.length) {
+          // All price elicitation rounds done - show final review
+          setShowPriceDivider(true);
+          setPriceElicitationRound(CONFIG.priceElicitationPrices.length);
         } else {
           // Show divider before next price
           setShowPriceDivider(true);
         }
-      }, [priceElicitationRound, priceElicitationChoices]);
+      }, [priceElicitationRound, priceElicitationChoices, priceElicitationReturnRound]);
+
+      // Handle going back to edit a previous choice
+      const handleGoBackToChoice = useCallback((roundNumber) => {
+        // Store where to return after editing (current round, so divider shows correct next choice)
+        setPriceElicitationReturnRound(priceElicitationRound);
+        setPriceElicitationRound(roundNumber);
+        setShowPriceDivider(false);
+      }, [priceElicitationRound]);
 
       // Handle price divider continue
       const handlePriceDividerContinue = useCallback(() => {
@@ -1084,21 +1276,25 @@
 
       // Show price divider between rounds (and before first round)
       if (phase === 'priceElicitation' && showPriceDivider) {
+        const isFinalReview = priceElicitationChoices.length >= CONFIG.priceElicitationPrices.length;
         const nextRound = priceElicitationRound === 0 ? 1 : priceElicitationRound + 1;
-        const nextPrice = CONFIG.priceElicitationPrices[nextRound - 1];
+        const nextPrice = isFinalReview ? null : getOrderedPrices()[nextRound - 1];
         return (
           <PriceDividerPage
             nextPrice={nextPrice}
             nextRound={nextRound}
             totalRounds={CONFIG.priceElicitationPrices.length}
-            onContinue={handlePriceDividerContinue}
+            onContinue={isFinalReview ? () => setPhase('complete') : handlePriceDividerContinue}
+            choices={priceElicitationChoices}
+            onGoBack={handleGoBackToChoice}
+            isFinalReview={isFinalReview}
           />
         );
       }
 
       // Show price elicitation rounds
       if (phase === 'priceElicitation') {
-        const currentPrice = CONFIG.priceElicitationPrices[priceElicitationRound - 1];
+        const currentPrice = getOrderedPrices()[priceElicitationRound - 1];
         return (
           <PriceElicitationPanel
             price={currentPrice}

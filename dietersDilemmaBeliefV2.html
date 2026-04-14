@@ -173,7 +173,7 @@
       rationalInference: null,    // Will be set from Qualtrics
       // Default mainCausals - will be overwritten by Qualtrics
       increasingOrder: Math.random() < 0.5 ? 1 : 0,  // 1 = increases first, 0 = decreases first
-      order: 'AY',               // 'AXY' shows all questions, 'AY' shows only AY question
+      order: 'AXY',               // 'AXY' shows all questions, 'AY' shows only AY question
       mainCausals: [
         { causalElicit: "AX", exoButton: 0, id: "AX0" },
         { causalElicit: "AX", exoButton: 1, id: "AX1" },
@@ -394,7 +394,7 @@
     }
 
     // Variable Panel Component - shows 3 variables with game-style visuals
-    function VariablePanel({ causalElicit, exoButton, stage, pie1Value, pie2Value, playerName0, playerName1, playerName2Pos, playerName2Neg, highlightPanel, isWalkthrough, highlightButton }) {
+    function VariablePanel({ causalElicit, exoButton, stage, pie1Value, pie2Value, playerName0, playerName1, playerName2Pos, playerName2Neg, highlightPanel, isWalkthrough, highlightButton, showArrow }) {
       // Determine variable states based on causalElicit and stage
       // A = Drink, X = Chemical (Qivaryn), Y = How You Feel
 
@@ -500,7 +500,6 @@
                 isOn || isCause ? 'bg-blue-600 text-white' :
                 'bg-gray-200 text-gray-400'
               } ${drinkHighlight}`}>
-                {isLocked && isOn && <span className="absolute -top-2 -right-2 text-sm">🔒</span>}
                 <span className="text-xl mr-1">{CONFIG.playerIcon0}</span>
                 <div className="flex flex-col">
                   <span className="text-xs font-bold">Drink</span>
@@ -513,7 +512,6 @@
                 isOff || isCause ? 'bg-blue-600 text-white' :
                 'bg-gray-200 text-gray-400'
               } ${skipHighlight}`}>
-                {isLocked && isOff && <span className="absolute -top-2 -right-2 text-sm">🔒</span>}
                 <span className="text-xl mr-1">⊘</span>
                 <div className="flex flex-col">
                   <span className="text-xs font-bold">Skip</span>
@@ -551,7 +549,7 @@
         const getStatusText = () => {
           if (isOn) return 'NORMAL';
           if (isOff) return 'ABNORMAL';
-          if (isAYOrder) return 'SUBSCRIPTION EXPIRED';
+          if (isAYOrder) return null; // Handle separately with tspan
           return 'READING...';
         };
         
@@ -559,7 +557,6 @@
           <div className="flex flex-col items-center">
             <div className="text-xs text-gray-500 mb-1 h-4">{playerName1} Level</div>
             <div className="relative flex items-center justify-center h-32">
-              {isLocked && <span className="absolute -top-2 -right-2 text-sm z-10">🔒</span>}
               <svg viewBox="0 0 120 160" className="w-24 h-32">
                 {/* Main body */}
                 <rect x="10" y="10" width="100" height="140" rx="12" fill="#0f172a" stroke="#334155" strokeWidth="2" />
@@ -587,9 +584,16 @@
                   <text x="60" y="62" textAnchor="middle" fill="white" fontSize="28" fontWeight="bold">?</text>
                 )}
                 {/* Status text */}
-                <text x="60" y="100" textAnchor="middle" fill={isOn || isOff ? 'white' : '#64748b'} fontSize="11" fontWeight="bold">
-                  {getStatusText()}
-                </text>
+                {isAYOrder && !isOn && !isOff ? (
+                  <text x="60" y="93" textAnchor="middle" fill="#94a3b8" fontSize="9" fontWeight="bold">
+                    <tspan x="60" dy="0">SUBSCRIPTION</tspan>
+                    <tspan x="60" dy="12">EXPIRED</tspan>
+                  </text>
+                ) : (
+                  <text x="60" y="100" textAnchor="middle" fill={isOn || isOff ? 'white' : '#64748b'} fontSize="11" fontWeight="bold">
+                    {getStatusText()}
+                  </text>
+                )}
                 {/* BioClip label area */}
                 <rect x="30" y="126" width="60" height="18" rx="4" fill="#334155" />
                 <text x="60" y="139" textAnchor="middle" fill="#94a3b8" fontSize="10" fontFamily="monospace">
@@ -627,7 +631,7 @@
         const getCircleStyle = () => {
           if (isOn) return 'bg-gradient-to-br from-emerald-400 to-green-600';
           if (isOff) return 'bg-gradient-to-br from-rose-400 to-red-600';
-          if (isQuestion) return 'bg-yellow-100 ring-4 ring-yellow-400';
+          if (isQuestion) return 'bg-gray-200';
           return 'bg-gray-200';
         };
 
@@ -635,8 +639,7 @@
           <div className="flex flex-col items-center">
             <div className="text-xs text-gray-500 mb-1 h-4">Later this day...</div>
             <div className="relative h-32 flex flex-col items-center justify-center">
-              {isLocked && <span className="absolute -top-2 -right-2 text-sm z-10">🔒</span>}
-              <div className={`w-20 h-20 rounded-full flex-shrink-0 flex items-center justify-center transition-all duration-500 ${getCircleStyle()} ${isQuestion ? 'animate-pulse' : ''}`}>
+              <div className={`w-20 h-20 rounded-full flex-shrink-0 flex items-center justify-center transition-all duration-500 ${getCircleStyle()}`}>
                 <span className={`text-4xl ${!isOn && !isOff && !isQuestion ? 'grayscale opacity-30' : ''}`}>{getEmoji()}</span>
               </div>
               <div className="text-center mt-2">
@@ -647,17 +650,115 @@
         );
       };
       
+      // Rectangular arrow component that goes above panels (up, horizontal, down)
+      // Adjusted for actual panel widths with justify-around layout
+      const RectArrow = () => {
+        // Panel center positions (percentage of container width)
+        const aCenter = 21;
+        const xCenter = 56;
+        const yCenter = 86;
+
+        if (causalElicit === 'AX') {
+          // Arrow from A to X
+          return (
+            <div className="absolute top-0 h-12 flex items-start" style={{ left: `${aCenter}%`, width: `${xCenter - aCenter}%` }}>
+              <svg className="w-full h-full overflow-visible" viewBox="0 0 100 48" preserveAspectRatio="none">
+                <defs>
+                  <marker id="arrowhead-ax" markerWidth="10" markerHeight="8" refX="5" refY="4" orient="auto">
+                    <polygon points="0 0, 10 4, 0 8" fill="#f59e0b" />
+                  </marker>
+                </defs>
+                <path d="M 0 46 L 0 6 L 100 6 L 100 42" stroke="#f59e0b" strokeWidth="4" fill="none" strokeLinejoin="round" markerEnd="url(#arrowhead-ax)" vectorEffect="non-scaling-stroke" />
+              </svg>
+            </div>
+          );
+        }
+        if (causalElicit === 'AY') {
+          // Arrow from A to Y, over X
+          return (
+            <div className="absolute top-0 h-12 flex items-start" style={{ left: `${aCenter}%`, width: `${yCenter - aCenter}%` }}>
+              <svg className="w-full h-full overflow-visible" viewBox="0 0 100 48" preserveAspectRatio="none">
+                <defs>
+                  <marker id="arrowhead-ay" markerWidth="10" markerHeight="8" refX="5" refY="4" orient="auto">
+                    <polygon points="0 0, 10 4, 0 8" fill="#f59e0b" />
+                  </marker>
+                </defs>
+                <path d="M 0 46 L 0 6 L 100 6 L 100 42" stroke="#f59e0b" strokeWidth="4" fill="none" strokeLinejoin="round" markerEnd="url(#arrowhead-ay)" vectorEffect="non-scaling-stroke" />
+              </svg>
+            </div>
+          );
+        }
+        if (causalElicit === 'XY') {
+          // Arrow from X to Y
+          return (
+            <div className="absolute top-0 h-12 flex items-start" style={{ left: `${xCenter}%`, width: `${yCenter - xCenter}%` }}>
+              <svg className="w-full h-full overflow-visible" viewBox="0 0 100 48" preserveAspectRatio="none">
+                <defs>
+                  <marker id="arrowhead-xy" markerWidth="10" markerHeight="8" refX="5" refY="4" orient="auto">
+                    <polygon points="0 0, 10 4, 0 8" fill="#f59e0b" />
+                  </marker>
+                </defs>
+                <path d="M 0 46 L 0 6 L 100 6 L 100 42" stroke="#f59e0b" strokeWidth="4" fill="none" strokeLinejoin="round" markerEnd="url(#arrowhead-xy)" vectorEffect="non-scaling-stroke" />
+              </svg>
+            </div>
+          );
+        }
+        if (causalElicit === 'YX') {
+          // Arrow from Y to X
+          return (
+            <div className="absolute top-0 h-12 flex items-start" style={{ left: `${xCenter}%`, width: `${yCenter - xCenter}%` }}>
+              <svg className="w-full h-full overflow-visible" viewBox="0 0 100 48" preserveAspectRatio="none">
+                <defs>
+                  <marker id="arrowhead-yx" markerWidth="10" markerHeight="8" refX="5" refY="4" orient="auto">
+                    <polygon points="0 0, 10 4, 0 8" fill="#f59e0b" />
+                  </marker>
+                </defs>
+                <path d="M 100 46 L 100 6 L 0 6 L 0 42" stroke="#f59e0b" strokeWidth="4" fill="none" strokeLinejoin="round" markerEnd="url(#arrowhead-yx)" vectorEffect="non-scaling-stroke" />
+              </svg>
+            </div>
+          );
+        }
+        return null;
+      };
+
+      // Determine which panels are locked
+      const isALocked = aState === 'fixed-on' || aState === 'fixed-off';
+      const isXLocked = xState === 'fixed-on' || xState === 'fixed-off';
+      const isYLocked = yState === 'fixed-on' || yState === 'fixed-off';
+
+      // Lock badge component
+      const LockBadge = () => (
+        <div className="flex items-center justify-center mt-2">
+          <div className="px-3 py-1 bg-amber-500 rounded-full flex items-center gap-1 shadow-md">
+            <span className="text-white text-sm">🔒</span>
+            <span className="text-white text-xs font-bold">FIXED</span>
+          </div>
+        </div>
+      );
+
       return (
         <div className="bg-gray-50 rounded-xl p-3 mb-3 border border-gray-200">
-          <div className="flex justify-around items-start gap-3">
-            <div className={`rounded-xl p-2 transition-all ${isAHighlighted && !highlightButton ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-white bg-gray-100' : ''}`}>
-              <DrinkPanel state={aState} highlightButton={highlightButton} />
-            </div>
-            <div className={`rounded-xl p-2 transition-all ${isXHighlighted ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-white bg-gray-100' : ''}`}>
-              <MachinePanel state={xState} />
-            </div>
-            <div className={`rounded-xl p-2 transition-all ${isYHighlighted ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-white bg-gray-100' : ''}`}>
-              <OutcomePanel state={yState} />
+          <div className="relative pt-12">
+            {showArrow && <RectArrow />}
+            <div className="flex justify-around items-start">
+              <div className="flex flex-col items-center">
+                <div className={`rounded-xl p-2 transition-all ${isAHighlighted && !highlightButton ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-white bg-gray-100' : ''}`}>
+                  <DrinkPanel state={aState} highlightButton={highlightButton} />
+                </div>
+                {isALocked && <LockBadge />}
+              </div>
+              <div className="flex flex-col items-center">
+                <div className={`rounded-xl p-2 transition-all ${isXHighlighted ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-white bg-gray-100' : ''}`}>
+                  <MachinePanel state={xState} />
+                </div>
+                {isXLocked && <LockBadge />}
+              </div>
+              <div className="flex flex-col items-center">
+                <div className={`rounded-xl p-2 transition-all ${isYHighlighted ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-white bg-gray-100' : ''}`}>
+                  <OutcomePanel state={yState} />
+                </div>
+                {isYLocked && <LockBadge />}
+              </div>
             </div>
           </div>
         </div>
@@ -731,7 +832,7 @@
               ? `Report how <strong>your choice to drink ${playerName0}</strong>...`
               : `Report how <strong>your subsequent choice to drink ${playerName0}</strong>...`,
             walkthroughStep2: `...affects your <strong>${playerName1} level</strong>.`,
-            walkthroughHighlight: { step0: 'Y', step1: 'A', step2: 'X' },
+            walkthroughHighlight: { step0: 'Y', step1: 'A', step2: ['A', 'X'] },
             causePanel: 'A',
             outcomePanel: 'X',
             pie1Question: exoButton === null
@@ -762,7 +863,7 @@
               : `In this scenario, immediately after deciding whether to drink ${playerName0}, you are required to take ${playerName1}-${exoButton === 1 ? 'Normalase' : 'Disrupton'} which sets your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>...`,
             walkthroughStep1: `Report how <strong>your choice to drink ${playerName0}</strong>...`,
             walkthroughStep2: `...affects <strong>how you feel</strong>.`,
-            walkthroughHighlight: { step0: 'X', step1: 'A', step2: 'Y' },
+            walkthroughHighlight: { step0: 'X', step1: 'A', step2: ['A', 'Y'] },
             causePanel: 'A',
             outcomePanel: 'Y',
             pie1Question: exoButton === null
@@ -789,7 +890,7 @@
             walkthroughStep0: `In this scenario, you are <strong>required to ${exoButton === 1 ? 'drink' : 'NOT drink'}</strong> ${playerName0}...`,
             walkthroughStep1: `Report how <strong>your ${playerName1} level</strong>...`,
             walkthroughStep2: `...affects <strong>how you feel</strong>.`,
-            walkthroughHighlight: { step0: 'A', step1: 'X', step2: 'Y' },
+            walkthroughHighlight: { step0: 'A', step1: 'X', step2: ['X', 'Y'] },
             causePanel: 'X',
             outcomePanel: 'Y',
             pie1Question: `Suppose you are <strong>required to ${exoButton === 1 ? 'drink' : 'NOT drink'}</strong> ${playerName0}. Immediately after, you are required to take ${playerName1}-Disrupton which sets your ${playerName1} level to <strong >abnormal</strong>.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
@@ -810,7 +911,7 @@
             walkthroughStep0: `In this scenario, you are <strong>required to ${exoButton === 1 ? 'drink' : 'NOT drink'}</strong> ${playerName0}...`,
             walkthroughStep1: `Report how <strong>how you feel</strong>...`,
             walkthroughStep2: `...affects your <strong>${playerName1} level</strong>.`,
-            walkthroughHighlight: { step0: 'A', step1: 'Y', step2: 'X' },
+            walkthroughHighlight: { step0: 'A', step1: 'Y', step2: ['Y', 'X'] },
             causePanel: 'Y',
             outcomePanel: 'X',
             pie1Question: `Suppose you are <strong>required to ${exoButton === 1 ? 'drink' : 'NOT drink'}</strong> ${playerName0}. Immediately after, you are required to take ${playerName2NegExo} which makes you feel <strong >${playerName2Neg}</strong>.<br>What is the chance that your <strong>${playerName1} level is normal</strong>?`,
@@ -942,6 +1043,7 @@
                     highlightPanel={walkthroughContent.highlight}
                     isWalkthrough={true}
                     highlightButton={null}
+                    showArrow={walkthroughStep === 2}
                   />
 
                   {/* Next button */}
@@ -973,6 +1075,7 @@
                     highlightPanel={(stage === 1 || stage === 2 || stage === 3) ? (causalElicit === 'XY' || causalElicit === 'YX' ? ['X', 'Y'] : (stage === 3 ? ['A', config.outcomePanel] : config.outcomePanel)) : null}
                     isWalkthrough={false}
                     highlightButton={config.causePanel === 'A' ? (stage === 1 ? 'skip' : stage === 2 ? 'drink' : null) : null}
+                    showArrow={true}
                   />
 
                   {/* Divider */}
