@@ -218,7 +218,7 @@
       rho1: 0.80,             // P(Y=1 | X=1)
 
       // Display order
-      order: 'AY',            // 'AXY' shows all, 'AY' hides X
+      order: 'AXY',            // 'AXY' shows all, 'AY' hides X
 
       // Price elicitation prices (low to high)
       priceElicitationPrices: [0, 2.5, 5, 7.5, 9.5, 12, 14.5],
@@ -391,7 +391,7 @@
       };
 
       return (
-        <div className="flex flex-col items-center" style={{ minWidth: '140px' }}>
+        <div className="flex flex-col items-center" style={{ width: '140px' }}>
           <svg viewBox="0 0 120 160" className="w-32 h-44">
             <rect x="10" y="10" width="100" height="140" rx="12" fill="#0f172a" stroke="#334155" strokeWidth="2" />
             <rect x="18" y="20" width="84" height="100" rx="6" fill="#1e293b" />
@@ -441,7 +441,7 @@
     function MoodLarge({ mood, showBonus }) {
       const bonusAmount = showBonus || CONFIG.yBonus;
       return (
-        <div className="flex flex-col items-center mt-8" style={{ minWidth: '140px' }}>
+        <div className="flex flex-col items-center mt-8" style={{ width: '140px' }}>
           <div className={`w-32 h-32 rounded-full flex items-center justify-center transition-all duration-500 ${
             mood === null ? 'bg-gray-200' : mood === 1 ? 'bg-gradient-to-br from-emerald-400 to-green-600' : 'bg-gradient-to-br from-rose-400 to-red-600'
           }`}>
@@ -452,16 +452,18 @@
           <div className="text-lg font-bold text-gray-900 mt-1">
             {mood === null ? 'Later this day...' : mood === 1 ? `${CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}!` : CONFIG.playerName2Neg.charAt(0).toUpperCase() + CONFIG.playerName2Neg.slice(1)}
           </div>
-          {mood === null && showBonus ? (
-            <div className="mt-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl px-4 py-2 shadow-lg flex items-center gap-2">
-              <div className="text-green-100 font-medium text-sm whitespace-nowrap">If {CONFIG.playerName2Pos}:</div>
-              <div className="text-white text-2xl font-bold">{CONFIG.currency}{bonusAmount}</div>
-            </div>
-          ) : (
-            <div className={`mt-1 ${mood === null ? 'invisible' : mood === 1 ? 'text-green-600 text-lg font-bold' : 'text-red-600 text-lg font-bold'}`}>
-              {mood === null ? '\u00A0' : mood === 1 ? `+${CONFIG.currency}${bonusAmount}` : `${CONFIG.currency}0`}
-            </div>
-          )}
+          <div className="h-12 flex items-center justify-center">
+            {mood === null && showBonus ? (
+              <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl px-4 py-2 shadow-lg flex items-center gap-2">
+                <div className="text-green-100 font-medium text-sm whitespace-nowrap">If {CONFIG.playerName2Pos}:</div>
+                <div className="text-white text-2xl font-bold">{CONFIG.currency}{bonusAmount}</div>
+              </div>
+            ) : (
+              <div className={`${mood === null ? 'invisible' : mood === 1 ? 'text-green-600 text-lg font-bold' : 'text-red-600 text-lg font-bold'}`}>
+                {mood === null ? '\u00A0' : mood === 1 ? `+${CONFIG.currency}${bonusAmount}` : `${CONFIG.currency}0`}
+              </div>
+            )}
+          </div>
         </div>
       );
     }
@@ -511,7 +513,7 @@
             {!hideRateBox && (
               <div className={`bg-white border-2 rounded-xl px-4 py-3 z-10 transition-all duration-300 shadow-sm ${
                 showConnection ? (X === 1 ? 'border-green-500' : 'border-red-500') : 'border-gray-300'
-              }`} style={{ minWidth: '120px' }}>
+              }`} style={{ width: '130px' }}>
                 <div className="text-xs text-gray-500 text-center mb-1">
                   {isAYOrder ? 'Historical Rate' : X === null ? 'Historical Rate' : X === 1 ? 'When NORMAL' : 'When ABNORMAL'}
                 </div>
@@ -801,7 +803,7 @@
     function PriceElicitationIntro({ onContinue }) {
       return (
         <div className="min-h-screen bg-white px-4 pt-8">
-          <div className="max-w-2xl mx-auto text-center">
+          <div className="max-w-6xl mx-auto text-center">
             <div className="text-6xl mb-6">💰</div>
             <h1 className="text-3xl font-bold text-gray-900 mb-6">
               High-Stakes Decisions
@@ -877,7 +879,7 @@
 
       return (
         <div className="min-h-screen bg-white px-4 pt-8">
-          <div className="max-w-2xl mx-auto text-center">
+          <div className="max-w-6xl mx-auto text-center">
             <h1 className="text-3xl font-bold text-gray-900 mb-4">
               {isFinalReview ? 'Review Your Choices' : 'Next Choice'}
             </h1>
