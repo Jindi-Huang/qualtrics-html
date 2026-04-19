@@ -173,7 +173,7 @@
       rationalInference: null,    // Will be set from Qualtrics
       // Default mainCausals - will be overwritten by Qualtrics
       increasingOrder: Math.random() < 0.5 ? 1 : 0,  // 1 = increases first, 0 = decreases first
-      order: 'AXY',               // 'AXY' shows all questions, 'AY' shows only AY question
+      order: 'AY',               // 'AXY' shows all questions, 'AY' shows only AY question
       mainCausals: [
         { causalElicit: "AX", exoButton: 0, id: "AX0" },
         { causalElicit: "AX", exoButton: 1, id: "AX1" },
@@ -742,7 +742,7 @@
             {showArrow && <RectArrow />}
             <div className="flex justify-around items-start">
               <div className="flex flex-col items-center">
-                <div className={`rounded-xl p-2 transition-all ${isAHighlighted && !highlightButton ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-white bg-gray-100' : ''}`}>
+                <div className={`rounded-xl p-2 transition-all ${isAHighlighted ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-white bg-gray-100' : ''}`}>
                   <DrinkPanel state={aState} highlightButton={highlightButton} />
                 </div>
                 {isALocked && <LockBadge />}
@@ -780,8 +780,8 @@
       onComplete
     }) {
       // Stage 0 = walkthrough (with walkthroughStep 0, 1, 2), Stage 3 = verbal question
-      // Skip stages 1 and 2 (pie charts), go directly to stage 3
-      const skipPieCharts = true;
+      // Skip stages 1 and 2 (pie charts), except when order is 'AY' (show pie charts for AY)
+      const skipPieCharts = CONFIG.order !== 'AY';
       const [stage, setStage] = useState(0);
       const [walkthroughStep, setWalkthroughStep] = useState(0); // 0 = condition, 1 = cause, 2 = effect
       const [pie1Value, setPie1Value] = useState(null);
@@ -1072,7 +1072,7 @@
                     playerName1={playerName1}
                     playerName2Pos={playerName2Pos}
                     playerName2Neg={playerName2Neg}
-                    highlightPanel={(stage === 1 || stage === 2 || stage === 3) ? (causalElicit === 'XY' || causalElicit === 'YX' ? ['X', 'Y'] : (stage === 3 ? ['A', config.outcomePanel] : config.outcomePanel)) : null}
+                    highlightPanel={(stage === 1 || stage === 2 || stage === 3) ? [config.causePanel, config.outcomePanel] : null}
                     isWalkthrough={false}
                     highlightButton={config.causePanel === 'A' ? (stage === 1 ? 'skip' : stage === 2 ? 'drink' : null) : null}
                     showArrow={true}
