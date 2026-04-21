@@ -189,11 +189,14 @@
       const [allAnswersQ2, setAllAnswersQ2] = useState([]);
       const [q1Error, setQ1Error] = useState(null);
       const [q2Error, setQ2Error] = useState(null);
+      const [showNextButton, setShowNextButton] = useState(false);
       const totalPages = 8;
+      const nextButtonDelay = 10000; // 10 seconds delay before showing Next button
 
       // Track time spent on each page (in seconds)
       const pageTimesRef = React.useRef(Array(8).fill(0));
       const pageEnteredRef = React.useRef(Date.now());
+      const prevPageRef = React.useRef(0);
 
       // Track time per comprehension check attempt
       const comprehTimesRef = React.useRef([]);
@@ -219,7 +222,7 @@
       const q1ItemsMap = {
         drinkNoPay: { id: 'drinkNoPay', text: `Whether I drink the beverage or not does${'\u00A0'}`, underline: 'not', after: ` affect my payment.` },
         drinkCost: { id: 'drinkCost', text: `Drinking the beverage will cost ${CONFIG.currency}${CONFIG.aCost.toFixed(2)}.` },
-        feelGoodBonus: { id: 'feelGoodBonus', text: `If I feel good at the end of the day, I'll receive an additional ${CONFIG.currency}${CONFIG.yBonus.toFixed(2)} bonus.` },
+        feelGoodBonus: { id: 'feelGoodBonus', text: `If I feel good at the end of the day, and my decision for that day is selected to determine my study payment, I'll receive an additional ${CONFIG.currency}${CONFIG.yBonus.toFixed(2)} bonus.` },
         oneRound: { id: 'oneRound', text: 'My overall payment will be determined by one round randomly selected from throughout the study.' },
         sumAll: { id: 'sumAll', text: 'My overall payment will be the sum of all the payments I collect over all rounds I play.' },
         bioClipPay: { id: 'bioClipPay', text: 'My blood chemical levels measured by BioClip directly affects my payment.' }
@@ -232,7 +235,7 @@
 
       const q2ItemsMap = {
         normalCausesGood: { id: 'normalCausesGood', text: `If my BioClip shows a normal chemical level and I later feel good, this necessarily means that the normal chemical level caused me to feel good.` },
-        normalNotCausesGood: { id: 'normalNotCausesGood', text: `If my BioClip shows a normal chemical level and I later feel good, this does `, underline: 'not necessarily', after: ` mean that the normal chemical level caused me to feel good.` },
+        normalNotCausesGood: { id: 'normalNotCausesGood', text: `If my BioClip shows a normal chemical level and I later feel good, this does `, underline: 'not necessarily', after: ` mean that the normal chemical level caused me to feel good; the chemical level might have been a response to my feeling good.` },
         twoVersions: { id: 'twoVersions', text: `Each blood chemical has two possibilities: either it is a cause of how you feel, or is a response to how you feel. Different chemicals may work in different ways.` }
       };
       const q2Items = q2Order.map(id => q2ItemsMap[id]);
@@ -264,6 +267,22 @@
 
         return () => clearTimeout(timeout);
       }, []);
+
+      // Fade-in effect for Next button (only when going forward)
+      useEffect(() => {
+        if (!ready) return;
+        const isGoingBack = currentPage < prevPageRef.current;
+        prevPageRef.current = currentPage;
+
+        if (isGoingBack) {
+          setShowNextButton(true);
+          return;
+        }
+
+        setShowNextButton(false);
+        const timer = setTimeout(() => setShowNextButton(true), nextButtonDelay);
+        return () => clearTimeout(timer);
+      }, [currentPage, ready]);
 
       const handleContinue = () => {
         const now = Date.now();
@@ -352,7 +371,7 @@
               <li><strong className="text-gray-900">A new smartphone extension called BioClip</strong> that measures these blood chemicals.</li>
             </ul>
             <p className="text-gray-700 mt-4">
-              It is known that each of the drinks affect one blood chemical. For instance,
+              Each drink is known to affect a specific blood chemical. For instance,
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
@@ -381,7 +400,7 @@
           </h2>
           <div className="bg-gray-50 rounded-xl p-4">
             <p className="text-gray-700 mb-4">
-              Each <span onClick={() => setAttentionCheck(1)} className={`cursor-pointer ${attentionCheck === 1 ? 'text-green-600' : ''}`}>Monday</span> morning, when you get up, you decide whether to consume the drink. Shortly after, your BioClip tells you whether your blood chemical level is normal. What you care about is whether you will feel good or bad later in the day.
+              Each <span onClick={() => setAttentionCheck(1)} className={`cursor-pointer ${attentionCheck === 1 ? 'text-green-600' : ''}`}>Monday</span> morning, when you get up, you decide whether to consume the drink. Shortly after, your BioClip tells you whether the blood chemical it targets is at a normal level. What you care about is whether you will feel good or bad later in the day.
             </p>
             <div className="flex flex-col md:flex-row items-stretch justify-around gap-4 py-4">
               {/* Step 1: Decision */}
@@ -506,6 +525,9 @@
                 </div>
               )
             ))}
+            <p className="text-gray-700 mt-4">
+              Some blood chemicals in this study might be a cause of how you feel, others might be a response to it. For instance, the blood chemical Copranol might be a cause of how you feel whereas the blood chemical Rivirin might be a response to it, but not a cause.
+            </p>
           </div>
         </section>,
 
@@ -517,7 +539,7 @@
           </h2>
           <div className="bg-gray-50 rounded-xl p-4">
             <p className="text-gray-600">
-              Because many things are going on in your body at any time, <strong className="text-gray-900">even effective decisions will not work 100% of the time</strong>. For instance, even though the beverage usually affects your blood chemical level:
+              Because many things are going on in your body at any time, <strong className="text-gray-900">even effective decisions will not work 100% of the time</strong>. For instance, even though the beverage usually affects the blood chemical level it targets:
             </p>
             <ul className="list-disc list-inside space-y-2 text-gray-600 mt-3 ml-4">
               <li>Sometimes it will be normal even if you don't drink the beverage</li>
@@ -568,10 +590,10 @@
             </div>
 
             <p className="text-gray-600 mt-4">
-              <strong className="text-gray-900">There will be {CONFIG.nRounds} rounds.</strong> This may sound like a lot, but because each round only takes a few seconds, this is quite manageable.
+              <strong className="text-gray-900">For each of the three drinks in this study and the blood chemical they target, you will make decisions in {CONFIG.nRounds} rounds.</strong> This may sound like a lot, but because each round only takes a few seconds, this is quite manageable. You will make additional decisions.
             </p>
             <p className="text-gray-600 mt-2">
-              <strong className="text-gray-900">You will be paid for one round,</strong> selected at random at the end of the study.
+              <strong className="text-gray-900">Your study payment will be determined by a single decision from the entire survey,</strong> selected at random at the end of the study.
             </p>
           </div>
         </section>,
@@ -676,7 +698,7 @@
                   disabled={currentPage === 0}
                   className={`px-6 py-3 rounded-xl font-bold transition-all ${
                     currentPage === 0
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      ? 'invisible'
                       : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
                   }`}
                 >
@@ -686,7 +708,7 @@
                 {isLastPage ? (
                   <button
                     onClick={handleContinue}
-                    className="px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all"
+                    className={`px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl ${showNextButton ? 'transition-opacity duration-1000 ease-in opacity-100' : 'opacity-0 pointer-events-none'}`}
                   >
                     Submit
                   </button>
@@ -704,7 +726,7 @@
                         window.parent.postMessage({ type: 'SCROLL_TO_TOP' }, '*');
                       }
                     }}
-                    className="px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
+                    className={`px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl ${showNextButton ? 'transition-opacity duration-1000 ease-in opacity-100' : 'opacity-0 pointer-events-none'}`}
                   >
                     Next
                   </button>

@@ -200,21 +200,31 @@
     // Apply filter for standalone testing
     applyOrderFilter();
 
-    // Helper function to convert percentage to option index (0-10)
+    // Helper function to convert percentage to option index (0-20)
     function getOptionIndex(percentage) {
       if (percentage === null || percentage === undefined) return null;
 
-      if (percentage <= -80) return 0;
-      if (percentage <= -60) return 1;
-      if (percentage <= -40) return 2;
-      if (percentage <= -20) return 3;
-      if (percentage < 0) return 4;
-      if (percentage === 0) return 5;
-      if (percentage < 20) return 6;
-      if (percentage < 40) return 7;
-      if (percentage < 60) return 8;
-      if (percentage < 80) return 9;
-      return 10;
+      if (percentage <= -90) return 0;
+      if (percentage <= -80) return 1;
+      if (percentage <= -70) return 2;
+      if (percentage <= -60) return 3;
+      if (percentage <= -50) return 4;
+      if (percentage <= -40) return 5;
+      if (percentage <= -30) return 6;
+      if (percentage <= -20) return 7;
+      if (percentage <= -10) return 8;
+      if (percentage < 0) return 9;
+      if (percentage === 0) return 10;
+      if (percentage < 10) return 11;
+      if (percentage < 20) return 12;
+      if (percentage < 30) return 13;
+      if (percentage < 40) return 14;
+      if (percentage < 50) return 15;
+      if (percentage < 60) return 16;
+      if (percentage < 70) return 17;
+      if (percentage < 80) return 18;
+      if (percentage < 90) return 19;
+      return 20;
     }
 
     // Calculate payments based on responses and correct answers
@@ -670,6 +680,7 @@
                 </defs>
                 <path d="M 0 46 L 0 6 L 100 6 L 100 42" stroke="#f59e0b" strokeWidth="4" fill="none" strokeLinejoin="round" markerEnd="url(#arrowhead-ax)" vectorEffect="non-scaling-stroke" />
               </svg>
+              <span className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 text-amber-500 text-5xl bg-gray-50 px-2">?</span>
             </div>
           );
         }
@@ -685,6 +696,7 @@
                 </defs>
                 <path d="M 0 46 L 0 6 L 100 6 L 100 42" stroke="#f59e0b" strokeWidth="4" fill="none" strokeLinejoin="round" markerEnd="url(#arrowhead-ay)" vectorEffect="non-scaling-stroke" />
               </svg>
+              <span className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 text-amber-500 text-5xl bg-gray-50 px-2">?</span>
             </div>
           );
         }
@@ -700,6 +712,7 @@
                 </defs>
                 <path d="M 0 46 L 0 6 L 100 6 L 100 42" stroke="#f59e0b" strokeWidth="4" fill="none" strokeLinejoin="round" markerEnd="url(#arrowhead-xy)" vectorEffect="non-scaling-stroke" />
               </svg>
+              <span className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 text-amber-500 text-5xl bg-gray-50 px-2">?</span>
             </div>
           );
         }
@@ -715,6 +728,7 @@
                 </defs>
                 <path d="M 100 46 L 100 6 L 0 6 L 0 42" stroke="#f59e0b" strokeWidth="4" fill="none" strokeLinejoin="round" markerEnd="url(#arrowhead-yx)" vectorEffect="non-scaling-stroke" />
               </svg>
+              <span className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 text-amber-500 text-5xl bg-gray-50 px-2">?</span>
             </div>
           );
         }
@@ -929,17 +943,27 @@
       const config = getQuestionConfig();
       
       const verbalOptions = [
-        `Decreases the chance by 80-100%`,
-        `Decreases the chance by 60-79%`,
-        `Decreases the chance by 40-59%`,
-        `Decreases the chance by 20-39%`,
-        `Decreases the chance by 1-19%`,
+        `Decreases the chance by 90-100%`,
+        `Decreases the chance by 80-89%`,
+        `Decreases the chance by 70-79%`,
+        `Decreases the chance by 60-69%`,
+        `Decreases the chance by 50-59%`,
+        `Decreases the chance by 40-49%`,
+        `Decreases the chance by 30-39%`,
+        `Decreases the chance by 20-29%`,
+        `Decreases the chance by 10-19%`,
+        `Decreases the chance by 1-9%`,
         `No change`,
-        `Increases the chance by 1-19%`,
-        `Increases the chance by 20-39%`,
-        `Increases the chance by 40-59%`,
-        `Increases the chance by 60-79%`,
-        `Increases the chance by 80-100%`
+        `Increases the chance by 1-9%`,
+        `Increases the chance by 10-19%`,
+        `Increases the chance by 20-29%`,
+        `Increases the chance by 30-39%`,
+        `Increases the chance by 40-49%`,
+        `Increases the chance by 50-59%`,
+        `Increases the chance by 60-69%`,
+        `Increases the chance by 70-79%`,
+        `Increases the chance by 80-89%`,
+        `Increases the chance by 90-100%`
       ];
       
       const handleSubmit = () => {
@@ -1043,7 +1067,7 @@
                     highlightPanel={walkthroughContent.highlight}
                     isWalkthrough={true}
                     highlightButton={null}
-                    showArrow={walkthroughStep === 2}
+                    showArrow={!skipPieCharts ? false : walkthroughStep === 2}
                   />
 
                   {/* Next button */}
@@ -1075,7 +1099,7 @@
                     highlightPanel={(stage === 1 || stage === 2 || stage === 3) ? [config.causePanel, config.outcomePanel] : null}
                     isWalkthrough={false}
                     highlightButton={config.causePanel === 'A' ? (stage === 1 ? 'skip' : stage === 2 ? 'drink' : null) : null}
-                    showArrow={true}
+                    showArrow={!skipPieCharts ? stage === 3 : true}
                   />
 
                   {/* Divider */}
@@ -1239,8 +1263,7 @@
                   {CONFIG.order === 'AY' ? (
                     <>The next decision screen will ask about how your decision to drink <strong>{CONFIG.playerName0}</strong> is related to <strong>how you feel</strong>.</>
                   ) : (
-                    <>Each of the next <strong>{CONFIG.mainCausals.length}</strong> decision screens show you a different scenario.
-                    Each will ask about how your decision to drink <strong>{CONFIG.playerName0}</strong>, your <strong>{CONFIG.playerName1} level</strong>, and <strong>how you feel</strong> are related.</>
+                    <>What do you believe about how your decision to drink <strong>{CONFIG.playerName0}</strong>, your <strong>{CONFIG.playerName1} level</strong>, and <strong>how you feel</strong> are related? To answer this question, each of the next {CONFIG.mainCausals.length} decision screens show you a different scenario.</>
                   )}
                 </p>
 
@@ -1271,8 +1294,7 @@
                 )}
 
                 <p>
-                  This part may determine your bonus payment. If your reports are accurate, you will receive {CONFIG.currency}{CONFIG.beliefPaymentMax}. The less accurate your reports, the lower this bonus will be. The payment system is designed
-                  such that it is in your own interest to report your beliefs truthfully.
+                  One of your responses in this part may randomly be chosen to determine your bonus payment. If so, then you will receive {CONFIG.currency}{CONFIG.beliefPaymentMax} if your report is accurate. The less accurate your report, the lower this bonus will be. The payment system is designed such that it is in your own interest to report your beliefs truthfully.
                 </p>
               </div>
 
