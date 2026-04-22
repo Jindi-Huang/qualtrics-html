@@ -222,7 +222,7 @@
       const q1ItemsMap = {
         drinkNoPay: { id: 'drinkNoPay', text: `Whether I drink the beverage or not does${'\u00A0'}`, underline: 'not', after: ` affect my payment.` },
         drinkCost: { id: 'drinkCost', text: `Drinking the beverage will cost ${CONFIG.currency}${CONFIG.aCost.toFixed(2)}.` },
-        feelGoodBonus: { id: 'feelGoodBonus', text: `If I feel good at the end of the day, and my decision for that day is selected to determine my study payment, I'll receive an additional ${CONFIG.currency}${CONFIG.yBonus.toFixed(2)} bonus.` },
+        feelGoodBonus: { id: 'feelGoodBonus', text: `If I feel good at the end of the day, and my decision for that day is selected to determine my bonus payment, I'll receive an additional ${CONFIG.currency}${CONFIG.yBonus.toFixed(2)} bonus.` },
         oneRound: { id: 'oneRound', text: 'My overall payment will be determined by one round randomly selected from throughout the study.' },
         sumAll: { id: 'sumAll', text: 'My overall payment will be the sum of all the payments I collect over all rounds I play.' },
         bioClipPay: { id: 'bioClipPay', text: 'My blood chemical levels measured by BioClip directly affects my payment.' }
@@ -361,7 +361,7 @@
           </h2>
           <div className="bg-gray-50 rounded-xl p-4 space-y-4">
             <p className="text-gray-700">
-              For this study, imagine the following:
+              In this part, imagine the following:
             </p>
             <p className="text-gray-700">
               There are new products of two kinds:
@@ -485,7 +485,7 @@
                   <span>✓</span> What You Know
                 </h3>
                 <p className="text-gray-600">
-                  Consuming a drink makes it <strong className="text-gray-900">more likely</strong> that your blood chemical level will be <strong className="text-green-600">normal</strong>.
+                  Consuming a drink makes it <strong className="text-gray-900">more likely</strong> that the blood chemical level it targets will be <strong className="text-green-600">normal</strong>.
                 </p>
               </div>
               <div className="bg-amber-50 border border-amber-300 rounded-xl p-4">

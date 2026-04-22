@@ -79,6 +79,7 @@
           if (qConfig.rho1 !== undefined) CONFIG.rho1 = qConfig.rho1;
           if (qConfig.order) CONFIG.order = qConfig.order;
           if (qConfig.increasingPrice !== undefined) CONFIG.increasingPrice = parseInt(qConfig.increasingPrice);
+          if (qConfig.themeColor) CONFIG.themeColor = qConfig.themeColor;
           console.log('Applied config:', CONFIG);
         }
         
@@ -232,7 +233,30 @@
       playerName2Neg: 'tired',     // Negative outcome (Y=0)
       playerIcon0: '🥤',        // Icon for drink action (A)
       currentSymbol: null,      // HTML for scenario tile display
+      themeColor: 'blue',       // Theme color for backgrounds: 'blue', 'purple', 'teal'
     };
+
+    // Theme color helper - returns background classes based on theme
+    function getThemeClasses() {
+      const themes = {
+        blue: {
+          panelBg: 'bg-blue-50',
+          panelBorder: 'border-blue-200',
+          statBoxBg: 'bg-blue-50/50',
+        },
+        purple: {
+          panelBg: 'bg-purple-50',
+          panelBorder: 'border-purple-200',
+          statBoxBg: 'bg-purple-50/50',
+        },
+        teal: {
+          panelBg: 'bg-teal-50',
+          panelBorder: 'border-teal-200',
+          statBoxBg: 'bg-teal-50/50',
+        }
+      };
+      return themes[CONFIG.themeColor] || themes.blue;
+    }
   </script>
   
   <script type="text/babel">
@@ -544,6 +568,7 @@
 
     // X Statistics Panel (X → Y relationship)
     function XStatsPanel({ stats, currentX }) {
+      const theme = getThemeClasses();
       const isAYOrder = CONFIG.order === 'AY';
       const X1Y1Rate = stats.X1.total > 0
         ? (stats.X1.Y1 / stats.X1.total * 100).toFixed(0)
@@ -553,9 +578,9 @@
         : null;
 
       return (
-        <div className="bg-white rounded-2xl p-5 border-2 border-blue-200 shadow-sm">
-          <h3 className="text-blue-600 font-bold text-lg mb-4 flex items-center gap-2">
-            <span className="text-2xl">📊</span> {CONFIG.playerName1} ⇢ {CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}
+        <div className={`${theme.panelBg} rounded-2xl p-5 border-2 ${theme.panelBorder} shadow-sm`}>
+          <h3 className="text-gray-900 font-bold text-lg mb-4 text-center">
+            {CONFIG.playerName1} ⇢ {CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}
           </h3>
 
           <div className="grid grid-cols-2 gap-4">
@@ -607,6 +632,7 @@
 
     // Drink decision panel (A = action)
     function DrinkDecisionPanel({ onChoice, disabled, stats, isFirstRound }) {
+      const theme = getThemeClasses();
       const A1Y1Rate = stats.A1.total > 0
         ? Math.round(stats.A1.Y1 / stats.A1.total * 100)
         : null;
@@ -615,8 +641,8 @@
         : null;
 
       return (
-        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
-          <h4 className="text-gray-500 text-sm font-medium mb-3 text-center">Morning Decision</h4>
+        <div className={`${theme.panelBg} rounded-xl p-4 border ${theme.panelBorder} shadow-sm`}>
+          <h4 className="text-gray-900 text-lg font-bold mb-3 text-center">Morning Decision</h4>
           <div className="flex justify-center gap-3">
             <button
               onClick={() => onChoice(1)}
@@ -651,9 +677,9 @@
             </button>
           </div>
 
-          <div className="mt-3 space-y-2">
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="bg-gray-50 rounded p-2 text-center border border-gray-200">
+          <div className="mt-3 flex justify-center">
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="bg-gray-50 rounded p-2 text-center border border-gray-200 w-32">
                 <div className="text-green-600">{CONFIG.playerName0} ⇢ {CONFIG.playerName1}</div>
                 <div className="text-gray-900 font-bold">
                   {CONFIG.order === 'AY'
@@ -663,7 +689,7 @@
                       : '—'}
                 </div>
               </div>
-              <div className="bg-gray-50 rounded p-2 text-center border border-gray-200">
+              <div className="bg-gray-50 rounded p-2 text-center border border-gray-200 w-32">
                 <div className="text-red-600">Skip ⇢ {CONFIG.playerName1}</div>
                 <div className="text-gray-900 font-bold">
                   {CONFIG.order === 'AY'
@@ -740,12 +766,13 @@
 
     // Recent history - displays [[A, X, Y], ...]
     function CompactHistory({ history }) {
+      const theme = getThemeClasses();
       const allRounds = history.slice().reverse();
       const isAYOrder = CONFIG.order === 'AY';
 
       return (
-        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
-          <h4 className="text-gray-500 text-sm font-medium mb-3">All Weeks</h4>
+        <div className={`${theme.panelBg} rounded-xl p-4 border ${theme.panelBorder} shadow-sm`}>
+          <h4 className="text-gray-900 text-lg font-bold mb-3 text-center">All Weeks</h4>
           <div className="space-y-1 max-h-48 overflow-y-auto">
             {allRounds.map((round, idx) => {
               const [A, X, Y] = round;
@@ -950,6 +977,7 @@
 
     // Price Elicitation Decision Panel (modified DrinkDecisionPanel with highlighted price)
     function PriceElicitationDecisionPanel({ price, onChoice, stats, isFirstRound, selectedChoice }) {
+      const theme = getThemeClasses();
       const A1Y1Rate = stats.A1.total > 0
         ? Math.round(stats.A1.Y1 / stats.A1.total * 100)
         : null;
@@ -958,8 +986,8 @@
         : null;
 
       return (
-        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
-          <h4 className="text-gray-500 text-sm font-medium mb-3 text-center">Your Decision</h4>
+        <div className={`${theme.panelBg} rounded-xl p-4 border ${theme.panelBorder} shadow-sm`}>
+          <h4 className="text-gray-900 text-lg font-bold mb-3 text-center">Your Decision</h4>
           <div className="flex justify-center gap-3">
             <button
               onClick={() => onChoice(1)}
@@ -994,9 +1022,9 @@
             </button>
           </div>
 
-          <div className="mt-3 space-y-2">
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="bg-gray-50 rounded p-2 text-center border border-gray-200">
+          <div className="mt-3 space-y-2 flex flex-col items-center">
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="bg-gray-50 rounded p-2 text-center border border-gray-200 w-32">
                 <div className="text-green-600">{CONFIG.playerName0} ⇢ {CONFIG.playerName1}</div>
                 <div className="text-gray-900 font-bold">
                   {CONFIG.order === 'AY'
@@ -1006,7 +1034,7 @@
                       : '—'}
                 </div>
               </div>
-              <div className="bg-gray-50 rounded p-2 text-center border border-gray-200">
+              <div className="bg-gray-50 rounded p-2 text-center border border-gray-200 w-32">
                 <div className="text-red-600">Skip ⇢ {CONFIG.playerName1}</div>
                 <div className="text-gray-900 font-bold">
                   {CONFIG.order === 'AY'
@@ -1017,14 +1045,14 @@
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="bg-gray-50 rounded p-2 text-center border border-gray-200">
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="bg-gray-50 rounded p-2 text-center border border-gray-200 w-32">
                 <div className="text-green-600">{CONFIG.playerName0} ⇢ {CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}</div>
                 <div className="text-gray-900 font-bold">
                   {A1Y1Rate !== null ? `${A1Y1Rate}%` : '—'}
                 </div>
               </div>
-              <div className="bg-gray-50 rounded p-2 text-center border border-gray-200">
+              <div className="bg-gray-50 rounded p-2 text-center border border-gray-200 w-32">
                 <div className="text-red-600">Skip ⇢ {CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}</div>
                 <div className="text-gray-900 font-bold">
                   {A0Y1Rate !== null ? `${A0Y1Rate}%` : '—'}
@@ -1038,10 +1066,11 @@
 
     // Price Elicitation Page (matches main game layout)
     function PriceElicitationPanel({ price, roundNumber, totalRounds, onChoice, stats, history, waitingForSpace, pendingChoice }) {
+      const theme = getThemeClasses();
       return (
         <div className="min-h-screen bg-white px-4 pt-0 pb-4">
           <div className="max-w-6xl mx-auto">
-            <div className="bg-gray-50 rounded-2xl p-6 mb-4 border border-gray-200 shadow-sm relative overflow-hidden">
+            <div className={`${theme.panelBg} rounded-2xl p-6 mb-4 border ${theme.panelBorder} shadow-sm relative overflow-hidden`}>
               <div className="text-center mb-4 h-14 flex items-center justify-center">
                 <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${
                   waitingForSpace
@@ -1456,10 +1485,12 @@
         );
       }
 
+      const theme = getThemeClasses();
+
       return (
         <div className="min-h-screen bg-white px-4 pt-0 pb-4">
           <div className="max-w-6xl mx-auto">
-              <div className="bg-gray-50 rounded-2xl p-6 mb-4 border border-gray-200 shadow-sm relative overflow-hidden">
+              <div className={`${theme.panelBg} rounded-2xl p-6 mb-4 border ${theme.panelBorder} shadow-sm relative overflow-hidden`}>
               <NewDayOverlay show={showNewDay} dayNumber={nextDayNumber} />
 
               <div className="text-center mb-4 h-14 flex items-center justify-center">

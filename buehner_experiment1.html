@@ -91,11 +91,11 @@
 
         .trial-item {
             text-align: center;
-            padding: 20px;
+            padding: 30px 40px;
             background: white;
             border-radius: 8px;
             border: 1px solid #ddd;
-            min-width: 200px;
+            min-width: 250px;
         }
 
         .trial-item.exposure {
@@ -222,11 +222,9 @@
 
         /* Condition indicator */
         .condition-indicator {
-            background: #4a90a4;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
-            display: inline-block;
+            color: #4a90a4;
+            font-size: 1.5em;
+            font-weight: bold;
             margin-bottom: 20px;
         }
 
@@ -252,19 +250,12 @@
 
         .icon-label {
             position: absolute;
-            top: -10%;
+            top: -30px;
             left: 50%;
             transform: translate(-50%, 0);
             font-size: 20px;
             font-weight: bold;
             pointer-events: none;
-            background: rgba(255, 255, 255, 0.85);
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
 
         .intro-icon-label {
@@ -360,9 +351,7 @@
         <h1>Instructions</h1>
 
         <div class="instructions">
-            <p>In this part, you will play the role of a <strong>microbiologist</strong> studying how different types of ray exposure influence the mutation of viruses.</p>
-
-            <p>Imagine that you are a <strong>microbiologist</strong> working in a research laboratory. Your task is to study how exposure to various types of rays influences whether viruses mutate.</p>
+            <p>In this part, imagine that you are a <strong>microbiologist</strong> working in a research laboratory. Your task is to study how exposure to various types of rays influences whether viruses mutate.</p>
 
             <p>You will review <strong>laboratory records</strong> from experiments conducted on petri dishes containing viruses. In each experiment:</p>
 
@@ -384,7 +373,7 @@
             <p>You will evaluate <strong>2 different types of rays</strong> and their effects on 2 different viruses.</p>
         </div>
 
-        <button class="btn fade-in-btn" id="begin-experiment-btn" onclick="startExperiment()">Begin Experiment</button>
+        <button class="btn fade-in-btn" id="begin-experiment-btn" onclick="startExperiment()">Begin</button>
     </div>
 
     <!-- Screen 3.5: Condition Intro -->
@@ -415,7 +404,7 @@
             </div>
         </div>
 
-        <button class="btn" onclick="startTrials()">Begin Trials</button>
+        <button class="btn" onclick="startTrials()">Begin this study</button>
     </div>
 
     <!-- Screen 4: Trial Display -->
@@ -534,7 +523,7 @@
         </div>
 
         <div class="rating-container">
-            <p>Out of 100 petri dishes that <strong>were exposed</strong> to the rays, how many do you think had mutated viruses?</p>
+            <p>If 100 petri dishes <strong>were exposed</strong> to the rays, how many do you think would have mutated viruses?</p>
             <div class="scale-container">
                 <div class="scale-labels">
                     <span>0</span>
@@ -547,7 +536,7 @@
                 <div class="scale-value" id="p-ec-value">-</div>
             </div>
 
-            <p>Out of 100 petri dishes that <strong>were not exposed</strong> to the rays, how many do you think had mutated viruses?</p>
+            <p>If 100 petri dishes <strong>were not exposed</strong> to the rays, how many do you think would have mutated viruses?</p>
             <div class="scale-container">
                 <div class="scale-labels">
                     <span>0</span>
@@ -580,9 +569,12 @@
                 if (event.data.experiment) {
                     experiment = event.data.experiment;
                 }
+                if (event.data.highNoiseFirst !== undefined) {
+                    highNoiseFirst = event.data.highNoiseFirst;
+                }
                 isInitialized = true;
 
-                sendDataToQualtrics('GAME_START', { started: true, experiment: experiment });
+                sendDataToQualtrics('GAME_START', { started: true, experiment: experiment, highNoiseFirst: highNoiseFirst });
             }
         });
 
@@ -628,6 +620,7 @@
 
         // Experiment type: "EndogDieterBinary1" or "EndogDieterBinary2"
         let experiment = "EndogDieterBinary1";  // Default, can be set via Qualtrics INIT
+        let highNoiseFirst = 0;  // If 1, show low deltaP first; otherwise show high deltaP first
 
         // Experimental conditions (Generative Component)
         // P(e|¬c) = 0.25 constant, P(e|c) varies
@@ -763,7 +756,7 @@
             const rayName = rayNames[rayIndex];
             const virusName = virusNames[rayIndex];
 
-            label.textContent = `Study ${index}/2: Testing ${rayName} Rays on ${virusName}`;
+            label.textContent = `Study ${index} of 2: Testing ${rayName} Rays on ${virusName}`;
         }
 
         // Update SVG icon colors based on condition
@@ -936,8 +929,15 @@
 
         // Start main experiment
         function startExperiment() {
-            // Randomize condition order
-            state.conditionOrder = shuffleArray([...Array(2).keys()]);
+            // Set condition order based on highNoiseFirst
+            // Index 0 = low deltaP, Index 1 = high deltaP
+            // highNoiseFirst = 1: show low deltaP first [0, 1]
+            // highNoiseFirst != 1: show high deltaP first [1, 0]
+            if (highNoiseFirst == 1) {
+                state.conditionOrder = [0, 1];  // low deltaP first
+            } else {
+                state.conditionOrder = [1, 0];  // high deltaP first
+            }
             state.currentConditionIndex = 0;
             state.results = [];
 

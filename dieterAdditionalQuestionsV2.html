@@ -311,10 +311,10 @@
 
             {page === 1 && (
               <>
-                <p className="text-base text-gray-600 mb-8 text-center">
+                <p className="text-base text-gray-800 mb-8">
                   {isAYOrder
-                    ? `Now, please answer some questions about ${CONFIG.playerName0} and how you feel.`
-                    : `Now, please answer some questions about ${CONFIG.playerName0}, ${CONFIG.playerName1} and how you feel.`
+                    ? `Now, please answer some questions about ${CONFIG.playerName0} and how you feel. You made decisions about ${CONFIG.playerName0} for ${CONFIG.nRounds} weeks; please only consider the second half of that period (weeks ${Math.floor(CONFIG.nRounds / 2)} to ${CONFIG.nRounds}) when answering these questions.`
+                    : `Now, please answer some questions about ${CONFIG.playerName0}, ${CONFIG.playerName1} and how you feel. You made decisions about ${CONFIG.playerName0} for ${CONFIG.nRounds} weeks; please only consider the second half of that period (weeks ${Math.floor(CONFIG.nRounds / 2)} to ${CONFIG.nRounds}) when answering these questions.`
                   }
                 </p>
 
@@ -344,7 +344,11 @@
             )}
 
             {page === 2 && (
-              <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
+              <>
+                <p className="text-base text-gray-800 mb-8">
+                  You made decisions about {CONFIG.playerName0} for {CONFIG.nRounds} weeks; please only consider the second half of that period (weeks {Math.floor(CONFIG.nRounds / 2)} to {CONFIG.nRounds}) when answering these questions.
+                </p>
+                <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
                 <RadioQuestion
                   questionNumber={isAYOrder ? 3 : 4}
                   questionText={q4.text}
@@ -370,6 +374,7 @@
                   Next
                 </button>
               </div>
+              </>
             )}
 
             {page === 3 && (
