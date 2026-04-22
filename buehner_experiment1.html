@@ -220,14 +220,6 @@
             opacity: 1;
         }
 
-        /* Condition indicator */
-        .condition-indicator {
-            color: #4a90a4;
-            font-size: 1.5em;
-            font-weight: bold;
-            margin-bottom: 20px;
-        }
-
         /* Trial icons */
         .mutation-icon,
         .ray-icon {
@@ -409,10 +401,6 @@
 
     <!-- Screen 4: Trial Display -->
     <div class="screen" id="screen-trial">
-        <div class="condition-indicator" id="condition-label">
-            Testing: Alpha Rays on Virus Alpha
-        </div>
-
         <div class="trial-container">
             <div class="trial-header">Laboratory Record #<span id="record-number">1</span></div>
 
@@ -483,7 +471,7 @@
         </div>
 
         <div class="rating-container">
-            <p>How strongly do these rays <strong>cause</strong> the viruses to mutate?</p>
+            <p>How strongly do you think <span id="causal-question-ray-name" class="ray-name">Beta Rays</span> <strong>cause</strong> virus mutations?</p>
 
             <div class="scale-container">
                 <div class="scale-description">
@@ -523,7 +511,7 @@
         </div>
 
         <div class="rating-container">
-            <p>If 100 petri dishes <strong>were exposed</strong> to the rays, how many do you think would have mutated viruses?</p>
+            <p>If 100 petri dishes <strong>were exposed</strong> to the <span id="exposed-question-ray-name" class="ray-name">Beta Rays</span>, how many do you think would have mutated viruses?</p>
             <div class="scale-container">
                 <div class="scale-labels">
                     <span>0</span>
@@ -536,7 +524,7 @@
                 <div class="scale-value" id="p-ec-value">-</div>
             </div>
 
-            <p>If 100 petri dishes <strong>were not exposed</strong> to the rays, how many do you think would have mutated viruses?</p>
+            <p>If 100 petri dishes <strong>were not exposed</strong> to the <span id="not-exposed-question-ray-name" class="ray-name">Beta Rays</span>, how many do you think would have mutated viruses?</p>
             <div class="scale-container">
                 <div class="scale-labels">
                     <span>0</span>
@@ -566,15 +554,28 @@
                 console.log('Received INIT from Qualtrics:', event.data);
                 participantId = event.data.participantId;
                 gameId = event.data.gameId;
-                if (event.data.experiment) {
-                    experiment = event.data.experiment;
-                }
-                if (event.data.highNoiseFirst !== undefined) {
-                    highNoiseFirst = event.data.highNoiseFirst;
+                if (event.data.gameConfig) {
+                    if (event.data.gameConfig.id !== undefined) {
+                        gameConfig.id = event.data.gameConfig.id;
+                    }
+                    if (event.data.gameConfig.gameCounterBuehner !== undefined) {
+                        gameConfig.gameCounterBuehner = event.data.gameConfig.gameCounterBuehner;
+                    }
+                    if (event.data.gameConfig.colorRay) {
+                        gameConfig.colorRay = event.data.gameConfig.colorRay;
+                    }
+                    if (event.data.gameConfig.colorVirus) {
+                        gameConfig.colorVirus = event.data.gameConfig.colorVirus;
+                    }
                 }
                 isInitialized = true;
 
-                sendDataToQualtrics('GAME_START', { started: true, experiment: experiment, highNoiseFirst: highNoiseFirst });
+                sendDataToQualtrics('GAME_START', { started: true, gameConfig: gameConfig });
+
+                // If gameCounterBuehner == 2, skip instructions and start directly
+                if (gameConfig.gameCounterBuehner == 2) {
+                    startExperiment();
+                }
             }
         });
 
@@ -618,46 +619,44 @@
             "Strain-K11", "Strain-L12", "Strain-M13", "Strain-N14", "Strain-O15", "Strain-P16"
         ];
 
-        // Experiment type: "EndogDieterBinary1" or "EndogDieterBinary2"
-        let experiment = "EndogDieterBinary1";  // Default, can be set via Qualtrics INIT
-        let highNoiseFirst = 0;  // If 1, show low deltaP first; otherwise show high deltaP first
-
-        // Experimental conditions (Generative Component)
-        // P(e|¬c) = 0.25 constant, P(e|c) varies
-        // Causal power q = ΔP / (1 - P(e|¬c)) = ΔP / 0.75
-        const allConditions = {
-            "EndogDieterBinary1": [
-                { pEC: 0.25, pEnotC: 0.25, deltaP: 0.00, power: 0.00, rayColor: '#3498db', mutationColor: '#e74c3c' },
-                { pEC: 0.75, pEnotC: 0.25, deltaP: 0.50, power: 0.67, rayColor: '#e67e22', mutationColor: '#1abc9c' }
-            ],
-            "EndogDieterBinary2": [
-                { pEC: 0.25, pEnotC: 0.25, deltaP: 0.00, power: 0.00, rayColor: '#3498db', mutationColor: '#e74c3c' },
-                { pEC: 0.50, pEnotC: 0.25, deltaP: 0.25, power: 0.33, rayColor: '#9b59b6', mutationColor: '#27ae60' }
-            ]
+        // Game configuration from Qualtrics
+        let gameConfig = {
+            id: 41,                    // 41: P(E|C)=0.25, 43: P(E|C)=0.5, 45: P(E|C)=0.75
+            gameCounterBuehner: 1,     // 1: show instructions & study 1, 2: skip instructions & study 2
+            colorRay: '#3498db',       // Ray icon color
+            colorVirus: '#e74c3c'      // Virus icon color
         };
 
-        // Get conditions based on experiment type
-        function getConditions() {
-            return allConditions[experiment] || allConditions["EndogDieterBinary1"];
+        // Get condition based on id
+        function getCondition() {
+            const conditionMap = {
+                41: { pEC: 0.25, pEnotC: 0.25, deltaP: 0.00, power: 0.00 },
+                43: { pEC: 0.75, pEnotC: 0.25, deltaP: 0.50, power: 0.67 },
+                45: { pEC: 0.50, pEnotC: 0.25, deltaP: 0.25, power: 0.33 }
+            };
+            const condition = conditionMap[gameConfig.id] || conditionMap[41];
+            return {
+                ...condition,
+                rayColor: gameConfig.colorRay,
+                mutationColor: gameConfig.colorVirus
+            };
         }
 
         // Experiment state
         let state = {
             currentScreen: 'screen-instructions',
-            currentConditionIndex: 0,
             currentTrialIndex: 0,
             trials: [],
-            conditionOrder: [],
             results: [],
             currentCondition: null,
             // Timing tracking
-            trialTimes: [],           // [[t1, t2, ...], [t1, t2, ...], [t1, t2, ...]] - per trial times for each condition
-            conditionTimes: [],       // [time1, time2, time3] - total time for each condition
-            ratingTimes: [],          // [r1, r2, r3] - time spent on evaluation questions for each condition
+            trialTimes: [],           // [t1, t2, ...] - per trial times
+            conditionTimes: [],       // total time for the condition
+            ratingTimes: [],          // time spent on evaluation questions
             currentTrialStartTime: null,
             currentConditionStartTime: null,
             currentRatingStartTime: null,
-            currentConditionTrialTimes: []  // temp array for current condition's trial times
+            currentConditionTrialTimes: []  // temp array for trial times
         };
 
         // Shuffle array (Fisher-Yates)
@@ -708,17 +707,20 @@
 
         // Start a condition - show intro first
         function startCondition() {
-            state.currentCondition = getConditions()[state.conditionOrder[state.currentConditionIndex]];
+            state.currentCondition = getCondition();
             state.trials = generateTrials(state.currentCondition);
             state.currentTrialIndex = 0;
 
+            // Use gameCounterBuehner to determine ray/virus index (1 or 2)
+            const studyNumber = gameConfig.gameCounterBuehner;
+            const nameIndex = studyNumber;  // 1 for first study, 2 for second study
+
             // Show condition intro
-            const virusIndex = state.conditionOrder[state.currentConditionIndex] + 1;
-            document.getElementById('condition-intro-title').textContent = `Study ${state.currentConditionIndex + 1} of 2`;
-            document.getElementById('intro-ray-name').textContent = rayNames[virusIndex] + ' Rays';
-            document.getElementById('intro-virus-name').textContent = virusNames[virusIndex];
-            document.getElementById('desc-ray-name').textContent = rayNames[virusIndex] + ' Rays';
-            document.getElementById('desc-virus-name').textContent = virusNames[virusIndex];
+            document.getElementById('condition-intro-title').textContent = `Study ${studyNumber} of 2`;
+            document.getElementById('intro-ray-name').textContent = rayNames[nameIndex] + ' Rays';
+            document.getElementById('intro-virus-name').textContent = virusNames[nameIndex];
+            document.getElementById('desc-ray-name').textContent = rayNames[nameIndex] + ' Rays';
+            document.getElementById('desc-virus-name').textContent = virusNames[nameIndex];
 
             // Update intro icon colors
             const condition = state.currentCondition;
@@ -730,8 +732,8 @@
             });
 
             // Update intro icon labels
-            document.getElementById('intro-ray-label').textContent = rayLabels[virusIndex];
-            document.getElementById('intro-virus-label').textContent = virusLabels[virusIndex];
+            document.getElementById('intro-ray-label').textContent = rayLabels[nameIndex];
+            document.getElementById('intro-virus-label').textContent = virusLabels[nameIndex];
             document.getElementById('intro-ray-label').style.color = condition.rayColor;
             document.getElementById('intro-virus-label').style.color = condition.mutationColor;
 
@@ -744,19 +746,8 @@
             state.currentConditionStartTime = Date.now();
             state.currentConditionTrialTimes = [];
 
-            updateConditionLabel(state.currentConditionIndex + 1);
             showTrial();
             showScreen('screen-trial');
-        }
-
-        // Update condition label
-        function updateConditionLabel(index) {
-            const label = document.getElementById('condition-label');
-            const rayIndex = state.conditionOrder[state.currentConditionIndex] + 1;
-            const rayName = rayNames[rayIndex];
-            const virusName = virusNames[rayIndex];
-
-            label.textContent = `Study ${index} of 2: Testing ${rayName} Rays on ${virusName}`;
         }
 
         // Update SVG icon colors based on condition
@@ -788,13 +779,13 @@
             document.getElementById('record-number').textContent = state.currentTrialIndex + 1;
 
             // Update icon labels
-            const virusIndex = state.conditionOrder[state.currentConditionIndex] + 1;
-            document.getElementById('ray-name-label').textContent = rayNames[virusIndex] + ' Rays';
-            document.getElementById('virus-name-label').textContent = virusNames[virusIndex];
+            const nameIndex = gameConfig.gameCounterBuehner;
+            document.getElementById('ray-name-label').textContent = rayNames[nameIndex] + ' Rays';
+            document.getElementById('virus-name-label').textContent = virusNames[nameIndex];
 
             // Update icon text labels (Greek letter for ray, letter for virus)
-            document.getElementById('ray-label').textContent = rayLabels[virusIndex];
-            document.getElementById('virus-label').textContent = virusLabels[virusIndex];
+            document.getElementById('ray-label').textContent = rayLabels[nameIndex];
+            document.getElementById('virus-label').textContent = virusLabels[nameIndex];
 
             // Update icon colors for this condition
             updateIconColors();
@@ -851,9 +842,9 @@
 
         // Show rating screen
         function showRatingScreen() {
-            const rayIndex = state.conditionOrder[state.currentConditionIndex] + 1;
-            const rayName = rayNames[rayIndex];
-            const virusName = virusNames[rayIndex];
+            const nameIndex = gameConfig.gameCounterBuehner;
+            const rayName = rayNames[nameIndex];
+            const virusName = virusNames[nameIndex];
 
             // Start timing for evaluation questions
             state.currentRatingStartTime = Date.now();
@@ -861,6 +852,9 @@
             document.getElementById('rating-header').textContent = `Evaluate ${rayName} Rays`;
             document.getElementById('rating-ray-name').textContent = `${rayName} Rays`;
             document.getElementById('rating-virus-name').textContent = virusName;
+            document.getElementById('causal-question-ray-name').textContent = `${rayName} Rays`;
+            document.getElementById('exposed-question-ray-name').textContent = `${rayName} Rays`;
+            document.getElementById('not-exposed-question-ray-name').textContent = `${rayName} Rays`;
 
             // Reset ratings - no default position
             document.getElementById('causal-value').textContent = '-';
@@ -901,13 +895,14 @@
             const pECRating = parseInt(document.getElementById('p-ec-rating').value);
             const pEnotCRating = parseInt(document.getElementById('p-e-not-c-rating').value);
 
-            const conditionData = getConditions()[state.conditionOrder[state.currentConditionIndex]];
-            const rayIndex = state.conditionOrder[state.currentConditionIndex] + 1;
+            const conditionData = getCondition();
+            const nameIndex = gameConfig.gameCounterBuehner;
 
             state.results.push({
-                conditionIndex: state.currentConditionIndex + 1,
-                rayName: rayNames[rayIndex],
-                virusName: virusNames[rayIndex],
+                studyNumber: gameConfig.gameCounterBuehner,
+                conditionId: gameConfig.id,
+                rayName: rayNames[nameIndex],
+                virusName: virusNames[nameIndex],
                 pEC: conditionData.pEC,
                 pEnotC: conditionData.pEnotC,
                 deltaP: conditionData.deltaP,
@@ -918,27 +913,12 @@
                 subjectivePEnotC: pEnotCRating
             });
 
-            state.currentConditionIndex++;
-
-            if (state.currentConditionIndex >= 2) {
-                showResults();
-            } else {
-                startCondition();
-            }
+            // Only one condition per session, go directly to results
+            showResults();
         }
 
         // Start main experiment
         function startExperiment() {
-            // Set condition order based on highNoiseFirst
-            // Index 0 = low deltaP, Index 1 = high deltaP
-            // highNoiseFirst = 1: show low deltaP first [0, 1]
-            // highNoiseFirst != 1: show high deltaP first [1, 0]
-            if (highNoiseFirst == 1) {
-                state.conditionOrder = [0, 1];  // low deltaP first
-            } else {
-                state.conditionOrder = [1, 0];  // high deltaP first
-            }
-            state.currentConditionIndex = 0;
             state.results = [];
 
             // Reset timing arrays
