@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Causal Inference Experiment - Vaccine Study</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+
+        .screen {
+            display: none;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #4a90a4;
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            color: #4a90a4;
+        }
+
+        .instructions {
+            background: #e8f4f8;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        .btn {
+            background: #4a90a4;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .btn:hover {
+            background: #3a7a94;
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* Trial display styles */
+        .trial-container {
+            background: #fafafa;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 25px;
+            margin: 20px 0;
+        }
+
+        .trial-header {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .trial-info {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 20px 0;
+        }
+
+        .trial-item {
+            text-align: center;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            min-width: 200px;
+        }
+
+        .trial-item.vaccination {
+        }
+
+        .trial-item.disease {
+        }
+
+        .trial-label {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        .trial-value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .trial-value.yes {
+            color: #27ae60;
+        }
+
+        .trial-value.no {
+            color: #e74c3c;
+        }
+
+        /* Checkbox confirmation */
+        .confirmation-area {
+            background: #fff9e6;
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+
+        .checkbox-group {
+            margin: 15px 0;
+        }
+
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .checkbox-group label:hover {
+            background: #f0f0f0;
+        }
+
+        .checkbox-group input[type="checkbox"],
+        .checkbox-group input[type="radio"] {
+            width: 20px;
+            height: 20px;
+        }
+
+        .checkbox-group label {
+            display: inline-flex;
+            margin-right: 20px;
+        }
+
+        /* Progress indicator */
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #ddd;
+            border-radius: 4px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #4a90a4;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* Rating scales */
+        .rating-container {
+            margin: 30px 0;
+        }
+
+        .scale-container {
+            margin: 20px 0;
+        }
+
+        .scale-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .scale-input {
+            width: 100%;
+        }
+
+        .scale-value {
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #4a90a4;
+            margin-top: 10px;
+        }
+
+        .scale-description {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #ddd;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #4a90a4;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        input[type="range"].touched::-webkit-slider-thumb {
+            opacity: 1;
+        }
+
+        /* Condition indicator */
+        .condition-indicator {
+            background: #4a90a4;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
+        /* Trial icons */
+        .syringe-icon,
+        .virus-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 5px auto;
+        }
+
+        .icon-name {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #555;
+        }
+
+        /* Condition intro styles */
+        .condition-intro-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 40px 0;
+            padding: 30px;
+            background: #fafafa;
+            border-radius: 8px;
+        }
+
+        .intro-item {
+            text-align: center;
+            padding: 30px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            min-width: 200px;
+        }
+
+        .intro-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 15px auto;
+        }
+
+        .intro-icon svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .intro-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .condition-description {
+            font-size: 16px;
+            color: #555;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .syringe-icon svg,
+        .virus-icon svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Default colors (will be overridden by condition) */
+        .syringe-icon svg path {
+            fill: #4a90a4;
+        }
+
+        .virus-icon svg path {
+            fill: #e74c3c;
+        }
+
+        /* Summary table */
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .summary-table th, .summary-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .summary-table th {
+            background: #4a90a4;
+            color: white;
+        }
+
+        .summary-table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        /* Virus name styling */
+        .virus-name {
+            color: #4a90a4;
+            font-weight: bold;
+        }
+
+        .vaccine-name {
+            color: #27ae60;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <!-- Screen 1: Welcome and Instructions -->
+    <div class="screen active" id="screen-welcome">
+        <h1>Vaccine Effectiveness Study</h1>
+
+        <div class="instructions">
+            <h2>Welcome</h2>
+            <p>Thank you for participating in this study on causal reasoning.</p>
+            <p>In this experiment, you will play the role of a <strong>virologist</strong> testing several new vaccines against various viruses.</p>
+            <p>The experiment will take approximately <strong>45 minutes</strong> to complete.</p>
+        </div>
+
+        <button class="btn" onclick="showScreen('screen-instructions')">Continue</button>
+    </div>
+
+    <!-- Screen 2: Detailed Instructions -->
+    <div class="screen" id="screen-instructions">
+        <h1>Instructions</h1>
+
+        <div class="instructions">
+            <p>Imagine that you are a <strong>virologist</strong> working in a research laboratory. Your task is to test several new vaccines that have been developed to prevent various virus diseases.</p>
+
+            <p>You will review <strong>laboratory records</strong> from experiments conducted on rats. In each experiment:</p>
+
+            <ul>
+                <li>Some rats received a <strong>vaccination</strong> prior to virus exposure</li>
+                <li>Other rats did <strong>not receive</strong> the vaccination (control group)</li>
+                <li>You will see whether each rat <strong>developed the disease</strong> or not</li>
+            </ul>
+
+            <p>For each vaccine, you will see <strong>16 laboratory records</strong> (8 vaccinated rats and 8 unvaccinated rats), presented one at a time.</p>
+
+            <p>After viewing all records for a vaccine, you will be asked to judge:</p>
+            <ol>
+                <li>How strongly the vaccine <strong>prevents</strong> the disease</li>
+                <li>How <strong>confident</strong> you are in your judgment</li>
+                <li>Your estimates of disease rates in each group</li>
+            </ol>
+
+            <p>You will evaluate <strong>3 different vaccines</strong> for 3 different viruses.</p>
+        </div>
+
+        <button class="btn" onclick="startExperiment()">Begin Experiment</button>
+    </div>
+
+    <!-- Screen 3.5: Condition Intro -->
+    <div class="screen" id="screen-condition-intro">
+        <h2 id="condition-intro-title">Study 1 of 3</h2>
+
+        <p class="condition-description" id="condition-description">Now you are studying how <strong id="desc-vaccine-name">Vaccine Bexoral</strong> prevents <strong id="desc-virus-name">Betavirus</strong>.</p>
+
+        <div class="condition-intro-container">
+            <div class="intro-item">
+                <div class="intro-icon" id="intro-syringe-icon">
+                    <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="M504.485 7.515c-10.02-10.02-26.264-10.02-36.284 0l-42.426 42.426-28.284-28.284c-6.248-6.248-16.38-6.248-22.628 0-6.248 6.248-6.248 16.38 0 22.628l5.656 5.656-124.451 124.451-33.941-33.941c-6.248-6.248-16.38-6.248-22.628 0l-22.627 22.627c-6.248 6.248-6.248 16.38 0 22.628l11.314 11.314L47.029 338.177c-27.051 27.051-42.028 63.043-42.028 101.307v56.516c0 8.836 7.164 16 16 16h56.516c38.264 0 74.256-14.977 101.307-42.028L319.98 328.817l11.314 11.314c6.248 6.248 16.38 6.248 22.628 0l22.627-22.627c6.248-6.248 6.248-16.38 0-22.628l-33.941-33.941 124.451-124.451 5.656 5.656c6.248 6.248 16.38 6.248 22.628 0 6.248-6.248 6.248-16.38 0-22.628l-28.284-28.284 42.426-42.426c10.02-10.021 10.02-26.266 0-36.287zM156.196 447.344c-20.742 20.742-48.313 32.16-77.679 32.16H37v-41.517c0-29.366 11.418-56.937 32.16-77.679l141.157-141.157 86.036 86.036L156.196 447.344zm175.19-175.19l-90.379-90.379 11.313-11.313 90.379 90.379-11.313 11.313zm34.156-56.284l-69.095-69.095L409.899 33.323l69.095 69.095-113.452 113.452z"/></svg>
+                </div>
+                <div class="intro-name" id="intro-vaccine-name">Vaccine Bexoral</div>
+            </div>
+
+            <div class="intro-item">
+                <div class="intro-icon" id="intro-virus-icon">
+                    <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="m278.5 512h-45c-16.542 0-30-13.458-30-30 0-13.953 9.575-25.712 22.5-29.051v-12.446c0-2.845-2.067-5.31-4.916-5.864-23.953-4.655-46.383-13.945-66.667-27.612-2.428-1.638-5.651-1.364-7.665.648l-8.878 8.877c6.192 10.778 5.41 24.664-2.732 34.385-5.414 6.463-13.326 10.381-21.71 10.75-8.383.361-16.604-2.822-22.54-8.757l-31.821-31.82c-5.666-5.666-8.786-13.199-8.786-21.213s3.12-15.548 8.786-21.214c5.667-5.666 13.2-8.786 21.214-8.786 5.449 0 10.677 1.442 15.245 4.147l8.796-8.796c2.013-2.012 2.285-5.236.648-7.665-13.667-20.284-22.957-42.714-27.612-66.666-.554-2.85-3.02-4.917-5.864-4.917h-12.435c-1.358 5.317-4.168 10.166-8.231 14.088-5.912 5.706-13.688 8.671-21.917 8.394-16.214-.578-28.915-13.958-28.915-30.461v-44.521c0-8.203 3.248-15.862 9.146-21.566 5.898-5.702 13.681-8.691 21.874-8.416 13.266.442 24.478 9.947 27.904 22.482h12.573c2.845 0 5.311-2.067 5.864-4.916 4.655-23.953 13.945-46.383 27.612-66.667 1.637-2.429 1.364-5.653-.648-7.665l-8.796-8.796c-4.568 2.705-9.796 4.147-15.245 4.147-8.014 0-15.547-3.12-21.214-8.786-11.697-11.697-11.697-30.73 0-42.428l31.82-31.819c11.697-11.698 30.729-11.696 42.427 0 5.666 5.667 8.786 13.2 8.786 21.214 0 5.448-1.442 10.676-4.147 15.245l8.796 8.796c2.014 2.014 5.236 2.285 7.664.648 20.285-13.667 42.715-22.957 66.667-27.612 2.85-.554 4.917-3.02 4.917-5.864v-12.446c-12.925-3.339-22.5-15.098-22.5-29.051 0-16.542 13.458-30 30-30h45c16.542 0 30 13.458 30 30 0 13.953-9.575 25.712-22.5 29.051v12.446c0 2.845 2.067 5.311 4.916 5.864 23.953 4.655 46.383 13.945 66.667 27.612 2.428 1.637 5.652 1.365 7.665-.648l8.804-8.803c-6.779-11.503-5.234-26.587 4.631-36.452 11.696-11.696 30.729-11.698 42.427 0l31.82 31.819c11.697 11.697 11.697 30.73 0 42.428-5.667 5.666-13.2 8.786-21.214 8.786-5.448 0-10.676-1.442-15.245-4.147l-8.796 8.796c-2.013 2.012-2.285 5.236-.648 7.665 13.667 20.284 22.957 42.714 27.612 66.666.554 2.85 3.02 4.917 5.864 4.917h12.552c3.243-12.001 13.616-21.266 26.248-22.381h.001c8.4-.749 16.763 2.084 22.952 7.751 6.192 5.67 9.744 13.736 9.744 22.13v45c0 8.394-3.552 16.46-9.744 22.13-6.189 5.667-14.562 8.491-22.952 7.751-12.633-1.115-23.006-10.38-26.249-22.381h-12.552c-2.845 0-5.31 2.067-5.864 4.916-4.655 23.953-13.945 46.383-27.612 66.667-1.637 2.429-1.364 5.653.648 7.665l8.796 8.796c4.569-2.705 9.797-4.147 15.245-4.147 8.014 0 15.547 3.12 21.214 8.786 5.666 5.666 8.786 13.2 8.786 21.214s-3.12 15.547-8.787 21.213l-31.819 31.82c-5.936 5.936-14.147 9.128-22.541 8.757-8.384-.369-16.296-4.287-21.71-10.749-8.142-9.722-8.926-23.607-2.732-34.386l-8.878-8.877c-2.013-2.013-5.236-2.286-7.664-.648-20.285 13.667-42.715 22.957-66.667 27.612-2.85.554-4.917 3.02-4.917 5.864v12.446c12.925 3.339 22.5 15.098 22.5 29.051-.001 16.542-13.459 30-30.001 30z"/></svg>
+                </div>
+                <div class="intro-name" id="intro-virus-name">Betavirus</div>
+            </div>
+        </div>
+
+        <button class="btn" onclick="startTrials()">Begin Trials</button>
+    </div>
+
+    <!-- Screen 4: Trial Display -->
+    <div class="screen" id="screen-trial">
+        <div class="condition-indicator" id="condition-label">
+            Testing: Vaccine Alpha against Virus Alpha
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="trial-progress"></div>
+        </div>
+        <div class="progress-text" id="progress-text">Record 1 of 16</div>
+
+        <div class="trial-container">
+            <div class="trial-header">Laboratory Record #<span id="record-number">1</span></div>
+
+            <div class="trial-info">
+                <div class="trial-item vaccination">
+                    <div class="syringe-icon" id="syringe-icon">
+                        <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="M504.485 7.515c-10.02-10.02-26.264-10.02-36.284 0l-42.426 42.426-28.284-28.284c-6.248-6.248-16.38-6.248-22.628 0-6.248 6.248-6.248 16.38 0 22.628l5.656 5.656-124.451 124.451-33.941-33.941c-6.248-6.248-16.38-6.248-22.628 0l-22.627 22.627c-6.248 6.248-6.248 16.38 0 22.628l11.314 11.314L47.029 338.177c-27.051 27.051-42.028 63.043-42.028 101.307v56.516c0 8.836 7.164 16 16 16h56.516c38.264 0 74.256-14.977 101.307-42.028L319.98 328.817l11.314 11.314c6.248 6.248 16.38 6.248 22.628 0l22.627-22.627c6.248-6.248 6.248-16.38 0-22.628l-33.941-33.941 124.451-124.451 5.656 5.656c6.248 6.248 16.38 6.248 22.628 0 6.248-6.248 6.248-16.38 0-22.628l-28.284-28.284 42.426-42.426c10.02-10.021 10.02-26.266 0-36.287zM156.196 447.344c-20.742 20.742-48.313 32.16-77.679 32.16H37v-41.517c0-29.366 11.418-56.937 32.16-77.679l141.157-141.157 86.036 86.036L156.196 447.344zm175.19-175.19l-90.379-90.379 11.313-11.313 90.379 90.379-11.313 11.313zm34.156-56.284l-69.095-69.095L409.899 33.323l69.095 69.095-113.452 113.452z"/></svg>
+                    </div>
+                    <div class="icon-name" id="vaccine-name-label">Vaccine Bexoral</div>
+                    <div class="trial-label">Received Vaccination?</div>
+                    <div class="trial-value" id="vaccination-status">YES</div>
+                </div>
+
+                <div class="trial-item disease">
+                    <div class="virus-icon" id="virus-icon">
+                        <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="m278.5 512h-45c-16.542 0-30-13.458-30-30 0-13.953 9.575-25.712 22.5-29.051v-12.446c0-2.845-2.067-5.31-4.916-5.864-23.953-4.655-46.383-13.945-66.667-27.612-2.428-1.638-5.651-1.364-7.665.648l-8.878 8.877c6.192 10.778 5.41 24.664-2.732 34.385-5.414 6.463-13.326 10.381-21.71 10.75-8.383.361-16.604-2.822-22.54-8.757l-31.821-31.82c-5.666-5.666-8.786-13.199-8.786-21.213s3.12-15.548 8.786-21.214c5.667-5.666 13.2-8.786 21.214-8.786 5.449 0 10.677 1.442 15.245 4.147l8.796-8.796c2.013-2.012 2.285-5.236.648-7.665-13.667-20.284-22.957-42.714-27.612-66.666-.554-2.85-3.02-4.917-5.864-4.917h-12.435c-1.358 5.317-4.168 10.166-8.231 14.088-5.912 5.706-13.688 8.671-21.917 8.394-16.214-.578-28.915-13.958-28.915-30.461v-44.521c0-8.203 3.248-15.862 9.146-21.566 5.898-5.702 13.681-8.691 21.874-8.416 13.266.442 24.478 9.947 27.904 22.482h12.573c2.845 0 5.311-2.067 5.864-4.916 4.655-23.953 13.945-46.383 27.612-66.667 1.637-2.429 1.364-5.653-.648-7.665l-8.796-8.796c-4.568 2.705-9.796 4.147-15.245 4.147-8.014 0-15.547-3.12-21.214-8.786-11.697-11.697-11.697-30.73 0-42.428l31.82-31.819c11.697-11.698 30.729-11.696 42.427 0 5.666 5.667 8.786 13.2 8.786 21.214 0 5.448-1.442 10.676-4.147 15.245l8.796 8.796c2.014 2.014 5.236 2.285 7.664.648 20.285-13.667 42.715-22.957 66.667-27.612 2.85-.554 4.917-3.02 4.917-5.864v-12.446c-12.925-3.339-22.5-15.098-22.5-29.051 0-16.542 13.458-30 30-30h45c16.542 0 30 13.458 30 30 0 13.953-9.575 25.712-22.5 29.051v12.446c0 2.845 2.067 5.311 4.916 5.864 23.953 4.655 46.383 13.945 66.667 27.612 2.428 1.637 5.652 1.365 7.665-.648l8.804-8.803c-6.779-11.503-5.234-26.587 4.631-36.452 11.696-11.696 30.729-11.698 42.427 0l31.82 31.819c11.697 11.697 11.697 30.73 0 42.428-5.667 5.666-13.2 8.786-21.214 8.786-5.448 0-10.676-1.442-15.245-4.147l-8.796 8.796c-2.013 2.012-2.285 5.236-.648 7.665 13.667 20.284 22.957 42.714 27.612 66.666.554 2.85 3.02 4.917 5.864 4.917h12.552c3.243-12.001 13.616-21.266 26.248-22.381h.001c8.4-.749 16.763 2.084 22.952 7.751 6.192 5.67 9.744 13.736 9.744 22.13v45c0 8.394-3.552 16.46-9.744 22.13-6.189 5.667-14.562 8.491-22.952 7.751-12.633-1.115-23.006-10.38-26.249-22.381h-12.552c-2.845 0-5.31 2.067-5.864 4.916-4.655 23.953-13.945 46.383-27.612 66.667-1.637 2.429-1.364 5.653.648 7.665l8.796 8.796c4.569-2.705 9.797-4.147 15.245-4.147 8.014 0 15.547 3.12 21.214 8.786 5.666 5.666 8.786 13.2 8.786 21.214s-3.12 15.547-8.787 21.213l-31.819 31.82c-5.936 5.936-14.147 9.128-22.541 8.757-8.384-.369-16.296-4.287-21.71-10.749-8.142-9.722-8.926-23.607-2.732-34.386l-8.878-8.877c-2.013-2.013-5.236-2.286-7.664-.648-20.285 13.667-42.715 22.957-66.667 27.612-2.85.554-4.917 3.02-4.917 5.864v12.446c12.925 3.339 22.5 15.098 22.5 29.051-.001 16.542-13.459 30-30.001 30z"/></svg>
+                    </div>
+                    <div class="icon-name" id="virus-name-label">Betavirus</div>
+                    <div class="trial-label">Developed Disease?</div>
+                    <div class="trial-value" id="disease-status">NO</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="confirmation-area">
+            <p><strong>Please confirm the information above:</strong></p>
+
+            <div class="checkbox-group">
+                <p style="margin-bottom: 5px;">Received vaccination?</p>
+                <label>
+                    <input type="radio" name="confirm-vaccination" id="confirm-vaccination-yes" onchange="checkConfirmation()">
+                    <span>Yes</span>
+                </label>
+                <label>
+                    <input type="radio" name="confirm-vaccination" id="confirm-vaccination-no" onchange="checkConfirmation()">
+                    <span>No</span>
+                </label>
+            </div>
+
+            <div class="checkbox-group">
+                <p style="margin-bottom: 5px;">Broke out with virus disease?</p>
+                <label>
+                    <input type="radio" name="confirm-disease" id="confirm-disease-yes" onchange="checkConfirmation()">
+                    <span>Yes</span>
+                </label>
+                <label>
+                    <input type="radio" name="confirm-disease" id="confirm-disease-no" onchange="checkConfirmation()">
+                    <span>No</span>
+                </label>
+            </div>
+        </div>
+
+        <button class="btn" id="next-trial-btn" disabled onclick="nextTrial()">Next Record</button>
+    </div>
+
+    <!-- Screen 5: Causal Rating -->
+    <div class="screen" id="screen-rating">
+        <h2 id="rating-header">Evaluate Vaccine Alpha</h2>
+
+        <div class="instructions">
+            <p>Based on the laboratory records you just reviewed, please answer the following questions about <span id="rating-vaccine-name" class="vaccine-name">Vaccine Alpha</span> and its effect on <span id="rating-virus-name" class="virus-name">Virus Alpha</span>.</p>
+        </div>
+
+        <div class="rating-container">
+            <p>How strongly does this vaccine <strong>prevent</strong> the disease related to this virus?</p>
+
+            <div class="scale-container">
+                <div class="scale-description">
+                    <span>Does not prevent<br>the disease at all</span>
+                    <span>Prevents the disease<br>every time</span>
+                </div>
+                <div class="scale-labels">
+                    <span>0</span>
+                    <span>25</span>
+                    <span>50</span>
+                    <span>75</span>
+                    <span>100</span>
+                </div>
+                <input type="range" class="scale-input" id="causal-rating" min="0" max="100" oninput="updateRatingDisplay('causal-rating', 'causal-value'); this.classList.add('touched')">
+                <div class="scale-value" id="causal-value">-</div>
+            </div>
+        </div>
+
+        <div class="rating-container">
+            <p>How <strong>confident</strong> are you in your judgment above?</p>
+
+            <div class="scale-container">
+                <div class="scale-description">
+                    <span>Not confident at all</span>
+                    <span>Completely confident</span>
+                </div>
+                <div class="scale-labels">
+                    <span>0</span>
+                    <span>25</span>
+                    <span>50</span>
+                    <span>75</span>
+                    <span>100</span>
+                </div>
+                <input type="range" class="scale-input" id="confidence-rating" min="0" max="100" oninput="updateRatingDisplay('confidence-rating', 'confidence-value'); this.classList.add('touched')">
+                <div class="scale-value" id="confidence-value">-</div>
+            </div>
+        </div>
+
+        <div class="rating-container">
+            <p>Out of 100 rats that <strong>received</strong> the vaccination, how many do you think developed the disease?</p>
+            <div class="scale-container">
+                <div class="scale-labels">
+                    <span>0</span>
+                    <span>25</span>
+                    <span>50</span>
+                    <span>75</span>
+                    <span>100</span>
+                </div>
+                <input type="range" class="scale-input" id="p-ec-rating" min="0" max="100" oninput="updateRatingDisplay('p-ec-rating', 'p-ec-value'); this.classList.add('touched')">
+                <div class="scale-value" id="p-ec-value">-</div>
+            </div>
+
+            <p>Out of 100 rats that <strong>did not receive</strong> the vaccination, how many do you think developed the disease?</p>
+            <div class="scale-container">
+                <div class="scale-labels">
+                    <span>0</span>
+                    <span>25</span>
+                    <span>50</span>
+                    <span>75</span>
+                    <span>100</span>
+                </div>
+                <input type="range" class="scale-input" id="p-e-not-c-rating" min="0" max="100" oninput="updateRatingDisplay('p-e-not-c-rating', 'p-e-not-c-value'); this.classList.add('touched')">
+                <div class="scale-value" id="p-e-not-c-value">-</div>
+            </div>
+        </div>
+
+        <button class="btn" onclick="submitRating()">Submit Evaluation</button>
+    </div>
+
+    <!-- Screen 6: Experiment Complete -->
+    <div class="screen" id="screen-complete">
+        <h1>Experiment Complete!</h1>
+
+        <div class="instructions">
+            <p>Thank you for participating in this study!</p>
+            <p>Your responses have been recorded.</p>
+        </div>
+
+        <h2>Summary of Your Responses</h2>
+        <table class="summary-table" id="results-table">
+            <thead>
+                <tr>
+                    <th>Vaccine</th>
+                    <th>P(e|c)</th>
+                    <th>P(e|¬c)</th>
+                    <th>ΔP</th>
+                    <th>Causal Power</th>
+                    <th>Your Rating</th>
+                    <th>Confidence</th>
+                </tr>
+            </thead>
+            <tbody id="results-body">
+            </tbody>
+        </table>
+
+        <button class="btn" onclick="downloadResults()">Download Results (CSV)</button>
+    </div>
+
+    <script>
+        // Experiment Configuration
+        const vaccineNames = [
+            "Astrion", "Bexoral", "Covitex", "Delphin", "Euvax",
+            "Florex", "Genvir", "Heptum", "Immunex", "Jovex",
+            "Kinevar", "Lumivax", "Medrix", "Novirin", "Omnivex", "Prevex"
+        ];
+
+        const virusNames = [
+            "Alphavirus", "Betavirus", "Corvid-X", "Deltagen", "Epsilon-7",
+            "Phage-F", "Gamma-12", "Helix-H", "Iota-9", "Jade-virus",
+            "Kappa-11", "Lambda-3", "Mu-virus", "Nu-strain", "Omicron-5", "Pi-virus"
+        ];
+
+        // Experimental conditions (Preventive Component)
+        // P(e|¬c) = 0.75 constant, P(e|c) varies
+        // Preventive power p = -ΔP / P(e|¬c) = -ΔP / 0.75
+        const conditions = [
+            { pEC: 0.75, pEnotC: 0.75, deltaP: 0.00, power: 0.00, syringeColor: '#3498db', virusColor: '#e74c3c' },
+            { pEC: 0.50, pEnotC: 0.75, deltaP: -0.25, power: 0.33, syringeColor: '#27ae60', virusColor: '#9b59b6' },
+            { pEC: 0.25, pEnotC: 0.75, deltaP: -0.50, power: 0.67, syringeColor: '#e67e22', virusColor: '#1abc9c' }
+        ];
+
+        // Experiment state
+        let state = {
+            currentScreen: 'screen-welcome',
+            currentConditionIndex: 0,
+            currentTrialIndex: 0,
+            trials: [],
+            conditionOrder: [],
+            results: [],
+            currentCondition: null
+        };
+
+        // Shuffle array (Fisher-Yates)
+        function shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        // Generate trials for a condition
+        function generateTrials(condition) {
+            const trials = [];
+
+            // 8 trials with vaccination (c present)
+            const numDiseaseWithVax = Math.round(condition.pEC * 8);
+            for (let i = 0; i < 8; i++) {
+                trials.push({
+                    vaccinated: true,
+                    disease: i < numDiseaseWithVax
+                });
+            }
+
+            // 8 trials without vaccination (c absent)
+            const numDiseaseWithoutVax = Math.round(condition.pEnotC * 8);
+            for (let i = 0; i < 8; i++) {
+                trials.push({
+                    vaccinated: false,
+                    disease: i < numDiseaseWithoutVax
+                });
+            }
+
+            // Shuffle trials
+            return shuffleArray(trials);
+        }
+
+        // Show screen
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+            state.currentScreen = screenId;
+        }
+
+        // Start a condition - show intro first
+        function startCondition() {
+            state.currentCondition = conditions[state.conditionOrder[state.currentConditionIndex]];
+            state.trials = generateTrials(state.currentCondition);
+            state.currentTrialIndex = 0;
+
+            // Show condition intro
+            const virusIndex = state.conditionOrder[state.currentConditionIndex] + 1;
+            document.getElementById('condition-intro-title').textContent = `Study ${state.currentConditionIndex + 1} of 3`;
+            document.getElementById('intro-vaccine-name').textContent = vaccineNames[virusIndex];
+            document.getElementById('intro-virus-name').textContent = virusNames[virusIndex];
+            document.getElementById('desc-vaccine-name').textContent = vaccineNames[virusIndex];
+            document.getElementById('desc-virus-name').textContent = virusNames[virusIndex];
+
+            // Update intro icon colors
+            const condition = state.currentCondition;
+            document.querySelectorAll('#intro-syringe-icon svg path').forEach(path => {
+                path.style.fill = condition.syringeColor;
+            });
+            document.querySelectorAll('#intro-virus-icon svg path').forEach(path => {
+                path.style.fill = condition.virusColor;
+            });
+
+            showScreen('screen-condition-intro');
+        }
+
+        // Start trials after intro
+        function startTrials() {
+            updateConditionLabel(state.currentConditionIndex + 1);
+            showTrial();
+            showScreen('screen-trial');
+        }
+
+        // Update condition label
+        function updateConditionLabel(index) {
+            const label = document.getElementById('condition-label');
+            const vaccineIndex = state.conditionOrder[state.currentConditionIndex] + 1;
+            const vaccineName = vaccineNames[vaccineIndex];
+            const virusName = virusNames[vaccineIndex];
+
+            label.textContent = `Study ${index}/3: Testing Vaccine ${vaccineName} against ${virusName}`;
+        }
+
+        // Update SVG icon colors based on condition
+        function updateIconColors() {
+            const condition = state.currentCondition;
+            const syringePaths = document.querySelectorAll('#syringe-icon svg path');
+            const virusPaths = document.querySelectorAll('#virus-icon svg path');
+
+            syringePaths.forEach(path => {
+                path.style.fill = condition.syringeColor;
+            });
+            virusPaths.forEach(path => {
+                path.style.fill = condition.virusColor;
+            });
+        }
+
+        // Show current trial
+        function showTrial() {
+            const trial = state.trials[state.currentTrialIndex];
+
+            // Update progress
+            const progress = ((state.currentTrialIndex + 1) / 16) * 100;
+            document.getElementById('trial-progress').style.width = progress + '%';
+            document.getElementById('progress-text').textContent = `Record ${state.currentTrialIndex + 1} of 16`;
+            document.getElementById('record-number').textContent = state.currentTrialIndex + 1;
+
+            // Update icon labels
+            const virusIndex = state.conditionOrder[state.currentConditionIndex] + 1;
+            document.getElementById('vaccine-name-label').textContent = vaccineNames[virusIndex];
+            document.getElementById('virus-name-label').textContent = virusNames[virusIndex];
+
+            // Update icon colors for this condition
+            updateIconColors();
+
+            // Update trial display
+            const vaccinationStatus = document.getElementById('vaccination-status');
+            const diseaseStatus = document.getElementById('disease-status');
+
+            vaccinationStatus.textContent = trial.vaccinated ? 'YES' : 'NO';
+            vaccinationStatus.className = 'trial-value ' + (trial.vaccinated ? 'yes' : 'no');
+
+            diseaseStatus.textContent = trial.disease ? 'YES' : 'NO';
+            diseaseStatus.className = 'trial-value ' + (trial.disease ? 'yes' : 'no');
+
+            // Reset radio buttons
+            document.getElementById('confirm-vaccination-yes').checked = false;
+            document.getElementById('confirm-vaccination-no').checked = false;
+            document.getElementById('confirm-disease-yes').checked = false;
+            document.getElementById('confirm-disease-no').checked = false;
+            document.getElementById('next-trial-btn').disabled = true;
+        }
+
+        // Check if correct confirmations are selected
+        function checkConfirmation() {
+            const trial = state.trials[state.currentTrialIndex];
+
+            const vaxYes = document.getElementById('confirm-vaccination-yes').checked;
+            const vaxNo = document.getElementById('confirm-vaccination-no').checked;
+            const diseaseYes = document.getElementById('confirm-disease-yes').checked;
+            const diseaseNo = document.getElementById('confirm-disease-no').checked;
+
+            // Check if both questions are answered correctly
+            const vaxCorrect = (trial.vaccinated && vaxYes) || (!trial.vaccinated && vaxNo);
+            const diseaseCorrect = (trial.disease && diseaseYes) || (!trial.disease && diseaseNo);
+
+            document.getElementById('next-trial-btn').disabled = !(vaxCorrect && diseaseCorrect);
+        }
+
+        // Move to next trial
+        function nextTrial() {
+            state.currentTrialIndex++;
+
+            if (state.currentTrialIndex >= 16) {
+                // All trials complete, show rating screen
+                showRatingScreen();
+            } else {
+                showTrial();
+            }
+        }
+
+        // Show rating screen
+        function showRatingScreen() {
+            const vaccineIndex = state.conditionOrder[state.currentConditionIndex] + 1;
+            const vaccineName = vaccineNames[vaccineIndex];
+            const virusName = virusNames[vaccineIndex];
+
+            document.getElementById('rating-header').textContent = `Evaluate Vaccine ${vaccineName}`;
+            document.getElementById('rating-vaccine-name').textContent = `Vaccine ${vaccineName}`;
+            document.getElementById('rating-virus-name').textContent = virusName;
+
+            // Reset ratings - no default position
+            document.getElementById('causal-value').textContent = '-';
+            document.getElementById('confidence-value').textContent = '-';
+            document.getElementById('p-ec-value').textContent = '-';
+            document.getElementById('p-e-not-c-value').textContent = '-';
+
+            // Hide slider handles until touched
+            document.getElementById('causal-rating').classList.remove('touched');
+            document.getElementById('confidence-rating').classList.remove('touched');
+            document.getElementById('p-ec-rating').classList.remove('touched');
+            document.getElementById('p-e-not-c-rating').classList.remove('touched');
+
+            showScreen('screen-rating');
+        }
+
+        // Update rating display
+        function updateRatingDisplay(inputId, displayId) {
+            const value = document.getElementById(inputId).value;
+            document.getElementById(displayId).textContent = value;
+        }
+
+        // Submit rating
+        function submitRating() {
+            const causalRating = parseInt(document.getElementById('causal-rating').value);
+            const confidenceRating = parseInt(document.getElementById('confidence-rating').value);
+            const pECRating = parseInt(document.getElementById('p-ec-rating').value);
+            const pEnotCRating = parseInt(document.getElementById('p-e-not-c-rating').value);
+
+            const conditionData = conditions[state.conditionOrder[state.currentConditionIndex]];
+            const vaccineIndex = state.conditionOrder[state.currentConditionIndex] + 1;
+
+            state.results.push({
+                conditionIndex: state.currentConditionIndex + 1,
+                vaccineName: vaccineNames[vaccineIndex],
+                virusName: virusNames[vaccineIndex],
+                pEC: conditionData.pEC,
+                pEnotC: conditionData.pEnotC,
+                deltaP: conditionData.deltaP,
+                causalPower: conditionData.power,
+                causalRating: causalRating,
+                confidenceRating: confidenceRating,
+                subjectivePEC: pECRating,
+                subjectivePEnotC: pEnotCRating
+            });
+
+            state.currentConditionIndex++;
+
+            if (state.currentConditionIndex >= 3) {
+                showResults();
+            } else {
+                startCondition();
+            }
+        }
+
+        // Start main experiment
+        function startExperiment() {
+            // Randomize condition order
+            state.conditionOrder = shuffleArray([...Array(3).keys()]);
+            state.currentConditionIndex = 0;
+            state.results = [];
+
+            startCondition();
+        }
+
+        // Show results
+        function showResults() {
+            const tbody = document.getElementById('results-body');
+            tbody.innerHTML = '';
+
+            state.results.forEach(result => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${result.vaccineName}</td>
+                    <td>${(result.pEC * 100).toFixed(0)}%</td>
+                    <td>${(result.pEnotC * 100).toFixed(0)}%</td>
+                    <td>${(result.deltaP * 100).toFixed(0)}%</td>
+                    <td>${result.causalPower !== null ? (result.causalPower * 100).toFixed(0) + '%' : 'Undefined'}</td>
+                    <td>${result.causalRating}</td>
+                    <td>${result.confidenceRating}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            showScreen('screen-complete');
+        }
+
+        // Download results as CSV
+        function downloadResults() {
+            const headers = [
+                'Study', 'Vaccine', 'Virus', 'P(e|c)', 'P(e|not c)', 'DeltaP',
+                'Causal Power', 'Causal Rating', 'Confidence',
+                'Subjective P(e|c)', 'Subjective P(e|not c)'
+            ];
+
+            let csv = headers.join(',') + '\n';
+
+            state.results.forEach(result => {
+                csv += [
+                    result.conditionIndex,
+                    result.vaccineName,
+                    result.virusName,
+                    result.pEC,
+                    result.pEnotC,
+                    result.deltaP,
+                    result.causalPower !== null ? result.causalPower : 'undefined',
+                    result.causalRating,
+                    result.confidenceRating,
+                    result.subjectivePEC,
+                    result.subjectivePEnotC
+                ].join(',') + '\n';
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'causal_inference_results.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
