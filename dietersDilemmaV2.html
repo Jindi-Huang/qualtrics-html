@@ -826,7 +826,7 @@
     }
 
     // DAG Iframe Component
-    function DAGIframe({ onComplete, playerName0, playerName1, playerIcon0, nRounds }) {
+    function DAGIframe({ onComplete, playerName0, playerName1, playerIcon0, nRounds, themeColor }) {
       const iframeRef = useRef(null);
 
       useEffect(() => {
@@ -848,7 +848,8 @@
                 playerName0: playerName0,
                 playerName1: playerName1,
                 playerIcon0: playerIcon0,
-                nRounds: nRounds
+                nRounds: nRounds,
+                themeColor: themeColor
               }
             }, '*');
           }
@@ -861,7 +862,7 @@
           window.removeEventListener('message', handleMessage);
           clearTimeout(timeout);
         };
-      }, [onComplete, playerName0, playerName1, playerIcon0, nRounds]);
+      }, [onComplete, playerName0, playerName1, playerIcon0, nRounds, themeColor]);
 
       return (
         <iframe
@@ -875,7 +876,8 @@
                 gameConfig: {
                   playerName0: playerName0,
                   playerName1: playerName1,
-                  playerIcon0: playerIcon0
+                  playerIcon0: playerIcon0,
+                  themeColor: themeColor
                 }
               }, '*');
             }
@@ -1559,6 +1561,7 @@
             playerName1={CONFIG.playerName1}
             playerIcon0={CONFIG.playerIcon0}
             nRounds={CONFIG.totalRounds}
+            themeColor={CONFIG.themeColor}
           />
         );
       }
