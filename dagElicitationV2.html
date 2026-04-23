@@ -8,6 +8,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="shared-icons.js"></script>
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; padding: 0; background: #ffffff; }
@@ -44,12 +45,15 @@
   <script>
     // =============== CONFIGURATION ===============
     const CONFIG = {
-      playerName0: 'Driftwell',
-      playerName1: 'Qivaryn',
-      playerIcon0: '🥤',
+      playerName0: 'Qivex-norm',
+      playerName1: 'Qivex',
+      playerIcon0: '',  // Deprecated - now using SVG
       noConfirmation: null,  // If 1, skip confirmation step and go directly to confidence
       nRounds: 30,
+      themeColor: 'purple'  // Theme color: 'blue', 'purple', 'teal', 'yellow'
     };
+
+    // Note: getThemeIconColor() is loaded from shared-icons.js
 
     // =============== QUALTRICS/PARENT COMMUNICATION ===============
     let parentOrigin = '*';
@@ -88,6 +92,7 @@
           if (qConfig.playerIcon0) CONFIG.playerIcon0 = qConfig.playerIcon0;
           if (qConfig.noConfirmation !== undefined) CONFIG.noConfirmation = qConfig.noConfirmation;
           if (qConfig.nRounds !== undefined) CONFIG.nRounds = parseInt(qConfig.nRounds) || CONFIG.nRounds;
+          if (qConfig.themeColor) CONFIG.themeColor = qConfig.themeColor;
         }
 
         if (!isInitialized) {
@@ -125,6 +130,66 @@
   <script type="text/babel">
     const { useState, useRef } = React;
 
+    // Get theme classes for buttons (uses shared getThemeClasses from shared-icons.js)
+    const theme = getThemeClasses(CONFIG.themeColor);
+
+    // SVG Icon Components for use inside SVG canvas
+    function DrinkIconSVG({ x, y, size, drinkName }) {
+      const color = getThemeIconColor(CONFIG.themeColor);
+      const scale = size / 50;
+
+      // Zyrax-norm: cup/glass icon
+      if (drinkName && drinkName.toLowerCase().includes('zyrax')) {
+        return (
+          <g transform={`translate(${x - size/2}, ${y - size/2}) scale(${scale * 0.1})`}>
+            <path d="M443.882,5.28C440.842,1.92,436.554,0,432.01,0h-352c-4.512,0-8.832,1.92-11.872,5.28c-3.008,3.328-4.512,7.808-4.064,12.32l48,480c0.832,8.192,7.712,14.4,15.936,14.4h256c8.224,0,15.104-6.208,15.904-14.4l48-480C448.394,13.088,446.922,8.608,443.882,5.28z M401.29,162.496c-40.672,13.152-93.6,19.232-135.136-14.848c-52.064-42.72-115.872-35.36-159.136-22.496L97.706,32h316.608L401.29,162.496z" fill={color} />
+          </g>
+        );
+      }
+      // Nexol-norm: bottle/flask icon
+      if (drinkName && drinkName.toLowerCase().includes('nexol')) {
+        return (
+          <g transform={`translate(${x - size/2}, ${y - size/2}) scale(${scale * 0.5})`}>
+            <path d="m68.3983231 39.4338799v51.373867c0 3.6944504-2.9977417 6.6922531-6.6921844 6.6922531h-23.4122773c-3.6944466 0-6.6921864-2.9978027-6.6921864-6.6922531v-51.373867c0-3.2933311 1.0977535-6.4916306 3.1244678-9.0988846l5.3199768-6.8294144c1.2877464-1.6572304 1.9844475-3.6839428 1.9844475-5.773922v-2.7444191h15.9388657v2.7444191c0 2.0899792.696701 4.1166916 1.9844475 5.773922l5.3199768 6.8294144c2.0267105 2.607254 3.124466 5.8055534 3.124466 9.0988846z" fill={color} transform="translate(-25, 0)" />
+            <path d="m58.727375 11.8242331h-17.45475c-.7878952 0-1.426609-.6387148-1.426609-1.426609v-6.471015c-.0000001-.7878943.6387138-1.4266091 1.426609-1.4266091h17.45475c.7878952 0 1.426609.6387148 1.426609 1.4266093v6.471015c.0000001.787894-.6387138 1.4266088-1.426609 1.4266088z" fill={color} transform="translate(-25, 0)" />
+          </g>
+        );
+      }
+      // Qivex-norm (default): cup with straw icon
+      return (
+        <g transform={`translate(${x - size/2}, ${y - size/2}) scale(${scale * 0.1})`}>
+          <polygon points="246.784,94.208 246.784,53.248 344.064,29.184 336.384,0 216.064,29.184 216.064,94.208 82.432,94.208 82.432,160.768 380.416,160.768 380.416,94.208" fill={color} />
+          <path d="M102.912,186.368l35.328,249.856c2.048,15.36,15.36,26.624,30.208,26.624h124.416c15.36,0,28.16-11.264,30.208-26.624L358.4,186.368H102.912z" fill={color} />
+        </g>
+      );
+    }
+
+    function BioClipIconSVG({ x, y, size }) {
+      const scale = size / 40;
+      return (
+        <g transform={`translate(${x - size/2}, ${y - size/2}) scale(${scale})`}>
+          <rect x="2" y="2" width="36" height="36" rx="4" fill="#0f172a" stroke="#334155" strokeWidth="1" />
+          <rect x="5" y="5" width="30" height="26" rx="2" fill="#14532d" />
+          <circle cx="20" cy="15" r="8" fill="#22c55e" />
+          <path d="M15 15 L18 18 L25 11" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          <text x="20" y="27" textAnchor="middle" fill="white" fontSize="4" fontWeight="bold">NORMAL</text>
+          <rect x="10" y="33" width="20" height="4" rx="1" fill="#334155" />
+        </g>
+      );
+    }
+
+    function NeutralFaceIconSVG({ x, y, size }) {
+      const scale = size / 48;
+      return (
+        <g transform={`translate(${x - size/2}, ${y - size/2}) scale(${scale})`} fill="#9ca3af" stroke="#9ca3af">
+          <path d="m42.07179 9.7714a22.99476 22.99476 0 1 1 -4.0696-4.0195" fill="none" strokeLinecap="round" strokeMiterlimit="10" strokeWidth="2"/>
+          <circle cx="40.094" cy="7.781" r="1" stroke="none"/>
+          <ellipse cx="31.6" cy="19.125" rx="2.4" ry="3" stroke="none"/>
+          <ellipse cx="16.4" cy="19.125" rx="2.4" ry="3" stroke="none"/>
+        </g>
+      );
+    }
+
     // DAG Drawing Component
     function DAGDrawer({ onComplete, playerName0, playerName1, playerIcon0 }) {
       const svgRef = useRef(null);
@@ -146,9 +211,9 @@
 
       // Node definitions
       const nodes = [
-        { id: 'A', label: `Drink ${playerName0}`, x: 200, y: 100, icon: playerIcon0 },
-        { id: 'X', label: `${playerName1} Level`, x: 500, y: 100, icon: '📟' },
-        { id: 'Y', label: 'How You Feel', x: 350, y: 300, icon: '😶' }
+        { id: 'A', label: `Drink ${playerName0}`, x: 200, y: 100, iconType: 'drink', drinkName: playerName0 },
+        { id: 'X', label: `${playerName1} Level`, x: 500, y: 100, iconType: 'bioclip' },
+        { id: 'Y', label: 'How You Feel', x: 350, y: 300, iconType: 'face' }
       ];
 
       // Node pairs for confirmation
@@ -418,18 +483,18 @@
                           cy={node.y}
                           r={40}
                           fill="white"
-                          stroke="#374151"
+                          stroke="#9ca3af"
                           strokeWidth={2}
                         />
-                        <text
-                          x={node.x}
-                          y={node.y}
-                          textAnchor="middle"
-                          dominantBaseline="central"
-                          className="text-4xl pointer-events-none"
-                        >
-                          {node.icon}
-                        </text>
+                        {node.iconType === 'drink' && (
+                          <DrinkIconSVG x={node.x} y={node.y} size={40} drinkName={node.drinkName} />
+                        )}
+                        {node.iconType === 'bioclip' && (
+                          <BioClipIconSVG x={node.x} y={node.y} size={40} />
+                        )}
+                        {node.iconType === 'face' && (
+                          <NeutralFaceIconSVG x={node.x} y={node.y} size={40} />
+                        )}
                         <text
                           x={node.x}
                           y={node.y + 60}
@@ -455,7 +520,7 @@
                     The payment mechanism is set up such that you will earn the most by answering truthfully.{' '}
                     <button
                       onClick={() => setShowDetails(!showDetails)}
-                      className="text-blue-600 hover:text-blue-800 underline"
+                      className={`${theme.pillText} hover:opacity-80 underline`}
                     >
                       {showDetails ? 'Hide details' : 'Show details'}
                     </button>
@@ -513,12 +578,12 @@
                         step="1"
                         value={confidence !== null ? confidence : 50}
                         onChange={(e) => setConfidence(parseInt(e.target.value))}
-                        className={`w-full h-4 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600 relative z-10 ${confidence === null ? 'slider-hidden-thumb' : ''}`}
-                        style={{ pointerEvents: confidence === null ? 'none' : 'auto' }}
+                        className={`w-full h-4 bg-gray-200 rounded-lg appearance-none cursor-pointer relative z-10 ${confidence === null ? 'slider-hidden-thumb' : ''}`}
+                        style={{ pointerEvents: confidence === null ? 'none' : 'auto', accentColor: getThemeIconColor(CONFIG.themeColor) }}
                       />
                     </div>
                     <div className="text-center mt-3">
-                      <span className="text-3xl font-bold text-blue-600">
+                      <span className={`text-3xl font-bold ${theme.iconColor}`}>
                         {confidence !== null ? `${confidence}%` : '—'}
                       </span>
                     </div>
@@ -529,7 +594,7 @@
                     disabled={confidence === null}
                     className={`w-full py-3 rounded-lg font-medium text-lg ${
                       confidence !== null
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                        ? `${theme.buttonBg} ${theme.buttonHover} text-white`
                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     }`}
                   >
@@ -741,20 +806,20 @@
                               cy={node.y}
                               r={40}
                               fill="white"
-                              stroke={isHighlighted ? "#fbbf24" : "#374151"}
+                              stroke={isHighlighted ? "#fbbf24" : "#9ca3af"}
                               strokeWidth={isHighlighted ? 4 : 2}
                               className={confirmMode ? "" : "cursor-pointer hover:stroke-blue-500"}
                               onMouseDown={(e) => handleMouseDown(node.id, e)}
                             />
-                            <text
-                              x={node.x}
-                              y={node.y}
-                              textAnchor="middle"
-                              dominantBaseline="central"
-                              className="text-4xl pointer-events-none"
-                            >
-                              {node.icon}
-                            </text>
+                            {node.iconType === 'drink' && (
+                              <DrinkIconSVG x={node.x} y={node.y} size={40} drinkName={node.drinkName} />
+                            )}
+                            {node.iconType === 'bioclip' && (
+                              <BioClipIconSVG x={node.x} y={node.y} size={40} />
+                            )}
+                            {node.iconType === 'face' && (
+                              <NeutralFaceIconSVG x={node.x} y={node.y} size={40} />
+                            )}
                           </g>
                           {/* Label - not animated */}
                           <text
@@ -785,7 +850,7 @@
                           disabled={!hasAnyEdge}
                           className={`px-6 py-2 rounded-lg font-medium ${
                             hasAnyEdge
-                              ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                              ? `${theme.buttonBg} ${theme.buttonHover} text-white`
                               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                           }`}
                         >
@@ -798,7 +863,7 @@
 
                 {/* Confirmation Panel */}
                 {confirmMode && (
-                  <div className="w-80 bg-blue-50 rounded-xl p-4 border border-blue-200">
+                  <div className={`w-80 ${theme.panelBg} rounded-xl p-4 border ${theme.panelBorder}`}>
                     <div className="text-sm text-gray-600 mb-2">
                       Question {confirmIndex + 1} of {nodePairs.length}
                     </div>
@@ -816,7 +881,7 @@
                         <div className="flex gap-2">
                           <button
                             onClick={handleConfirmChoice}
-                            className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium"
+                            className="flex-1 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium"
                           >
                             Confirm
                           </button>
@@ -837,7 +902,7 @@
                               key={opt}
                               className={`block p-3 rounded-lg border-2 cursor-pointer transition-all ${
                                 selectedOption === opt
-                                  ? 'bg-blue-100 border-blue-500'
+                                  ? `${theme.pillBg} ${theme.panelBorder}`
                                   : 'bg-white border-gray-200 hover:border-gray-300'
                               }`}
                             >
@@ -865,7 +930,7 @@
                             disabled={selectedOption === null}
                             className={`flex-1 px-4 py-2 rounded-lg font-medium ${
                               selectedOption !== null
-                                ? 'bg-green-600 hover:bg-green-700 text-white'
+                                ? `${theme.buttonBg} ${theme.buttonHover} text-white`
                                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                             }`}
                           >

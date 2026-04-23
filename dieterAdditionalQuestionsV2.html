@@ -8,6 +8,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="shared-icons.js"></script>
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; background: #ffffff; }
@@ -57,6 +58,7 @@
           if (qConfig.gameVersionsDescriptionOrderDieter1) CONFIG.gameVersionsDescriptionOrderDieter1 = qConfig.gameVersionsDescriptionOrderDieter1;
           if (qConfig.gameVersionsDescriptionOrderDieter2) CONFIG.gameVersionsDescriptionOrderDieter2 = qConfig.gameVersionsDescriptionOrderDieter2;
           if (qConfig.order) CONFIG.order = qConfig.order;
+          if (qConfig.themeColor) CONFIG.themeColor = qConfig.themeColor;
           console.log('Applied config:', CONFIG);
         }
 
@@ -95,23 +97,64 @@
 
     // =============== CONFIGURATION ===============
     const CONFIG = {
-      playerName0: 'Driftwell',
-      playerName1: 'Qivaryn',
+      playerName0: 'Qivex-norm',
+      playerName1: 'Qivex',
       playerName2Pos: 'energetic',
-      playerName2: 'Qivaryn',
+      playerName2: 'Qivex',
       playerPronoun2: 'it',
-      playerIcon0: '🥤',
+      playerIcon0: '',
       nRounds: 30,
       currentSymbol: '1',
       gameCounter: 1,
       gameVersionsDescriptionOrderDieter1: 'A',
       gameVersionsDescriptionOrderDieter2: 'B',
-      order: 'AY'  // 'AXY' shows all questions, 'AY' hides X-related questions
+      order: 'AY',  // 'AXY' shows all questions, 'AY' hides X-related questions
+      themeColor: 'purple'  // Theme color: 'blue', 'purple', 'teal', 'yellow'
     };
+
+    // Use shared getThemeClasses with CONFIG.themeColor
+    // This shadows the shared function for convenience
+    const getThemeClassesLocal = () => getThemeClasses(CONFIG.themeColor);
   </script>
 
   <script type="text/babel">
     const { useState, useEffect, useRef } = React;
+
+    // SVG Icons
+    function DrinkIcon({ className, drinkName }) {
+      // Zyrax-norm: cup/glass icon
+      if (drinkName && drinkName.toLowerCase().includes('zyrax')) {
+        return (
+          <svg className={className} viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+            <path d="M443.882,5.28C440.842,1.92,436.554,0,432.01,0h-352c-4.512,0-8.832,1.92-11.872,5.28c-3.008,3.328-4.512,7.808-4.064,12.32l48,480c0.832,8.192,7.712,14.4,15.936,14.4h256c8.224,0,15.104-6.208,15.904-14.4l48-480C448.394,13.088,446.922,8.608,443.882,5.28z M401.29,162.496c-40.672,13.152-93.6,19.232-135.136-14.848c-52.064-42.72-115.872-35.36-159.136-22.496L97.706,32h316.608L401.29,162.496z"/>
+          </svg>
+        );
+      }
+      // Nexol-norm: bottle/flask icon
+      if (drinkName && drinkName.toLowerCase().includes('nexol')) {
+        return (
+          <svg className={className} viewBox="25 0 50 100" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+            <path d="m68.3983231 39.4338799v51.373867c0 3.6944504-2.9977417 6.6922531-6.6921844 6.6922531h-23.4122773c-3.6944466 0-6.6921864-2.9978027-6.6921864-6.6922531v-51.373867c0-3.2933311 1.0977535-6.4916306 3.1244678-9.0988846l5.3199768-6.8294144c1.2877464-1.6572304 1.9844475-3.6839428 1.9844475-5.773922v-2.7444191h15.9388657v2.7444191c0 2.0899792.696701 4.1166916 1.9844475 5.773922l5.3199768 6.8294144c2.0267105 2.607254 3.124466 5.8055534 3.124466 9.0988846z"/>
+            <path d="m58.727375 11.8242331h-17.45475c-.7878952 0-1.426609-.6387148-1.426609-1.426609v-6.471015c-.0000001-.7878943.6387138-1.4266091 1.426609-1.4266091h17.45475c.7878952 0 1.426609.6387148 1.426609 1.4266093v6.471015c.0000001.787894-.6387138 1.4266088-1.426609 1.4266088z"/>
+          </svg>
+        );
+      }
+      // Qivex-norm (default): cup with straw icon
+      return (
+        <svg className={className} viewBox="0 0 462.848 462.848" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+          <polygon points="246.784,94.208 246.784,53.248 344.064,29.184 336.384,0 216.064,29.184 216.064,94.208 82.432,94.208 82.432,160.768 380.416,160.768 380.416,94.208"/>
+          <path d="M102.912,186.368l35.328,249.856c2.048,15.36,15.36,26.624,30.208,26.624h124.416c15.36,0,28.16-11.264,30.208-26.624L358.4,186.368H102.912z"/>
+        </svg>
+      );
+    }
+
+    function SkipIcon({ className }) {
+      return (
+        <svg className={className} viewBox="0 0 512.095 512.095" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+          <path d="m256.047 0c-141.411 0-256.047 114.636-256.047 256.047s114.636 256.047 256.047 256.047 256.047-114.636 256.047-256.047-114.636-256.047-256.047-256.047zm-192.313 256.047c0-106.212 86.102-192.313 192.313-192.313 41.614 0 80.139 13.221 111.61 35.687l-268.236 268.237c-22.466-31.471-35.687-69.996-35.687-111.611zm192.313 192.314c-41.589 0-80.092-13.204-111.552-35.644l268.221-268.221c22.441 31.46 35.644 69.964 35.644 111.552.001 106.211-86.101 192.313-192.313 192.313z"/>
+        </svg>
+      );
+    }
 
     const PERCENTAGE_OPTIONS = [
       '0 - 10%',
@@ -126,14 +169,18 @@
       '91 - 100%'
     ];
 
-    function RadioQuestion({ questionNumber, questionText, introText, options, selectedValue, onChange }) {
+    function RadioQuestion({ questionNumber, questionText, questionContent, introText, options, selectedValue, onChange }) {
       const optionList = options || PERCENTAGE_OPTIONS;
       return (
         <div className="mb-8">
           {introText && (
             <p className="text-base text-gray-600 mb-3" dangerouslySetInnerHTML={{ __html: introText }} />
           )}
-          <p className="text-base text-gray-800 mb-4" dangerouslySetInnerHTML={{ __html: `Q${questionNumber}. ${questionText}` }} />
+          {questionContent ? (
+            <p className="text-base text-gray-800 mb-4">Q{questionNumber}. {questionContent}</p>
+          ) : (
+            <p className="text-base text-gray-800 mb-4" dangerouslySetInnerHTML={{ __html: `Q${questionNumber}. ${questionText}` }} />
+          )}
           <div className="space-y-2 ml-4">
             {optionList.map((option, idx) => (
               <label key={idx} className="flex items-start gap-3 cursor-pointer py-1 px-3 rounded-lg hover:bg-gray-50 transition-colors">
@@ -276,7 +323,11 @@
       const page1Questions = [
         {
           key: 'q1',
-          text: `How often did <strong>you drink ${CONFIG.playerName0}</strong> ${CONFIG.playerIcon0} <span style="color: #64748b; font-style: italic;">(what percentage of the weeks)</span>?`
+          content: (
+            <>
+              How often did <strong>you drink {CONFIG.playerName0}</strong> <DrinkIcon className={`inline-block w-4 h-4 align-middle mx-1 ${getThemeClassesLocal().iconColor}`} drinkName={CONFIG.playerName0} /> <span style={{color: '#64748b', fontStyle: 'italic'}}>(what percentage of the weeks)</span>?
+            </>
+          )
         },
         ...(isAYOrder ? [] : [{
           key: 'q2',
@@ -324,6 +375,7 @@
                       key={q.key}
                       questionNumber={idx + 1}
                       questionText={q.text}
+                      questionContent={q.content}
                       selectedValue={answers[q.key]}
                       onChange={(val) => handleChange(q.key, val)}
                     />
@@ -335,7 +387,7 @@
 
                   <button
                     onClick={() => handleNextPage(isAYOrder ? ['q1', 'q3'] : ['q1', 'q2', 'q3'], 2)}
-                    className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg"
+                    className={`w-full py-3 px-6 ${getThemeClassesLocal().buttonBg} ${getThemeClassesLocal().buttonHover} text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg`}
                   >
                     Next
                   </button>
@@ -369,7 +421,7 @@
 
                 <button
                   onClick={() => handleNextPage(['q4', 'q5'], 3)}
-                  className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg"
+                  className={`w-full py-3 px-6 ${getThemeClassesLocal().buttonBg} ${getThemeClassesLocal().buttonHover} text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg`}
                 >
                   Next
                 </button>
@@ -381,13 +433,13 @@
               <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
                 <div className="mb-8">
                   <p className="text-base text-gray-800 mb-4">
-                    Q{isAYOrder ? 5 : 6}. In your own words, please describe how you usually chose between "drink {CONFIG.playerName0} {CONFIG.playerIcon0}" and "Skip" in study {CONFIG.currentSymbol}. How did your decision making evolve over time?
+                    Q{isAYOrder ? 5 : 6}. In your own words, please describe how you usually chose between "drink {CONFIG.playerName0}" <DrinkIcon className={`inline-block w-4 h-4 align-middle mx-1 ${getThemeClassesLocal().iconColor}`} drinkName={CONFIG.playerName0} /> and "Skip" <SkipIcon className={`inline-block w-4 h-4 align-middle mx-1 ${getThemeClassesLocal().iconColor}`} /> in study {CONFIG.currentSymbol}. How did your decision making evolve over time?
                   </p>
                   <textarea
                     value={answers.q7}
                     onChange={(e) => handleInputChange(e, keylogQ7, lastLenQ7, 'q7')}
                     onKeyDown={(e) => handleKeyDown(e, keylogQ7)}
-                    className="w-full h-40 p-4 border border-gray-300 rounded-lg text-sm text-gray-700 resize-y focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+                    className={`w-full h-40 p-4 border border-gray-300 rounded-lg text-sm text-gray-700 resize-y focus:outline-none focus:ring-2 ${getThemeClassesLocal().focusRing} ${getThemeClassesLocal().focusBorder}`}
                   />
                 </div>
 
@@ -402,7 +454,7 @@
                     value={answers.q8}
                     onChange={(e) => handleInputChange(e, keylogQ8, lastLenQ8, 'q8')}
                     onKeyDown={(e) => handleKeyDown(e, keylogQ8)}
-                    className="w-full h-40 p-4 border border-gray-300 rounded-lg text-sm text-gray-700 resize-y focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+                    className={`w-full h-40 p-4 border border-gray-300 rounded-lg text-sm text-gray-700 resize-y focus:outline-none focus:ring-2 ${getThemeClassesLocal().focusRing} ${getThemeClassesLocal().focusBorder}`}
                   />
                 </div>
 
@@ -412,7 +464,7 @@
 
                 <button
                   onClick={handleSubmit}
-                  className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg"
+                  className={`w-full py-3 px-6 ${getThemeClassesLocal().buttonBg} ${getThemeClassesLocal().buttonHover} text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg`}
                 >
                   Submit
                 </button>
