@@ -280,15 +280,14 @@
 
     // Drink button mini
     function DrinkButtonMini({ name, type }) {
-      const bgColor = 'bg-blue-600';
       return (
-        <div className={`w-20 py-3 rounded-lg flex flex-col items-center justify-center gap-1 ${bgColor} text-white`}>
+        <div className="w-20 py-3 rounded-xl flex flex-col items-center justify-center gap-1 bg-gradient-to-b from-white to-gray-100 border-2 border-gray-300 border-b-gray-400 shadow-md">
           {type === 'skip' ? (
-            <SkipIcon className="w-5 h-5" />
+            <SkipIcon className="w-5 h-5 text-blue-600" />
           ) : (
-            <DrinkIcon className="w-5 h-5" />
+            <DrinkIcon className="w-5 h-5 text-blue-600" />
           )}
-          <span className="text-sm font-bold">{name}</span>
+          <span className="text-sm font-bold text-gray-700">{name}</span>
         </div>
       );
     }

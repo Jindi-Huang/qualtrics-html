@@ -456,7 +456,8 @@
       const displayOptions = increasingOrder ? options : [...options].reverse();
 
       // Split into decreases (first 10), no change (index 10), and increases (last 10)
-      const decreaseOptions = displayOptions.slice(0, 10);
+      // Reverse decrease options so both columns go from low to high numbers
+      const decreaseOptions = [...displayOptions.slice(0, 10)].reverse();
       const noChangeOption = displayOptions[10];
       const increaseOptions = displayOptions.slice(11);
 
@@ -473,7 +474,8 @@
             <div className="space-y-1">
               <div className="text-xs text-gray-500 font-medium mb-1 text-center">Decreases</div>
               {decreaseOptions.map((option, idx) => {
-                const displayIndex = idx;
+                // Since decreaseOptions is reversed, map idx back to original displayIndex
+                const displayIndex = 9 - idx;
                 const actualIndex = getActualIndex(displayIndex);
                 const isSelected = value === actualIndex;
                 return (
@@ -652,30 +654,44 @@
         const drinkHighlight = (highlightButton === 'drink' || highlightButton === 'both') ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-white' : '';
         const skipHighlight = (highlightButton === 'skip' || highlightButton === 'both') ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-white' : '';
 
+        // Active state (selected): gray gradient with theme border and ring
+        // Cause state: gray gradient with gray border, theme icon (no ring)
+        // Inactive state: lighter gray
+        const drinkSelected = isOn;
+        const skipSelected = isOff;
+        const drinkActive = isOn || isCause;
+        const skipActive = isOff || isCause;
+
         return (
           <div className="flex flex-col items-center">
             <div className="text-xs text-gray-500 mb-1 h-4">Morning Decision</div>
             <div className="flex gap-2 h-24 items-center mt-4">
               {/* Drink button */}
-              <div className={`relative w-24 h-18 px-2 py-1.5 rounded-lg font-bold transition-all flex flex-col items-center justify-center gap-0.5 shadow-md ${
-                isOn || isCause ? `${theme.buttonBg} text-white` :
-                'bg-gray-200 text-gray-400'
+              <div className={`relative w-24 h-18 px-2 py-1.5 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-0.5 border-2 ${
+                drinkSelected
+                  ? `bg-gradient-to-b from-gray-100 to-gray-200 ${theme.panelBorder} shadow-md ring-4 ${theme.buttonRing}`
+                  : drinkActive
+                    ? 'bg-gradient-to-b from-white to-gray-100 border-gray-300 border-b-gray-400 shadow-md'
+                    : 'bg-gray-100 border-gray-200'
               } ${drinkHighlight}`}>
-                <DrinkIcon className="w-5 h-5" drinkName={playerName0} />
+                <DrinkIcon className={`w-5 h-5 ${drinkActive ? theme.iconColor : 'text-gray-400'}`} drinkName={playerName0} />
                 <div className="text-center">
-                  <div className="whitespace-nowrap text-[10px]">Drink {playerName0}</div>
-                  <div className="text-[8px] opacity-70">-{CONFIG.currency}{CONFIG.aCost}</div>
+                  <div className={`whitespace-nowrap text-[10px] ${drinkActive ? 'text-gray-700' : 'text-gray-400'}`}>Drink {playerName0}</div>
+                  <div className={`text-[8px] ${drinkActive ? 'text-gray-500' : 'text-gray-300'}`}>-{CONFIG.currency}{CONFIG.aCost}</div>
                 </div>
               </div>
               {/* Skip button */}
-              <div className={`relative w-24 h-18 px-2 py-1.5 rounded-lg font-bold transition-all flex flex-col items-center justify-center gap-0.5 shadow-md ${
-                isOff || isCause ? `${theme.buttonBg} text-white` :
-                'bg-gray-200 text-gray-400'
+              <div className={`relative w-24 h-18 px-2 py-1.5 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-0.5 border-2 ${
+                skipSelected
+                  ? `bg-gradient-to-b from-gray-100 to-gray-200 ${theme.panelBorder} shadow-md ring-4 ${theme.buttonRing}`
+                  : skipActive
+                    ? 'bg-gradient-to-b from-white to-gray-100 border-gray-300 border-b-gray-400 shadow-md'
+                    : 'bg-gray-100 border-gray-200'
               } ${skipHighlight}`}>
-                <SkipIcon className="w-5 h-5" />
+                <SkipIcon className={`w-5 h-5 ${skipActive ? theme.iconColor : 'text-gray-400'}`} />
                 <div className="text-center">
-                  <div className="text-[10px]">Skip</div>
-                  <div className="text-[8px] opacity-70">{CONFIG.currency}0</div>
+                  <div className={`text-[10px] ${skipActive ? 'text-gray-700' : 'text-gray-400'}`}>Skip</div>
+                  <div className={`text-[8px] ${skipActive ? 'text-gray-500' : 'text-gray-300'}`}>{CONFIG.currency}0</div>
                 </div>
               </div>
             </div>
