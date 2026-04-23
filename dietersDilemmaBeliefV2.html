@@ -453,17 +453,15 @@
 
     // Verbal Scale Options Component
     function VerbalScale({ value, onChange, options, increasingOrder }) {
-      const displayOptions = increasingOrder ? options : [...options].reverse();
+      // Always use original options array structure:
+      // options[0-9] = Decreases (90-100% down to 1-9%)
+      // options[10] = No change
+      // options[11-20] = Increases (1-9% up to 90-100%)
 
-      // Split into decreases (first 10), no change (index 10), and increases (last 10)
-      // Reverse decrease options so both columns go from low to high numbers
-      const decreaseOptions = [...displayOptions.slice(0, 10)].reverse();
-      const noChangeOption = displayOptions[10];
-      const increaseOptions = displayOptions.slice(11);
-
-      const getActualIndex = (displayIndex) => {
-        return increasingOrder ? displayIndex : (options.length - 1 - displayIndex);
-      };
+      // Reverse decrease options so both columns go from low to high numbers (1-9% at top)
+      const decreaseOptions = [...options.slice(0, 10)].reverse();
+      const noChangeOption = options[10];
+      const increaseOptions = options.slice(11);
 
       const accentColor = getThemeHexColor();
 
@@ -474,9 +472,8 @@
             <div className="space-y-1">
               <div className="text-xs text-gray-500 font-medium mb-1 text-center">Decreases</div>
               {decreaseOptions.map((option, idx) => {
-                // Since decreaseOptions is reversed, map idx back to original displayIndex
-                const displayIndex = 9 - idx;
-                const actualIndex = getActualIndex(displayIndex);
+                // decreaseOptions is reversed, so idx 0 = options[9], idx 9 = options[0]
+                const actualIndex = 9 - idx;
                 const isSelected = value === actualIndex;
                 return (
                   <label
@@ -505,8 +502,8 @@
             <div className="space-y-1">
               <div className="text-xs text-gray-500 font-medium mb-1 text-center">Increases</div>
               {increaseOptions.map((option, idx) => {
-                const displayIndex = idx + 11;
-                const actualIndex = getActualIndex(displayIndex);
+                // increaseOptions starts at options[11], so idx 0 = options[11], idx 9 = options[20]
+                const actualIndex = 11 + idx;
                 const isSelected = value === actualIndex;
                 return (
                   <label
@@ -535,17 +532,17 @@
           {/* No change option - centered below */}
           <label
             className={`flex items-center justify-center p-2 rounded-lg border-2 cursor-pointer transition-all text-sm font-medium ${
-              value === getActualIndex(10)
+              value === 10
                 ? `${getThemeClassesLocal().buttonBg} text-white border-transparent`
                 : 'bg-white border-gray-200 hover:border-gray-300'
             }`}
-            onClick={() => onChange(getActualIndex(10))}
+            onClick={() => onChange(10)}
           >
             <input
               type="radio"
               name="causalEffect"
-              checked={value === getActualIndex(10)}
-              onChange={() => onChange(getActualIndex(10))}
+              checked={value === 10}
+              onChange={() => onChange(10)}
               className="mr-2"
               style={{ accentColor }}
             />
