@@ -198,7 +198,7 @@
     const CONFIG = {
       yBonus: 2.00,           // Bonus when Y=1
       aCost: 0.00,            // Cost of drinking (A=1)
-      totalRounds: 20,
+      totalRounds: 4,
       currency: '$',
       id: 1,
       
@@ -483,14 +483,25 @@
       return stats;
     }
 
+    // Calendar Icon for New Day overlay
+    function CalendarIcon({ className }) {
+      return (
+        <svg className={className} viewBox="0 0 511.977 511.977" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+          <path d="m14.977 390.988h392c3.516 0 6.914-1.23 9.609-3.472 3.765-3.153 89.652-77.038 94.889-236.528h-421c-5.217 144.774-84.315 212.822-85.137 213.501-4.819 4.072-6.592 10.723-4.424 16.641 2.153 5.903 7.764 9.858 14.063 9.858z"/>
+          <path d="m496.976 60.988h-75v-15c0-8.4-6.6-15-15-15s-15 6.6-15 15v15h-76v-15c0-8.4-6.6-15-15-15s-15 6.6-15 15v15h-75v-15c0-8.4-6.6-15-15-15s-15 6.6-15 15v15h-75c-8.4 0-15 6.6-15 15v45h421v-45c0-8.4-6.6-15-15-15z"/>
+          <path d="m435.849 410.515c-8.145 6.782-18.369 10.474-28.872 10.474h-316v45c0 8.291 6.709 15 15 15h391c8.291 0 15-6.709 15-15v-168.146c-28.92 70.951-69.276 106.937-76.128 112.672z"/>
+        </svg>
+      );
+    }
+
     // New Day overlay
     function NewDayOverlay({ show, dayNumber }) {
       if (!show) return null;
-      
+
       return (
         <div className="absolute inset-0 bg-white flex items-center justify-center z-20 rounded-2xl">
           <div className="text-center">
-            <div className="text-6xl mb-4">🌅</div>
+            <CalendarIcon className="w-16 h-16 mx-auto mb-4 text-gray-700" />
             <div className="text-3xl font-bold text-gray-900">New Monday</div>
             <div className="text-xl text-gray-500 mt-2">Week {dayNumber}</div>
           </div>
@@ -853,7 +864,7 @@
       return (
         <iframe
           ref={iframeRef}
-          src="dagElicitation.html"
+          src="dagElicitationV2.html"
           style={{ width: '100%', height: '100vh', border: 'none' }}
           onLoad={() => {
             if (iframeRef.current && iframeRef.current.contentWindow) {
