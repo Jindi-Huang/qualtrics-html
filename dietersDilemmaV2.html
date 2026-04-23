@@ -929,6 +929,15 @@
     // Price Elicitation Intro Page
     function PriceElicitationIntro({ onContinue }) {
       const theme = getThemeClasses();
+      const [showButton, setShowButton] = useState(false);
+
+      useEffect(() => {
+        const timer = setTimeout(() => {
+          setShowButton(true);
+        }, 10000);
+        return () => clearTimeout(timer);
+      }, []);
+
       return (
         <div className="min-h-screen bg-white px-4 pt-8">
           <div className="max-w-6xl mx-auto text-center">
@@ -963,7 +972,9 @@
             </div>
             <button
               onClick={onContinue}
-              className={`px-8 py-4 ${theme.buttonBg} ${theme.buttonHover} text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all`}
+              className={`px-8 py-4 ${theme.buttonBg} ${theme.buttonHover} text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-500 ${
+                showButton ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              }`}
             >
               Continue to Choices
             </button>
