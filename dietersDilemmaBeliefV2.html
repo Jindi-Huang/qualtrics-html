@@ -8,6 +8,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="shared-icons.js"></script>
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; background: #ffffff; }
@@ -97,6 +98,7 @@
           if (qConfig.rationalInference) CONFIG.rationalInference = qConfig.rationalInference;
           if (qConfig.increasingOrder !== undefined) CONFIG.increasingOrder = qConfig.increasingOrder;
           if (qConfig.order) CONFIG.order = qConfig.order;
+          if (qConfig.themeColor) CONFIG.themeColor = qConfig.themeColor;
 
           // Accept mainCausals as a single array OR as individual fields (mainCausal1-10)
           if (qConfig.mainCausals) {
@@ -156,8 +158,8 @@
     
     // Configuration
     const CONFIG = {
-      playerName0: 'Driftwell',   // Drink name (A)
-      playerName1: 'Qivaryn',     // Chemical name (X)
+      playerName0: 'Qivex-norm',  // Drink name (A)
+      playerName1: 'Qivex',       // Chemical name (X)
       playerName2Pos: 'energetic', // Positive outcome (Y=1)
       playerName2Neg: 'tired',     // Negative outcome (Y=0)
       playerName2PosExo: 'Energenix',  // Medication that causes positive outcome
@@ -174,6 +176,7 @@
       // Default mainCausals - will be overwritten by Qualtrics
       increasingOrder: Math.random() < 0.5 ? 1 : 0,  // 1 = increases first, 0 = decreases first
       order: 'AY',               // 'AXY' shows all questions, 'AY' shows only AY question
+      themeColor: 'purple',      // Theme color: 'blue', 'purple', 'teal', 'yellow'
       mainCausals: [
         { causalElicit: "AX", exoButton: 0, id: "AX0" },
         { causalElicit: "AX", exoButton: 1, id: "AX1" },
@@ -199,6 +202,20 @@
 
     // Apply filter for standalone testing
     applyOrderFilter();
+
+    // Theme classes helper - wrapper for shared function
+    const getThemeClassesLocal = () => getThemeClasses(CONFIG.themeColor);
+
+    // Get theme hex color for pie chart
+    function getThemeHexColor() {
+      const colors = {
+        blue: '#3b82f6',
+        purple: '#9333ea',
+        teal: '#0d9488',
+        yellow: '#d97706'
+      };
+      return colors[CONFIG.themeColor] || colors.blue;
+    }
 
     // Helper function to convert percentage to option index (0-20)
     function getOptionIndex(percentage) {
@@ -296,10 +313,74 @@
   <script type="text/babel">
     const { useState, useEffect, useRef, useCallback } = React;
 
+    // DrinkIcon SVG Component
+    function DrinkIcon({ className, drinkName, style }) {
+      if (drinkName && drinkName.toLowerCase().includes('zyrax')) {
+        return (
+          <svg className={className} style={style} viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+            <path d="M443.882,5.28C440.842,1.92,436.554,0,432.01,0h-352c-4.512,0-8.832,1.92-11.872,5.28c-3.008,3.328-4.512,7.808-4.064,12.32l48,480c0.832,8.192,7.712,14.4,15.936,14.4h256c8.224,0,15.104-6.208,15.904-14.4l48-480C448.394,13.088,446.922,8.608,443.882,5.28z M401.29,162.496c-40.672,13.152-93.6,19.232-135.136-14.848c-52.064-42.72-115.872-35.36-159.136-22.496L97.706,32h316.608L401.29,162.496z"/>
+          </svg>
+        );
+      }
+      if (drinkName && drinkName.toLowerCase().includes('nexol')) {
+        return (
+          <svg className={className} style={style} viewBox="25 0 50 100" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+            <path d="m68.3983231 39.4338799v51.373867c0 3.6944504-2.9977417 6.6922531-6.6921844 6.6922531h-23.4122773c-3.6944466 0-6.6921864-2.9978027-6.6921864-6.6922531v-51.373867c0-3.2933311 1.0977535-6.4916306 3.1244678-9.0988846l5.3199768-6.8294144c1.2877464-1.6572304 1.9844475-3.6839428 1.9844475-5.773922v-2.7444191h15.9388657v2.7444191c0 2.0899792.696701 4.1166916 1.9844475 5.773922l5.3199768 6.8294144c2.0267105 2.607254 3.124466 5.8055534 3.124466 9.0988846z"/>
+            <path d="m58.727375 11.8242331h-17.45475c-.7878952 0-1.426609-.6387148-1.426609-1.426609v-6.471015c-.0000001-.7878943.6387138-1.4266091 1.426609-1.4266091h17.45475c.7878952 0 1.426609.6387148 1.426609 1.4266093v6.471015c.0000001.787894-.6387138 1.4266088-1.426609 1.4266088z"/>
+          </svg>
+        );
+      }
+      return (
+        <svg className={className} style={style} viewBox="0 0 462.848 462.848" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+          <polygon points="246.784,94.208 246.784,53.248 344.064,29.184 336.384,0 216.064,29.184 216.064,94.208 82.432,94.208 82.432,160.768 380.416,160.768 380.416,94.208"/>
+          <path d="M102.912,186.368l35.328,249.856c2.048,15.36,15.36,26.624,30.208,26.624h124.416c15.36,0,28.16-11.264,30.208-26.624L358.4,186.368H102.912z"/>
+        </svg>
+      );
+    }
+
+    // SkipIcon SVG Component
+    function SkipIcon({ className }) {
+      return (
+        <svg className={className} viewBox="0 0 512.095 512.095" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+          <path d="m256.047 0c-141.411 0-256.047 114.636-256.047 256.047s114.636 256.047 256.047 256.047 256.047-114.636 256.047-256.047-114.636-256.047-256.047-256.047zm-192.313 256.047c0-106.212 86.102-192.313 192.313-192.313 41.614 0 80.139 13.221 111.61 35.687l-268.236 268.237c-22.466-31.471-35.687-69.996-35.687-111.611zm192.313 192.314c-41.589 0-80.092-13.204-111.552-35.644l268.221-268.221c22.441 31.46 35.644 69.964 35.644 111.552.001 106.211-86.101 192.313-192.313 192.313z"/>
+        </svg>
+      );
+    }
+
+    // HappyFaceIcon SVG Component
+    function HappyFaceIcon({ className }) {
+      return (
+        <svg className={className} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+          <path d="m50 98c-26.467 0-48-21.533-48-48s21.533-48 48-48 48 21.533 48 48-21.533 48-48 48zm0-90c-23.159 0-42 18.841-42 42s18.841 42 42 42 42-18.841 42-42-18.841-42-42-42zm26.684 52.342c.737-1.475.141-3.258-1.327-4.006-1.471-.743-3.271-.158-4.03 1.304-.22.422-5.549 10.36-21.327 10.36-15.74 0-21.081-9.889-21.325-10.356-.743-1.474-2.542-2.071-4.017-1.327-1.482.741-2.083 2.543-1.342 4.025.28.558 7.055 13.658 26.684 13.658s26.404-13.1 26.684-13.658zm-11.684-16.342c-3.309 0-6-2.691-6-6s2.691-6 6-6 6 2.691 6 6-2.691 6-6 6zm-30 0c-3.309 0-6-2.691-6-6s2.691-6 6-6 6 2.691 6 6-2.691 6-6 6z"/>
+        </svg>
+      );
+    }
+
+    // SadFaceIcon SVG Component
+    function SadFaceIcon({ className }) {
+      return (
+        <svg className={className} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+          <path d="m50 98c-26.467 0-48-21.533-48-48s21.533-48 48-48 48 21.533 48 48-21.533 48-48 48zm0-90c-23.159 0-42 18.841-42 42s18.841 42 42 42 42-18.841 42-42-18.841-42-42-42zm26.684 67.658c-.28-.558-7.055-13.658-26.684-13.658s-26.404 13.1-26.684 13.658c-.741 1.482-.14 3.284 1.342 4.025 1.475.744 3.274.147 4.017-1.327.244-.467 5.585-10.356 21.325-10.356 15.778 0 21.107 9.938 21.327 10.36.759 1.462 2.559 2.047 4.03 1.304 1.468-.748 2.064-2.531 1.327-4.006zm-11.684-31.658c-3.309 0-6-2.691-6-6s2.691-6 6-6 6 2.691 6 6-2.691 6-6 6zm-30 0c-3.309 0-6-2.691-6-6s2.691-6 6-6 6 2.691 6 6-2.691 6-6 6z"/>
+        </svg>
+      );
+    }
+
+    // NeutralFaceIcon SVG Component
+    function NeutralFaceIcon({ className }) {
+      return (
+        <svg className={className} viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="currentColor" stroke="currentColor">
+          <path d="m42.07179 9.7714a22.99476 22.99476 0 1 1 -4.0696-4.0195" fill="none" strokeLinecap="round" strokeMiterlimit="10" strokeWidth="2"/>
+          <circle cx="40.094" cy="7.781" r="1" stroke="none"/>
+          <ellipse cx="31.6" cy="19.125" rx="2.4" ry="3" stroke="none"/>
+          <ellipse cx="16.4" cy="19.125" rx="2.4" ry="3" stroke="none"/>
+        </svg>
+      );
+    }
+
     // Pie Chart Component
     function PieChart({ value, onChange, highlightColor }) {
       const UNFILLED_COLOR = '#e5e7eb';
-      const FILLED_COLOR = highlightColor || '#3b82f6';
+      const FILLED_COLOR = highlightColor || getThemeHexColor();
       
       const polarToCartesian = (cx, cy, radius, angle) => {
         const rad = (angle - 90) * Math.PI / 180;
@@ -373,32 +454,101 @@
     // Verbal Scale Options Component
     function VerbalScale({ value, onChange, options, increasingOrder }) {
       const displayOptions = increasingOrder ? options : [...options].reverse();
-      
+
+      // Split into decreases (first 10), no change (index 10), and increases (last 10)
+      const decreaseOptions = displayOptions.slice(0, 10);
+      const noChangeOption = displayOptions[10];
+      const increaseOptions = displayOptions.slice(11);
+
+      const getActualIndex = (displayIndex) => {
+        return increasingOrder ? displayIndex : (options.length - 1 - displayIndex);
+      };
+
+      const accentColor = getThemeHexColor();
+
       return (
-        <div className="space-y-2">
-          {displayOptions.map((option, displayIndex) => {
-            const actualIndex = increasingOrder ? displayIndex : (options.length - 1 - displayIndex);
-            return (
-              <label
-                key={actualIndex}
-                className={`flex items-center p-2 rounded-lg border-2 cursor-pointer transition-all text-sm ${
-                  value === actualIndex 
-                    ? 'bg-blue-50 border-blue-500' 
-                    : 'bg-white border-gray-200 hover:border-gray-300'
-                }`}
-                onClick={() => onChange(actualIndex)}
-              >
-                <input
-                  type="radio"
-                  name="causalEffect"
-                  checked={value === actualIndex}
-                  onChange={() => onChange(actualIndex)}
-                  className="mr-2"
-                />
-                <span>{option}</span>
-              </label>
-            );
-          })}
+        <div>
+          <div className="grid grid-cols-2 gap-2 mb-2">
+            {/* Left column - Decreases */}
+            <div className="space-y-1">
+              <div className="text-xs text-gray-500 font-medium mb-1 text-center">Decreases</div>
+              {decreaseOptions.map((option, idx) => {
+                const displayIndex = idx;
+                const actualIndex = getActualIndex(displayIndex);
+                const isSelected = value === actualIndex;
+                return (
+                  <label
+                    key={actualIndex}
+                    className={`flex items-center p-1.5 rounded-lg border-2 cursor-pointer transition-all text-xs ${
+                      isSelected
+                        ? `${getThemeClassesLocal().buttonBg} text-white border-transparent font-medium`
+                        : 'bg-white border-gray-200 hover:border-gray-300'
+                    }`}
+                    onClick={() => onChange(actualIndex)}
+                  >
+                    <input
+                      type="radio"
+                      name="causalEffect"
+                      checked={isSelected}
+                      onChange={() => onChange(actualIndex)}
+                      className="mr-1.5 w-3 h-3"
+                      style={{ accentColor }}
+                    />
+                    <span>{option}</span>
+                  </label>
+                );
+              })}
+            </div>
+            {/* Right column - Increases */}
+            <div className="space-y-1">
+              <div className="text-xs text-gray-500 font-medium mb-1 text-center">Increases</div>
+              {increaseOptions.map((option, idx) => {
+                const displayIndex = idx + 11;
+                const actualIndex = getActualIndex(displayIndex);
+                const isSelected = value === actualIndex;
+                return (
+                  <label
+                    key={actualIndex}
+                    className={`flex items-center p-1.5 rounded-lg border-2 cursor-pointer transition-all text-xs ${
+                      isSelected
+                        ? `${getThemeClassesLocal().buttonBg} text-white border-transparent font-medium`
+                        : 'bg-white border-gray-200 hover:border-gray-300'
+                    }`}
+                    onClick={() => onChange(actualIndex)}
+                  >
+                    <input
+                      type="radio"
+                      name="causalEffect"
+                      checked={isSelected}
+                      onChange={() => onChange(actualIndex)}
+                      className="mr-1.5 w-3 h-3"
+                      style={{ accentColor }}
+                    />
+                    <span>{option}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+          {/* No change option - centered below */}
+          <label
+            className={`flex items-center justify-center p-2 rounded-lg border-2 cursor-pointer transition-all text-sm font-medium ${
+              value === getActualIndex(10)
+                ? `${getThemeClassesLocal().buttonBg} text-white border-transparent`
+                : 'bg-white border-gray-200 hover:border-gray-300'
+            }`}
+            onClick={() => onChange(getActualIndex(10))}
+          >
+            <input
+              type="radio"
+              name="causalEffect"
+              checked={value === getActualIndex(10)}
+              onChange={() => onChange(getActualIndex(10))}
+              className="mr-2"
+              style={{ accentColor }}
+            />
+            <span>{noChangeOption}</span>
+          </label>
         </div>
       );
     }
@@ -492,6 +642,7 @@
       
       // Drink buttons component (A) - matches game style
       const DrinkPanel = ({ state, highlightButton }) => {
+        const theme = getThemeClassesLocal();
         const isOn = state === 'on' || state === 'fixed-on';
         const isOff = state === 'off' || state === 'fixed-off';
         const isLocked = state === 'fixed-on' || state === 'fixed-off';
@@ -504,28 +655,27 @@
         return (
           <div className="flex flex-col items-center">
             <div className="text-xs text-gray-500 mb-1 h-4">Morning Decision</div>
-            <div className="flex gap-2 h-32 items-center">
+            <div className="flex gap-2 h-24 items-center mt-4">
               {/* Drink button */}
-              <div className={`relative flex items-center justify-center w-24 h-16 rounded-lg transition-all shadow-lg ${
-                isOn || isCause ? 'bg-blue-600 text-white' :
+              <div className={`relative w-24 h-18 px-2 py-1.5 rounded-lg font-bold transition-all flex flex-col items-center justify-center gap-0.5 shadow-md ${
+                isOn || isCause ? `${theme.buttonBg} text-white` :
                 'bg-gray-200 text-gray-400'
               } ${drinkHighlight}`}>
-                <span className="text-xl mr-1">{CONFIG.playerIcon0}</span>
-                <div className="flex flex-col">
-                  <span className="text-xs font-bold">Drink</span>
-                  <span className="text-xs font-bold">{playerName0}</span>
-                  <span className="text-[10px] opacity-70">-{CONFIG.currency}{CONFIG.aCost}</span>
+                <DrinkIcon className="w-5 h-5" drinkName={playerName0} />
+                <div className="text-center">
+                  <div className="whitespace-nowrap text-[10px]">Drink {playerName0}</div>
+                  <div className="text-[8px] opacity-70">-{CONFIG.currency}{CONFIG.aCost}</div>
                 </div>
               </div>
               {/* Skip button */}
-              <div className={`relative flex items-center justify-center w-24 h-16 rounded-lg transition-all shadow-lg ${
-                isOff || isCause ? 'bg-blue-600 text-white' :
+              <div className={`relative w-24 h-18 px-2 py-1.5 rounded-lg font-bold transition-all flex flex-col items-center justify-center gap-0.5 shadow-md ${
+                isOff || isCause ? `${theme.buttonBg} text-white` :
                 'bg-gray-200 text-gray-400'
               } ${skipHighlight}`}>
-                <span className="text-xl mr-1">⊘</span>
-                <div className="flex flex-col">
-                  <span className="text-xs font-bold">Skip</span>
-                  <span className="text-[10px] opacity-70">{CONFIG.currency}0</span>
+                <SkipIcon className="w-5 h-5" />
+                <div className="text-center">
+                  <div className="text-[10px]">Skip</div>
+                  <div className="text-[8px] opacity-70">{CONFIG.currency}0</div>
                 </div>
               </div>
             </div>
@@ -617,27 +767,27 @@
         );
       };
       
-      // Outcome emoji component (Y)
+      // Outcome icon component (Y)
       const OutcomePanel = ({ state }) => {
         const isOn = state === 'on' || state === 'fixed-on';
         const isOff = state === 'off' || state === 'fixed-off';
         const isLocked = state === 'fixed-on' || state === 'fixed-off';
         const isQuestion = state === 'question';
-        
-        const getEmoji = () => {
-          if (isOn) return '😊';
-          if (isOff) return '😔';
-          if (isQuestion) return '😶';
-          return '😶';
+
+        const getIcon = () => {
+          if (isOn) return <HappyFaceIcon className="w-10 h-10 text-white" />;
+          if (isOff) return <SadFaceIcon className="w-10 h-10 text-white" />;
+          if (isQuestion) return <NeutralFaceIcon className="w-10 h-10 text-gray-500" />;
+          return <NeutralFaceIcon className="w-10 h-10 text-gray-400 opacity-30" />;
         };
-        
+
         const getStatusText = () => {
           if (isOn) return playerName2Pos.charAt(0).toUpperCase() + playerName2Pos.slice(1) + '!';
           if (isOff) return playerName2Neg.charAt(0).toUpperCase() + playerName2Neg.slice(1);
-          if (isQuestion) return '???';
+          if (isQuestion) return '?';
           return '';
         };
-        
+
         const getCircleStyle = () => {
           if (isOn) return 'bg-gradient-to-br from-emerald-400 to-green-600';
           if (isOff) return 'bg-gradient-to-br from-rose-400 to-red-600';
@@ -650,7 +800,7 @@
             <div className="text-xs text-gray-500 mb-1 h-4">Later this day...</div>
             <div className="relative h-32 flex flex-col items-center justify-center">
               <div className={`w-20 h-20 rounded-full flex-shrink-0 flex items-center justify-center transition-all duration-500 ${getCircleStyle()}`}>
-                <span className={`text-4xl ${!isOn && !isOff && !isQuestion ? 'grayscale opacity-30' : ''}`}>{getEmoji()}</span>
+                {getIcon()}
               </div>
               <div className="text-center mt-2">
                 <span className="text-sm font-bold text-gray-900">{getStatusText()}</span>
@@ -761,7 +911,7 @@
                 </div>
                 {isALocked && <LockBadge />}
               </div>
-              <div className="flex flex-col items-center">
+              <div className="flex flex-col items-center -ml-8">
                 <div className={`rounded-xl p-2 transition-all ${isXHighlighted ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-white bg-gray-100' : ''}`}>
                   <MachinePanel state={xState} />
                 </div>
@@ -859,8 +1009,8 @@
               ? `How does <strong>drinking ${playerName0}</strong> change the chance that your <strong>${playerName1} level is normal</strong>?`
               : `Suppose you are required to take ${exoButton === 1 ? playerName2PosExo : playerName2NegExo} which makes you feel <strong>${exoButton === 1 ? playerName2Pos : playerName2Neg}</strong>.<br>How does <strong>your subsequent choice to drink ${playerName0}</strong> change the chance that your <strong>${playerName1} level is normal</strong>?`,
             outcomeText: `${playerName1} level is normal`,
-            pie1Color: '#3b82f6',
-            pie2Color: '#3b82f6'
+            pie1Color: getThemeHexColor(),
+            pie2Color: getThemeHexColor()
           },
           AY: {
             title: `How does <strong>your choice to drink ${playerName0}</strong> affect <strong>how you feel</strong> if ...`,
@@ -890,8 +1040,8 @@
               ? `How does <strong>drinking ${playerName0}</strong> change the chance that you feel <strong>${playerName2Pos}</strong>?`
               : `Suppose you are required to take ${playerName1}-${exoButton === 1 ? 'Normalase' : 'Disrupton'} which sets your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong> immediately after deciding whether to drink ${playerName0}.<br>How does <strong>your choice to drink ${playerName0}</strong> change the chance that you feel <strong>${playerName2Pos}</strong>?`,
             outcomeText: playerName2Pos,
-            pie1Color: '#3b82f6',
-            pie2Color: '#3b82f6'
+            pie1Color: getThemeHexColor(),
+            pie2Color: getThemeHexColor()
           },
           XY: {
             title: `How does <strong>${playerName1} level</strong> affect <strong>how you feel</strong> if ...`,
@@ -911,8 +1061,8 @@
             pie2Question: `Suppose you are <strong>required to ${exoButton === 1 ? 'drink' : 'NOT drink'}</strong> ${playerName0}. Immediately after, you are required to take ${playerName1}-Normalase which sets your ${playerName1} level to <strong >normal</strong>.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
             verbalQuestion: `Suppose you are <strong>required to ${exoButton === 1 ? 'drink' : 'NOT drink'}</strong> ${playerName0}.<br>How does having a <strong>normal ${playerName1}</strong> (vs. abnormal) level change the chance that you feel <strong>${playerName2Pos}</strong>?`,
             outcomeText: playerName2Pos,
-            pie1Color: '#3b82f6',
-            pie2Color: '#3b82f6'
+            pie1Color: getThemeHexColor(),
+            pie2Color: getThemeHexColor()
           },
           YX: {
             title: `How does <strong>how you feel</strong> affect <strong>${playerName1} level</strong> if ...`,
@@ -932,8 +1082,8 @@
             pie2Question: `Suppose you are <strong>required to ${exoButton === 1 ? 'drink' : 'NOT drink'}</strong> ${playerName0}. Immediately after, you are required to take ${playerName2PosExo} which makes you feel <strong >${playerName2Pos}</strong>.<br>What is the chance that your <strong>${playerName1} level is normal</strong>?`,
             verbalQuestion: `Suppose you are <strong>required to ${exoButton === 1 ? 'drink' : 'NOT drink'}</strong> ${playerName0}.<br>How does feeling <strong>${playerName2Pos}</strong> (vs. being ${playerName2Neg}) change the chance that your <strong>${playerName1} level is normal</strong>?`,
             outcomeText: `${playerName1} level is normal`,
-            pie1Color: '#3b82f6',
-            pie2Color: '#3b82f6'
+            pie1Color: getThemeHexColor(),
+            pie2Color: getThemeHexColor()
           }
         };
         
@@ -1036,13 +1186,13 @@
                 <span>{Math.round((questionNumber / totalQuestions) * 100)}%</span>
               </div>
               <div className="h-2 bg-gray-300 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-blue-500 transition-all duration-300"
+                <div
+                  className={`h-full ${getThemeClassesLocal().buttonBg} transition-all duration-300`}
                   style={{ width: `${(questionNumber / totalQuestions) * 100}%` }}
                 />
               </div>
             </div>
-            
+
             {/* Main Card - Contains everything */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               {/* Walkthrough Stage */}
@@ -1110,19 +1260,19 @@
                     <div className="flex justify-center mb-4">
                       <div className="flex items-center gap-2">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                          stage === 1 ? 'bg-blue-500 text-white' : 'bg-gray-300 text-gray-500'
+                          stage === 1 ? `${getThemeClassesLocal().buttonBg} text-white` : 'bg-gray-300 text-gray-500'
                         }`}>
                           1
                         </div>
                         <div className={`w-12 h-1 bg-gray-300`} />
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                          stage === 2 ? 'bg-blue-500 text-white' : 'bg-gray-300 text-gray-500'
+                          stage === 2 ? `${getThemeClassesLocal().buttonBg} text-white` : 'bg-gray-300 text-gray-500'
                         }`}>
                           2
                         </div>
                         <div className={`w-12 h-1 bg-gray-300`} />
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                          stage === 3 ? 'bg-blue-500 text-white' : 'bg-gray-300 text-gray-500'
+                          stage === 3 ? `${getThemeClassesLocal().buttonBg} text-white` : 'bg-gray-300 text-gray-500'
                         }`}>
                           3
                         </div>
@@ -1149,7 +1299,7 @@
                         disabled={!canProceedToStage2}
                         className={`px-8 py-3 rounded-lg font-medium text-lg transition-all ${
                           canProceedToStage2
-                            ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                            ? `${getThemeClassesLocal().buttonBg} ${getThemeClassesLocal().buttonHover} text-white`
                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         }`}
                       >
@@ -1182,7 +1332,7 @@
                         disabled={!canProceedToStage3}
                         className={`px-8 py-3 rounded-lg font-medium text-lg transition-all ${
                           canProceedToStage3
-                            ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                            ? `${getThemeClassesLocal().buttonBg} ${getThemeClassesLocal().buttonHover} text-white`
                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         }`}
                       >
@@ -1218,7 +1368,7 @@
                         disabled={!canSubmit}
                         className={`px-8 py-3 rounded-lg font-medium text-lg transition-all ${
                           canSubmit
-                            ? 'bg-green-600 hover:bg-green-700 text-white'
+                            ? `${getThemeClassesLocal().buttonBg} ${getThemeClassesLocal().buttonHover} text-white`
                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         }`}
                       >
@@ -1302,7 +1452,7 @@
               {!showDetails && (
                 <button
                   onClick={() => setShowDetails(true)}
-                  className="text-blue-600 hover:text-blue-800 underline mb-6 block"
+                  className={`${getThemeClassesLocal().pillText} hover:opacity-80 underline mb-6 block`}
                 >
                   Show payment details
                 </button>
@@ -1328,7 +1478,7 @@
               {/* Continue Button */}
               <button
                 onClick={onContinue}
-                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+                className={`w-full py-3 ${getThemeClassesLocal().buttonBg} ${getThemeClassesLocal().buttonHover} text-white font-medium rounded-lg transition-colors`}
               >
                 Continue
               </button>
@@ -1424,7 +1574,7 @@
       
       if (!ready) {
         return (
-          <div className="min-h-screen bg-white flex items-center justify-center">
+          <div className="min-h-screen bg-white flex items-start justify-center pt-8">
             <div className="text-gray-600 text-xl">Loading...</div>
           </div>
         );
