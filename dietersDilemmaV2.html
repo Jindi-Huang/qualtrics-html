@@ -497,13 +497,14 @@
     // New Day overlay
     function NewDayOverlay({ show, dayNumber }) {
       if (!show) return null;
+      const theme = getThemeClasses();
 
       return (
-        <div className="absolute inset-0 bg-white flex items-center justify-center z-20 rounded-2xl">
+        <div className={`absolute inset-0 ${theme.panelBg} flex items-center justify-center z-20 rounded-2xl`}>
           <div className="text-center">
-            <CalendarIcon className="w-16 h-16 mx-auto mb-4 text-gray-700" />
+            <CalendarIcon className={`w-16 h-16 mx-auto mb-4 ${theme.iconColor}`} />
             <div className="text-3xl font-bold text-gray-900">New Monday</div>
-            <div className="text-xl text-gray-500 mt-2">Week {dayNumber}</div>
+            <div className="text-xl text-gray-600 mt-2">Week {dayNumber}</div>
           </div>
         </div>
       );
@@ -595,9 +596,10 @@
           </div>
           <div className="h-12 flex items-center justify-center">
             {mood === null && showBonus ? (
-              <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl px-4 py-2 shadow-lg flex items-center gap-2">
-                <div className="text-green-100 font-medium text-sm whitespace-nowrap">If {CONFIG.playerName2Pos}:</div>
-                <div className="text-white text-2xl font-bold">{CONFIG.currency}{bonusAmount}</div>
+              <div className="flex items-center gap-1 text-lg">
+                <span className="text-gray-600">(<span className="underline">If</span> {CONFIG.playerName2Pos}:</span>
+                <span className="text-green-600 text-2xl font-bold">{CONFIG.currency}{bonusAmount}</span>
+                <span className="text-gray-600">)</span>
               </div>
             ) : (
               <div className={`${mood === null ? 'invisible' : mood === 1 ? 'text-green-600 text-lg font-bold' : 'text-red-600 text-lg font-bold'}`}>
@@ -762,35 +764,35 @@
             <button
               onClick={() => onChoice(1)}
               disabled={disabled}
-              className={`w-36 h-24 px-4 py-2 rounded-lg font-bold transition-all flex flex-col items-center justify-center gap-1 ${
+              className={`w-36 h-24 px-4 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 ${
                 disabled
                   ? selectedChoice === 1
-                    ? `${theme.buttonBg} text-white shadow-lg ring-4 ${theme.buttonRing}`
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : `${theme.buttonBg} ${theme.buttonHover} text-white shadow-lg hover:shadow-xl cursor-pointer ${isFirstRound ? 'first-round-shine-panel' : ''}`
+                    ? `bg-gradient-to-b from-gray-100 to-gray-200 border-2 ${theme.panelBorder} shadow-md ring-4 ${theme.buttonRing}`
+                    : 'bg-gray-100 border-2 border-gray-200 text-gray-400 cursor-not-allowed'
+                  : `bg-gradient-to-b from-white to-gray-100 border-2 border-gray-300 border-b-gray-400 shadow-md hover:shadow-lg hover:from-gray-50 hover:to-gray-150 active:shadow-sm active:translate-y-0.5 active:border-b-gray-300 cursor-pointer ${isFirstRound ? 'first-round-shine-panel' : ''}`
               }`}
             >
-              <DrinkIcon className="w-8 h-8" drinkName={CONFIG.playerName0} />
+              <DrinkIcon className={`w-8 h-8 ${disabled && selectedChoice !== 1 ? 'text-gray-400' : theme.iconColor}`} drinkName={CONFIG.playerName0} />
               <div className="text-center">
-                <div className="whitespace-nowrap text-sm">Drink {CONFIG.playerName0}</div>
-                <div className="text-xs opacity-70">-{CONFIG.currency}{CONFIG.aCost}</div>
+                <div className={`whitespace-nowrap text-sm ${disabled && selectedChoice !== 1 ? 'text-gray-400' : 'text-gray-700'}`}>Drink {CONFIG.playerName0}</div>
+                <div className={`text-xs ${disabled && selectedChoice !== 1 ? 'text-gray-300' : 'text-gray-500'}`}>-{CONFIG.currency}{CONFIG.aCost}</div>
               </div>
             </button>
             <button
               onClick={() => onChoice(0)}
               disabled={disabled}
-              className={`w-36 h-24 px-4 py-2 rounded-lg font-bold transition-all flex flex-col items-center justify-center gap-1 ${
+              className={`w-36 h-24 px-4 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 ${
                 disabled
                   ? selectedChoice === 0
-                    ? `${theme.buttonBg} text-white shadow-lg ring-4 ${theme.buttonRing}`
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : `${theme.buttonBg} ${theme.buttonHover} text-white shadow-lg hover:shadow-xl cursor-pointer ${isFirstRound ? 'first-round-shine-panel' : ''}`
+                    ? `bg-gradient-to-b from-gray-100 to-gray-200 border-2 ${theme.panelBorder} shadow-md ring-4 ${theme.buttonRing}`
+                    : 'bg-gray-100 border-2 border-gray-200 text-gray-400 cursor-not-allowed'
+                  : `bg-gradient-to-b from-white to-gray-100 border-2 border-gray-300 border-b-gray-400 shadow-md hover:shadow-lg hover:from-gray-50 hover:to-gray-150 active:shadow-sm active:translate-y-0.5 active:border-b-gray-300 cursor-pointer ${isFirstRound ? 'first-round-shine-panel' : ''}`
               }`}
             >
-              <SkipIcon className="w-8 h-8" />
+              <SkipIcon className={`w-8 h-8 ${disabled && selectedChoice !== 0 ? 'text-gray-400' : theme.iconColor}`} />
               <div className="text-center">
-                <div className="text-sm">Skip</div>
-                <div className="text-xs opacity-70">{CONFIG.currency}0</div>
+                <div className={`text-sm ${disabled && selectedChoice !== 0 ? 'text-gray-400' : 'text-gray-700'}`}>Skip</div>
+                <div className={`text-xs ${disabled && selectedChoice !== 0 ? 'text-gray-300' : 'text-gray-500'}`}>{CONFIG.currency}0</div>
               </div>
             </button>
           </div>
@@ -926,10 +928,10 @@
 
     // Price Elicitation Intro Page
     function PriceElicitationIntro({ onContinue }) {
+      const theme = getThemeClasses();
       return (
         <div className="min-h-screen bg-white px-4 pt-8">
           <div className="max-w-6xl mx-auto text-center">
-            <div className="text-6xl mb-6">💰</div>
             <h1 className="text-3xl font-bold text-gray-900 mb-6">
               High-Stakes Decisions
             </h1>
@@ -961,7 +963,7 @@
             </div>
             <button
               onClick={onContinue}
-              className="px-8 py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all"
+              className={`px-8 py-4 ${theme.buttonBg} ${theme.buttonHover} text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all`}
             >
               Continue to Choices
             </button>
@@ -974,6 +976,7 @@
     function PriceDividerPage({ nextPrice, nextRound, totalRounds, onContinue, choices, onGoBack, isFinalReview }) {
       const [isLoading, setIsLoading] = useState(true);
       const orderedPrices = getOrderedPrices();
+      const theme = getThemeClasses();
 
       // Sort choices by ordered prices for consistent checking
       const sortedChoices = orderedPrices
@@ -1005,12 +1008,14 @@
       return (
         <div className="min-h-screen bg-white px-4 pt-8">
           <div className="max-w-6xl mx-auto text-center">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">
-              {isFinalReview ? 'Review Your Choices' : 'Next Choice'}
-            </h1>
+            {!isFinalReview && (
+              <h1 className="text-3xl font-bold text-gray-900 mb-4">
+                Next Choice
+              </h1>
+            )}
 
             {!isFinalReview && (
-              <div className="mb-6">
+              <div className="mb-6 border-2 border-gray-200 rounded-xl p-6 inline-block">
                 <p className="text-gray-700 text-lg">
                   The price of {CONFIG.playerName0} is now:
                 </p>
@@ -1024,14 +1029,9 @@
             )}
 
             {isFinalReview && (
-              <div className="bg-green-50 border border-green-200 rounded-xl p-6 mb-6">
-                <p className="text-gray-700 text-lg">
-                  You have completed all {totalRounds} choices.
-                </p>
-                <p className="text-gray-600 text-sm mt-2">
-                  Please review your choices below. If you're satisfied, click "Submit" to continue.
-                </p>
-              </div>
+              <p className="text-gray-700 text-xl mb-6">
+                You have completed all {totalRounds} choices. Please review your choices below and click "Submit" to continue.
+              </p>
             )}
 
             {/* Choices so far */}
@@ -1088,7 +1088,7 @@
 
             <button
               onClick={onContinue}
-              className="px-8 py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all"
+              className={`px-8 py-4 ${theme.buttonBg} ${theme.buttonHover} text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all`}
             >
               {isFinalReview ? 'Submit' : 'Continue'}
             </button>
@@ -1113,15 +1113,17 @@
           <div className="flex justify-center gap-3">
             <button
               onClick={() => onChoice(1)}
-              className={`w-36 h-28 px-4 py-2 rounded-lg font-bold transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
+              className={`w-36 h-28 px-4 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
                 selectedChoice === 1
-                  ? 'bg-green-600 hover:bg-green-500 text-white shadow-lg hover:shadow-xl ring-4 ring-green-300'
-                  : `${theme.buttonBg} ${theme.buttonHover} text-white shadow-lg hover:shadow-xl ${isFirstRound ? 'first-round-shine-panel' : ''}`
+                  ? `bg-gradient-to-b from-gray-100 to-gray-200 border-2 ${theme.panelBorder} shadow-md ring-4 ${theme.buttonRing}`
+                  : selectedChoice === 0
+                    ? 'bg-gray-100 border-2 border-gray-200 text-gray-400'
+                    : `bg-gradient-to-b from-white to-gray-100 border-2 border-gray-300 border-b-gray-400 shadow-md hover:shadow-lg hover:from-gray-50 hover:to-gray-150 active:shadow-sm active:translate-y-0.5 active:border-b-gray-300 ${isFirstRound ? 'first-round-shine-panel' : ''}`
               }`}
             >
-              <DrinkIcon className="w-8 h-8" drinkName={CONFIG.playerName0} />
+              <DrinkIcon className={`w-8 h-8 ${selectedChoice === 0 ? 'text-gray-400' : theme.iconColor}`} drinkName={CONFIG.playerName0} />
               <div className="text-center">
-                <div className="whitespace-nowrap text-sm">Drink {CONFIG.playerName0}</div>
+                <div className={`whitespace-nowrap text-sm ${selectedChoice === 0 ? 'text-gray-400' : 'text-gray-700'}`}>Drink {CONFIG.playerName0}</div>
                 <div className="text-sm rounded px-2 py-0.5 mt-1 font-bold bg-amber-400 text-amber-900">
                   {price === 0 ? 'Free' : `-${CONFIG.currency}${price.toFixed(2)}`}
                 </div>
@@ -1129,21 +1131,23 @@
             </button>
             <button
               onClick={() => onChoice(0)}
-              className={`w-36 h-28 px-4 py-2 rounded-lg font-bold transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
+              className={`w-36 h-28 px-4 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
                 selectedChoice === 0
-                  ? 'bg-green-600 hover:bg-green-500 text-white shadow-lg hover:shadow-xl ring-4 ring-green-300'
-                  : `${theme.buttonBg} ${theme.buttonHover} text-white shadow-lg hover:shadow-xl ${isFirstRound ? 'first-round-shine-panel' : ''}`
+                  ? `bg-gradient-to-b from-gray-100 to-gray-200 border-2 ${theme.panelBorder} shadow-md ring-4 ${theme.buttonRing}`
+                  : selectedChoice === 1
+                    ? 'bg-gray-100 border-2 border-gray-200 text-gray-400'
+                    : `bg-gradient-to-b from-white to-gray-100 border-2 border-gray-300 border-b-gray-400 shadow-md hover:shadow-lg hover:from-gray-50 hover:to-gray-150 active:shadow-sm active:translate-y-0.5 active:border-b-gray-300 ${isFirstRound ? 'first-round-shine-panel' : ''}`
               }`}
             >
-              <SkipIcon className="w-8 h-8" />
+              <SkipIcon className={`w-8 h-8 ${selectedChoice === 1 ? 'text-gray-400' : theme.iconColor}`} />
               <div className="text-center">
-                <div className="text-sm">Skip</div>
-                <div className="text-xs opacity-70">{CONFIG.currency}0</div>
+                <div className={`text-sm ${selectedChoice === 1 ? 'text-gray-400' : 'text-gray-700'}`}>Skip</div>
+                <div className={`text-xs ${selectedChoice === 1 ? 'text-gray-300' : 'text-gray-500'}`}>{CONFIG.currency}0</div>
               </div>
             </button>
           </div>
 
-          <div className="mt-3 space-y-2 flex flex-col items-center">
+          <div className="mt-3 flex justify-center">
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="bg-gray-50 rounded p-2 text-center border border-gray-200 w-36">
                 <div className="text-green-600">{CONFIG.playerName0} ⇢ {CONFIG.playerName1}</div>
@@ -1166,20 +1170,6 @@
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <div className="bg-gray-50 rounded p-2 text-center border border-gray-200 w-36">
-                <div className="text-green-600">{CONFIG.playerName0} ⇢ {CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}</div>
-                <div className="text-gray-900 font-bold">
-                  {A1Y1Rate !== null ? `${A1Y1Rate}%` : '—'}
-                </div>
-              </div>
-              <div className="bg-gray-50 rounded p-2 text-center border border-gray-200 w-36">
-                <div className="text-red-600">Skip ⇢ {CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}</div>
-                <div className="text-gray-900 font-bold">
-                  {A0Y1Rate !== null ? `${A0Y1Rate}%` : '—'}
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       );
@@ -1193,11 +1183,7 @@
           <div className="max-w-6xl mx-auto">
             <div className={`${theme.panelBg} rounded-2xl p-6 mb-4 border ${theme.panelBorder} shadow-sm relative overflow-hidden`}>
               <div className="text-center mb-4 h-14 flex items-center justify-center">
-                <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${
-                  waitingForSpace
-                    ? 'bg-green-50 text-green-700 border border-green-200'
-                    : 'bg-amber-50 text-amber-700 border border-amber-200'
-                }`}>
+                <span className="inline-block px-4 py-2 rounded-full text-sm font-medium bg-amber-50 text-amber-700 border border-amber-200">
                   {waitingForSpace
                     ? 'Press "Space" to continue'
                     : `High-Stakes Choice: Would you drink ${CONFIG.playerName0} at this price?`
@@ -1206,7 +1192,7 @@
               </div>
 
               <div className="absolute top-4 left-4 bg-amber-100 rounded-xl px-4 py-2 border border-amber-300 shadow-sm">
-                <div className="text-amber-700 font-medium text-sm mb-1">💰 High Stakes</div>
+                <div className="text-amber-700 font-medium text-sm mb-1">High Stakes</div>
                 <div className="flex items-center gap-3">
                   <div>
                     <span className="text-amber-600 text-sm">Choice</span>
@@ -1524,6 +1510,12 @@
       if (phase === 'complete' && history.length === CONFIG.totalRounds && priceElicitationChoices.length === CONFIG.priceElicitationPrices.length && !dataSentRef.current) {
         dataSentRef.current = true;
 
+        // Simulate outcomes for high stakes choices using DGP
+        const highStakeOutcomes = priceElicitationChoices.map(c => {
+          const result = simulateRound(c.choice);
+          return { price: c.price, choice: c.choice, X: result.X, Y: result.Y };
+        });
+
         sendDataToQualtrics('FINAL_DATA', {
           history: history,  // [[A, X, Y], [A, X, Y], ...]
           roundTimes: roundTimesRef.current,
@@ -1537,6 +1529,8 @@
           finalDAGTime: dagData.finalDAGTime,
           confidenceTime: dagData.confidenceTime,
           priceElicitation: priceElicitationChoices,
+          highStakeOutcomes: highStakeOutcomes,
+          paymentHighStake: highStakeOutcomes.map(c => (c.choice === 1 ? -c.price : 0) + (c.Y === 1 ? CONFIG.priceElicitationBonus : 0)),
           tracking: getTrackingData()
         });
 
