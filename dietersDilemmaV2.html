@@ -1530,7 +1530,7 @@
           confidenceTime: dagData.confidenceTime,
           priceElicitation: priceElicitationChoices,
           highStakeOutcomes: highStakeOutcomes,
-          paymentHighStake: highStakeOutcomes.map(c => (c.choice === 1 ? -c.price : 0) + (c.Y === 1 ? CONFIG.priceElicitationBonus : 0)),
+          paymentHighStake: highStakeOutcomes.map(c => 15 + (c.choice === 1 ? -c.price : 0) + (c.Y === 1 ? CONFIG.priceElicitationBonus : 0)),
           tracking: getTrackingData()
         });
 
