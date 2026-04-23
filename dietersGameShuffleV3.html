@@ -228,6 +228,7 @@
           if (qConfig.aCost !== undefined) CONFIG.aCost = qConfig.aCost;
           if (qConfig.currency) CONFIG.currency = qConfig.currency;
           if (qConfig.order) CONFIG.order = qConfig.order;
+          if (qConfig.nRounds !== undefined) CONFIG.nRounds = qConfig.nRounds;
           if (qConfig.themeColor) CONFIG.themeColor = qConfig.themeColor;
           console.log('Applied config:', CONFIG);
         }
@@ -271,6 +272,7 @@
       playerIcon0: '',            // Deprecated - now using SVG
       gameCounter: 1,             // Current game number
       nSupergames: 1,             // Total number of games
+      nRounds: 30,                // Number of rounds
       yBonus: 0.10,               // Bonus for feeling good
       aCost: 0.05,                // Cost of drinking
       currency: '$',              // Currency symbol
@@ -307,11 +309,11 @@
     function updateTitle() {
       const counterEl = document.getElementById('studyCounter');
       if (counterEl) {
-        counterEl.textContent = `Study ${CONFIG.gameCounter}`;
+        counterEl.textContent = `Drink ${CONFIG.gameCounter}`;
       }
       const titleEl = document.getElementById('title');
       if (titleEl) {
-        titleEl.innerHTML = `<span style="font-weight: normal">This study is about</span> drinking ${CONFIG.playerName0}<span style="font-weight: normal">, your</span> ${CONFIG.playerName1} levels <span style="font-weight: normal">and</span> how you feel.`;
+        titleEl.innerHTML = `<span style="font-weight: normal">The next ${CONFIG.nRounds} rounds will be about</span> drinking ${CONFIG.playerName0}<span style="font-weight: normal">, your</span> ${CONFIG.playerName1} levels <span style="font-weight: normal">and</span> how you feel.`;
       }
       const bonusEl = document.getElementById('bonusInfo');
       if (bonusEl) {
