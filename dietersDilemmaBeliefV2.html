@@ -162,8 +162,8 @@
     
     // Configuration
     const CONFIG = {
-      playerName0: 'Qivex-norm',  // Drink name (A)
-      playerName1: 'Qivex',       // Chemical name (X)
+      playerName0: 'Zerqalase-norm',  // Drink name (A)
+      playerName1: 'Zerqalase',       // Chemical name (X)
       playerName2Pos: 'energetic', // Positive outcome (Y=1)
       playerName2Neg: 'tired',     // Negative outcome (Y=0)
       playerName2PosExo: 'Energenix',  // Medication that causes positive outcome
@@ -188,6 +188,7 @@
         { causalElicit: "AY", exoButton: 1, id: "AY1" },
         { causalElicit: "AX", exoButton: null, id: "AX" },
         { causalElicit: "AY", exoButton: null, id: "AY" },
+        { causalElicit: "XY", exoButton: null, id: "XY" },
         { causalElicit: "XY", exoButton: 0, id: "XY0" },
         { causalElicit: "XY", exoButton: 1, id: "XY1" },
         { causalElicit: "YX", exoButton: 0, id: "YX0" },
@@ -587,6 +588,7 @@
             yState = 'question';
             if (exoButton === 0) aState = 'fixed-off';
             else if (exoButton === 1) aState = 'fixed-on';
+            else aState = 'neutral';
           }
           else if (causalElicit === 'YX') {
             yState = 'cause';
@@ -622,6 +624,7 @@
           yState = 'question';
           if (exoButton === 0) aState = 'fixed-off';
           else if (exoButton === 1) aState = 'fixed-on';
+          else aState = 'neutral';
         }
         else if (causalElicit === 'YX') {
           if (stage === 1) yState = 'off';
@@ -666,9 +669,9 @@
         return (
           <div className="flex flex-col items-center">
             <div className="text-xs text-gray-500 mb-1 h-4">Morning Decision</div>
-            <div className="flex gap-2 h-24 items-center mt-4">
+            <div className="flex gap-2 items-center mt-4">
               {/* Drink button */}
-              <div className={`relative w-24 h-18 px-2 py-1.5 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-0.5 border-2 ${
+              <div className={`relative h-24 px-3 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 border-2 ${
                 drinkSelected
                   ? `bg-gradient-to-b from-gray-100 to-gray-200 ${theme.panelBorder} shadow-md ring-4 ${theme.buttonRing}`
                   : drinkActive
@@ -676,13 +679,11 @@
                     : 'bg-gray-100 border-gray-200'
               } ${drinkHighlight}`}>
                 <DrinkIcon className={`w-5 h-5 ${drinkActive ? theme.iconColor : 'text-gray-400'}`} drinkName={playerName0} />
-                <div className="text-center">
-                  <div className={`whitespace-nowrap text-[10px] ${drinkActive ? 'text-gray-700' : 'text-gray-400'}`}>Drink {playerName0}</div>
-                  <div className={`text-[8px] ${drinkActive ? 'text-gray-500' : 'text-gray-300'}`}>-{CONFIG.currency}{CONFIG.aCost}</div>
-                </div>
+                <div className={`text-[10px] whitespace-nowrap ${drinkActive ? 'text-gray-700' : 'text-gray-400'}`}>Drink {playerName0}</div>
+                <div className={`text-[8px] ${drinkActive ? 'text-gray-500' : 'text-gray-300'}`}>-{CONFIG.currency}{CONFIG.aCost}</div>
               </div>
               {/* Skip button */}
-              <div className={`relative w-24 h-18 px-2 py-1.5 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-0.5 border-2 ${
+              <div className={`relative h-24 px-3 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 border-2 ${
                 skipSelected
                   ? `bg-gradient-to-b from-gray-100 to-gray-200 ${theme.panelBorder} shadow-md ring-4 ${theme.buttonRing}`
                   : skipActive
@@ -690,10 +691,8 @@
                     : 'bg-gray-100 border-gray-200'
               } ${skipHighlight}`}>
                 <SkipIcon className={`w-5 h-5 ${skipActive ? theme.iconColor : 'text-gray-400'}`} />
-                <div className="text-center">
-                  <div className={`text-[10px] ${skipActive ? 'text-gray-700' : 'text-gray-400'}`}>Skip</div>
-                  <div className={`text-[8px] ${skipActive ? 'text-gray-500' : 'text-gray-300'}`}>{CONFIG.currency}0</div>
-                </div>
+                <div className={`text-[10px] ${skipActive ? 'text-gray-700' : 'text-gray-400'}`}>Skip</div>
+                <div className={`text-[8px] ${skipActive ? 'text-gray-500' : 'text-gray-300'}`}>{CONFIG.currency}0</div>
               </div>
             </div>
           </div>
@@ -1054,15 +1053,23 @@
           },
           XY: {
             // Walkthrough text for each step
-            walkthroughStep0: `In this scenario, you must <strong>${exoButton === 1 ? 'drink' : 'not drink'} ${playerName0}</strong> ...`,
+            walkthroughStep0: exoButton === null
+              ? null
+              : `In this scenario, you must <strong>${exoButton === 1 ? 'drink' : 'not drink'} ${playerName0}</strong>...`,
             walkthroughStep1: `Report how <strong>your ${playerName1} level</strong>...`,
             walkthroughStep2: `...affects <strong>how you feel</strong>.`,
             walkthroughHighlight: { step0: 'A', step1: 'X', step2: ['X', 'Y'] },
             causePanel: 'X',
             outcomePanel: 'Y',
-            pie1Question: `Suppose you must <strong>${exoButton === 1 ? 'drink' : 'not drink'} ${playerName0}</strong>. Immediately after, you are required to take ${playerName1}-abnormal-injection which sets your ${playerName1} level to <strong>abnormal</strong>.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
-            pie2Question: `Suppose you must <strong>${exoButton === 1 ? 'drink' : 'not drink'} ${playerName0}</strong>. Immediately after, you are required to take ${playerName1}-normal-injection which sets your ${playerName1} level to <strong>normal</strong>.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
-            verbalQuestion: `Suppose you must <strong>${exoButton === 1 ? 'drink' : 'not drink'} ${playerName0}</strong>.<br>How does having a <strong>normal ${playerName1}</strong> (rather than abnormal) level change the chance that you feel <strong>${playerName2Pos}</strong>?`,
+            pie1Question: exoButton === null
+              ? `What is the chance that you feel <strong>${playerName2Pos}</strong> if your <strong>${playerName1} level is abnormal</strong>?`
+              : `Suppose you must <strong>${exoButton === 1 ? 'drink' : 'not drink'} ${playerName0}</strong>. Immediately after, you are required to take ${playerName1}-abnormal-injection which sets your ${playerName1} level to <strong>abnormal</strong>.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
+            pie2Question: exoButton === null
+              ? `What is the chance that you feel <strong>${playerName2Pos}</strong> if your <strong>${playerName1} level is normal</strong>?`
+              : `Suppose you must <strong>${exoButton === 1 ? 'drink' : 'not drink'} ${playerName0}</strong>. Immediately after, you are required to take ${playerName1}-normal-injection which sets your ${playerName1} level to <strong>normal</strong>.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
+            verbalQuestion: exoButton === null
+              ? `How does having a <strong>normal ${playerName1}</strong> (rather than abnormal) level change the chance that you feel <strong>${playerName2Pos}</strong>?`
+              : `Suppose you must <strong>${exoButton === 1 ? 'drink' : 'not drink'} ${playerName0}</strong>.<br>How does having a <strong>normal ${playerName1}</strong> (rather than abnormal) level change the chance that you feel <strong>${playerName2Pos}</strong>?`,
             pie1Color: getThemeHexColor(),
             pie2Color: getThemeHexColor()
           },
@@ -1453,14 +1460,14 @@
               {CONFIG.order !== 'AY' && introStep >= 1 && (
                 <div className="text-gray-700 space-y-4 mb-6 fade-in">
                   <p>
-                    Some scenarios ask what will happen if your {CONFIG.playerName1} level are set by one of two medications:
+                    Some scenarios ask what will happen if your {CONFIG.playerName1} level are set by one of two treatments:
                   </p>
                   <ul className="list-disc list-inside space-y-2 ml-4 mb-4">
                     <li><strong>{CONFIG.playerName1}-normal-injection</strong> normalizes your {CONFIG.playerName1} level <strong>for sure</strong>.</li>
                     <li><strong>{CONFIG.playerName1}-abnormal-injection</strong> makes your {CONFIG.playerName1} levels abnormal <strong>for sure</strong>.</li>
                   </ul>
                   <p>
-                    These medications have <i>no direct effects</i> on how you feel. However, <i>if</i> how you feel is a response of your body to your {CONFIG.playerName1} level, you may feel different if you consume {CONFIG.playerName1}-normal-injection or {CONFIG.playerName1}-abnormal-injection.
+                    These treatments have <i>no direct effects</i> on how you feel. However, <i>if</i> how you feel is a response of your body to your {CONFIG.playerName1} level, you may feel different if you receive {CONFIG.playerName1}-normal-injection or {CONFIG.playerName1}-abnormal-injection.
                   </p>
                 </div>
               )}

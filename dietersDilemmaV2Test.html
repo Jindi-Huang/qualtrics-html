@@ -1352,23 +1352,7 @@
             return;
           }
 
-          if (e.code === 'Space' && waitingForSpace === 'outcome') {
-            e.preventDefault();
-            // Record time spent viewing chemical level
-            const currentTimestamps = roundTimestampsRef.current[roundTimestampsRef.current.length - 1];
-            if (currentTimestamps) {
-              currentTimestamps.chemicalViewTime = (Date.now() - phaseStartTimeRef.current) / 1000;
-            }
-            phaseStartTimeRef.current = Date.now();
-
-            // Show outcome
-            setPhase('outcome');
-            setCurrentY(pendingResult.Y);
-            setHistory(prev => [...prev, [pendingResult.A, pendingResult.X, pendingResult.Y]]);
-            setWaitingForSpace('nextRound');
-          }
-
-          if (e.code === 'Enter' && waitingForSpace === 'nextRound') {
+          if (e.code === 'Space' && waitingForSpace === 'nextRound') {
             e.preventDefault();
             // Record time spent viewing outcome
             const currentTimestamps = roundTimestampsRef.current[roundTimestampsRef.current.length - 1];
@@ -1436,11 +1420,26 @@
         const result = simulateRound(A);
         setPendingResult({ A, X: result.X, Y: result.Y });
 
-        // Show chemical level after a brief delay, then wait for space bar
+        // Show chemical level after a brief delay, then automatically show outcome
         setTimeout(() => {
           setCurrentX(result.X);
           phaseStartTimeRef.current = Date.now();
-          setWaitingForSpace('outcome');
+
+          // Automatically transition to outcome after showing chemical level
+          setTimeout(() => {
+            // Record time spent viewing chemical level
+            const currentTimestamps = roundTimestampsRef.current[roundTimestampsRef.current.length - 1];
+            if (currentTimestamps) {
+              currentTimestamps.chemicalViewTime = (Date.now() - phaseStartTimeRef.current) / 1000;
+            }
+            phaseStartTimeRef.current = Date.now();
+
+            // Show outcome
+            setPhase('outcome');
+            setCurrentY(result.Y);
+            setHistory(prev => [...prev, [A, result.X, result.Y]]);
+            setWaitingForSpace('nextRound');
+          }, 1200); // 1.2 second delay to view chemical level (same as dietersDilemma.html)
         }, 800);
       }, [currentRound]);
       
@@ -1630,14 +1629,10 @@
                   'bg-red-50 text-red-700 border border-red-200'
                 } ${currentRound === 1 && phase === 'decision' ? 'first-round-shine-pill' : ''}`}>
                   {phase === 'decision' && `Morning: Will you drink ${CONFIG.playerName0}?`}
-                  {phase === 'chemical' && (
-                    waitingForSpace === 'outcome'
-                      ? 'Press "Space" to see how you feel'
-                      : (CONFIG.order === 'AY' ? 'Later this day...' : `Reading your ${CONFIG.playerName1} level...`)
-                  )}
+                  {phase === 'chemical' && (CONFIG.order === 'AY' ? 'Later this day...' : `Reading your ${CONFIG.playerName1} level...`)}
                   {phase === 'outcome' && (
                     waitingForSpace === 'nextRound'
-                      ? <>{currentY === 1 ? `${CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}!` : `${CONFIG.playerName2Neg.charAt(0).toUpperCase() + CONFIG.playerName2Neg.slice(1)}`} {currentY === 1 ? <HappyFaceIcon className="w-5 h-5 inline-block" /> : <SadFaceIcon className="w-5 h-5 inline-block" />}<br />Press "Return" to continue to the next week</>
+                      ? <>{currentY === 1 ? `${CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}!` : `${CONFIG.playerName2Neg.charAt(0).toUpperCase() + CONFIG.playerName2Neg.slice(1)}`} {currentY === 1 ? <HappyFaceIcon className="w-5 h-5 inline-block" /> : <SadFaceIcon className="w-5 h-5 inline-block" />}<br />Press "Space" to continue</>
                       : <>Later this day: {currentY === 1 ? `${CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}!` : `${CONFIG.playerName2Neg.charAt(0).toUpperCase() + CONFIG.playerName2Neg.slice(1)}`} {currentY === 1 ? <HappyFaceIcon className="w-5 h-5 inline-block" /> : <SadFaceIcon className="w-5 h-5 inline-block" />}</>
                   )}
                 </span>

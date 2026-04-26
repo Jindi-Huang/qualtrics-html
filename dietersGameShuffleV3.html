@@ -191,13 +191,84 @@
       min-height: 24px;
     }
 
+    /* Transition screen styles */
+    #transitionScreen {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #ffffff;
+      z-index: 1000;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 40px;
+      padding-top: 80px;
+      text-align: center;
+    }
+
+    #transitionScreen .button-container {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    #transitionScreen.visible {
+      display: flex;
+    }
+
+    .transition-title {
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: #1e293b;
+      margin-bottom: 30px;
+    }
+
+    .transition-message {
+      font-size: 1.2rem;
+      color: #475569;
+      max-width: 900px;
+      line-height: 1.6;
+      margin-bottom: 30px;
+      text-align: left;
+    }
+
+    #transitionContinueBtn {
+      padding: 14px 40px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: white;
+      background: linear-gradient(135deg, var(--btn-color-light), var(--btn-color-dark));
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px var(--btn-shadow);
+    }
+
+    #transitionContinueBtn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px var(--btn-shadow-hover);
+    }
+
   </style>
 </head>
 <body>
+  <!-- Transition Screen for switching chemicals -->
+  <div id="transitionScreen">
+    <div class="transition-title">New Drink and New Blood Chemical</div>
+    <div class="transition-message" id="transitionMessage">From now on, your decisions concern a new drink and a new blood chemical. Anything you observed in the previous rounds involved a different drink and chemical, and is not relevant to the decisions you will make later.</div>
+    <div class="button-container">
+      <button id="transitionContinueBtn">Continue</button>
+    </div>
+  </div>
+
   <h2 id="studyCounter" style="color: #1e293b; margin-bottom: 24px; font-size: 1.8rem; text-align: center;"></h2>
   <h1 id="title"></h1>
   <ul id="bonusInfo" style="color: #475569; font-size: 1.2rem; text-align: left; margin: 0 auto 20px auto; max-width: 900px; line-height: 1.6;"></ul>
-  <p id="newStudyNote" style="display: none; color: #64748b; font-size: 1rem; text-align: center; margin-bottom: 20px;"></p>
   <div id="container"></div>
   <div id="message"></div>
   <button id="continueBtn">Continue</button>
@@ -270,7 +341,7 @@
       playerName0: 'Qivex-norm',  // Drink name (A)
       playerName1: 'Qivex',       // Chemical name (X)
       playerIcon0: '',            // Deprecated - now using SVG
-      gameCounter: 1,             // Current game number
+      gameCounter: 2,             // Current game number
       nSupergames: 1,             // Total number of games
       nRounds: 30,                // Number of rounds
       yBonus: 0.10,               // Bonus for feeling good
@@ -323,11 +394,6 @@
           bonusHTML += `<li>The trial subscription to the BioClip extension has expired. You no longer see the blood chemical levels.</li>`;
         }
         bonusEl.innerHTML = bonusHTML;
-      }
-      const noteEl = document.getElementById('newStudyNote');
-      if (noteEl && CONFIG.gameCounter >= 2) {
-        noteEl.textContent = 'This beverage and this blood chemical have nothing to do with what you experienced in the previous study.';
-        noteEl.style.display = 'block';
       }
     }
 
@@ -472,26 +538,57 @@
 
       // Continue button handler
       continueBtn.addEventListener('click', () => {
+        // Disable button to prevent multiple clicks
+        continueBtn.disabled = true;
+        continueBtn.style.opacity = '0.5';
+        continueBtn.style.cursor = 'not-allowed';
+
         sendDataToQualtrics('SCENARIO_COMPLETE', {
           drinkName: chosenScenario.drinkName,
           drinkIcon: chosenScenario.drinkIcon,
           chemicalName: chosenScenario.chemicalName,
           tileHTML: tileHTML
         });
-      });
+      }, { once: true });
+    }
+
+    // Show transition screen for game 2+
+    function showTransitionScreen(callback) {
+      const transitionScreen = document.getElementById('transitionScreen');
+      const transitionBtn = document.getElementById('transitionContinueBtn');
+
+      // Apply button theme colors before showing
+      applyButtonTheme();
+
+      // Show the screen
+      transitionScreen.classList.add('visible');
+
+      // Handle continue button
+      transitionBtn.addEventListener('click', () => {
+        transitionScreen.classList.remove('visible');
+        callback();
+      }, { once: true });
     }
 
     // Start after initialization or timeout
     const timeout = setTimeout(() => {
       if (!isInitialized) {
         console.log('Timeout: starting with default config');
-        startReveal();
+        if (CONFIG.gameCounter >= 2) {
+          showTransitionScreen(startReveal);
+        } else {
+          startReveal();
+        }
       }
     }, 3000);
 
     onInitialized(() => {
       clearTimeout(timeout);
-      startReveal();
+      if (CONFIG.gameCounter >= 2) {
+        showTransitionScreen(startReveal);
+      } else {
+        startReveal();
+      }
     });
   </script>
 </body>
