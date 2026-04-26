@@ -886,6 +886,93 @@
       );
     }
 
+    // Belief Elicitation Iframe Component
+    function BeliefIframe({ onComplete, playerName0, playerName1, playerName2Pos, playerName2Neg, aCost, currency, order, themeColor }) {
+      const iframeRef = useRef(null);
+      const beliefDataRef = useRef(null);
+
+      useEffect(() => {
+        const handleMessage = (event) => {
+          // Capture belief data when sent
+          if (event.data.type === 'GAME_DATA' && event.data.dataType === 'CAUSAL_BELIEFS') {
+            beliefDataRef.current = event.data.data;
+          }
+          // Call onComplete when elicitation is complete
+          if (event.data.type === 'GAME_DATA' && event.data.dataType === 'ELICIT_COMPLETE') {
+            onComplete(beliefDataRef.current || event.data.data);
+          }
+        };
+
+        window.addEventListener('message', handleMessage);
+
+        // Send INIT to iframe once loaded
+        const sendInit = () => {
+          if (iframeRef.current && iframeRef.current.contentWindow) {
+            // Determine which causal to show based on order
+            const mainCausals = order === 'AY'
+              ? [{ causalElicit: "AY", exoButton: null, id: "AY" }]
+              : [{ causalElicit: "XY", exoButton: null, id: "XY" }];
+
+            iframeRef.current.contentWindow.postMessage({
+              type: 'INIT',
+              gameConfig: {
+                playerName0: playerName0,
+                playerName1: playerName1,
+                playerName2Pos: playerName2Pos,
+                playerName2Neg: playerName2Neg,
+                aCost: aCost,
+                currency: currency,
+                order: order,
+                themeColor: themeColor,
+                skipIntro: true,
+                mainCausals: mainCausals
+              }
+            }, '*');
+          }
+        };
+
+        // Try sending after a short delay to ensure iframe is loaded
+        const timeout = setTimeout(sendInit, 500);
+
+        return () => {
+          window.removeEventListener('message', handleMessage);
+          clearTimeout(timeout);
+        };
+      }, [onComplete, playerName0, playerName1, playerName2Pos, playerName2Neg, aCost, currency, order, themeColor]);
+
+      return (
+        <iframe
+          ref={iframeRef}
+          src="dietersDilemmaBeliefV2.html"
+          style={{ width: '100%', height: '100vh', border: 'none' }}
+          onLoad={() => {
+            if (iframeRef.current && iframeRef.current.contentWindow) {
+              // Determine which causal to show based on order
+              const mainCausals = order === 'AY'
+                ? [{ causalElicit: "AY", exoButton: null, id: "AY" }]
+                : [{ causalElicit: "XY", exoButton: null, id: "XY" }];
+
+              iframeRef.current.contentWindow.postMessage({
+                type: 'INIT',
+                gameConfig: {
+                  playerName0: playerName0,
+                  playerName1: playerName1,
+                  playerName2Pos: playerName2Pos,
+                  playerName2Neg: playerName2Neg,
+                  aCost: aCost,
+                  currency: currency,
+                  order: order,
+                  themeColor: themeColor,
+                  skipIntro: true,
+                  mainCausals: mainCausals
+                }
+              }, '*');
+            }
+          }}
+        />
+      );
+    }
+
     // Recent history - displays [[A, X, Y], ...]
     function CompactHistory({ history }) {
       const theme = getThemeClasses();
@@ -1266,6 +1353,10 @@
       const [dagData, setDagData] = useState({ initial: null, final: null, confidence: null, alertCount: null });
       const [hideRateBox, setHideRateBox] = useState(false);
 
+      // Belief elicitation state
+      const [showBelief, setShowBelief] = useState(false);
+      const [beliefData, setBeliefData] = useState(null);
+
       // Price elicitation state
       const [priceElicitationRound, setPriceElicitationRound] = useState(0);
       const [priceElicitationChoices, setPriceElicitationChoices] = useState([]);
@@ -1284,6 +1375,7 @@
       const roundStartTimeRef = useRef(Date.now());
       const dataSentRef = useRef(false);
       const halfwayDAGShownRef = useRef(false);
+      const beliefShownRef = useRef(false);
 
       // Detailed timestamps for each round: { decision, chemical, outcome, nextRound }
       const roundTimestampsRef = useRef([]);
@@ -1382,9 +1474,13 @@
             if (currentRound >= CONFIG.totalRounds) {
               setPhase('priceIntro');
             } else {
+              // Check if we're at round 10 and haven't shown belief elicitation yet
+              if (currentRound === 10 && !beliefShownRef.current) {
+                beliefShownRef.current = true;
+                setShowBelief(true);
+              }
               // Check if we're at the halfway point and haven't shown DAG yet (skip for AY order)
-              const halfwayPoint = Math.floor(CONFIG.totalRounds / 2);
-              if (currentRound === halfwayPoint && !halfwayDAGShownRef.current && CONFIG.order !== 'AY') {
+              else if (currentRound === Math.floor(CONFIG.totalRounds / 2) && !halfwayDAGShownRef.current && CONFIG.order !== 'AY') {
                 halfwayDAGShownRef.current = true;
                 setShowDAG(true);
               } else {
@@ -1509,7 +1605,34 @@
           phaseStartTimeRef.current = Date.now();
         }, 1000);
       }, [currentRound]);
-      
+
+      // Handle Belief elicitation completion
+      const handleBeliefComplete = useCallback((data) => {
+        setBeliefData(data);
+        setShowBelief(false);
+
+        // Send belief data to Qualtrics
+        sendDataToQualtrics('BELIEF_DATA', {
+          ...data,
+          completedAtRound: currentRound
+        });
+
+        // Continue to next round - immediately show new day overlay
+        setCurrentA(null);
+        setCurrentX(null);
+        setCurrentY(null);
+        setNextDayNumber(currentRound + 1);
+        setShowNewDay(true);
+        setPhase('decision');
+
+        setTimeout(() => {
+          setShowNewDay(false);
+          setCurrentRound(prev => prev + 1);
+          roundStartTimeRef.current = Date.now();
+          phaseStartTimeRef.current = Date.now();
+        }, 1000);
+      }, [currentRound]);
+
       // Show loading screen while waiting for Qualtrics config
       if (!ready) {
         return (
@@ -1541,6 +1664,8 @@
           initialDAGTime: dagData.initialDAGTime,
           finalDAGTime: dagData.finalDAGTime,
           confidenceTime: dagData.confidenceTime,
+          // Belief elicitation data (after round 10)
+          beliefData: beliefData,
           priceElicitation: priceElicitationChoices,
           highStakeOutcomes: highStakeOutcomes,
           paymentHighStake: highStakeOutcomes.map(c => 15 + (c.choice === 1 ? -c.price : 0) + (c.Y === 1 ? CONFIG.priceElicitationBonus : 0)),
@@ -1561,6 +1686,23 @@
             playerName1={CONFIG.playerName1}
             playerIcon0={CONFIG.playerIcon0}
             nRounds={CONFIG.totalRounds}
+            themeColor={CONFIG.themeColor}
+          />
+        );
+      }
+
+      // Show Belief elicitation interface (loads from separate file)
+      if (showBelief) {
+        return (
+          <BeliefIframe
+            onComplete={handleBeliefComplete}
+            playerName0={CONFIG.playerName0}
+            playerName1={CONFIG.playerName1}
+            playerName2Pos={CONFIG.playerName2Pos}
+            playerName2Neg={CONFIG.playerName2Neg}
+            aCost={CONFIG.aCost}
+            currency={CONFIG.currency}
+            order={CONFIG.order}
             themeColor={CONFIG.themeColor}
           />
         );

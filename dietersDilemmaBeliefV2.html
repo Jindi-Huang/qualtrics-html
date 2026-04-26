@@ -103,6 +103,7 @@
           if (qConfig.increasingOrder !== undefined) CONFIG.increasingOrder = qConfig.increasingOrder;
           if (qConfig.order) CONFIG.order = qConfig.order;
           if (qConfig.themeColor) CONFIG.themeColor = qConfig.themeColor;
+          if (qConfig.skipIntro !== undefined) CONFIG.skipIntro = qConfig.skipIntro;
 
           // Accept mainCausals as a single array OR as individual fields (mainCausal1-10)
           if (qConfig.mainCausals) {
@@ -181,14 +182,15 @@
       increasingOrder: Math.random() < 0.5 ? 1 : 0,  // 1 = increases first, 0 = decreases first
       order: 'AXY',               // 'AXY' shows all questions, 'AY' shows only AY question
       themeColor: 'purple',      // Theme color: 'blue', 'purple', 'teal', 'yellow'
+      skipIntro: false,          // Skip intro page when embedded from main game
       mainCausals: [
+        { causalElicit: "XY", exoButton: null, id: "XY" },
         { causalElicit: "AX", exoButton: 0, id: "AX0" },
         { causalElicit: "AX", exoButton: 1, id: "AX1" },
         { causalElicit: "AY", exoButton: 0, id: "AY0" },
         { causalElicit: "AY", exoButton: 1, id: "AY1" },
         { causalElicit: "AX", exoButton: null, id: "AX" },
         { causalElicit: "AY", exoButton: null, id: "AY" },
-        { causalElicit: "XY", exoButton: null, id: "XY" },
         { causalElicit: "XY", exoButton: 0, id: "XY0" },
         { causalElicit: "XY", exoButton: 1, id: "XY1" },
         { causalElicit: "YX", exoButton: 0, id: "YX0" },
@@ -657,42 +659,44 @@
 
         const drinkHighlight = (highlightButton === 'drink' || highlightButton === 'both') ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-white' : '';
         const skipHighlight = (highlightButton === 'skip' || highlightButton === 'both') ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-white' : '';
+        const isNeutral = state === 'neutral';
 
         // Active state (selected): gray gradient with theme border and ring
         // Cause state: gray gradient with gray border, theme icon (no ring)
+        // Neutral state: both buttons active (not greyed out)
         // Inactive state: lighter gray
         const drinkSelected = isOn;
         const skipSelected = isOff;
-        const drinkActive = isOn || isCause;
-        const skipActive = isOff || isCause;
+        const drinkActive = isOn || isCause || isNeutral;
+        const skipActive = isOff || isCause || isNeutral;
 
         return (
           <div className="flex flex-col items-center">
             <div className="text-xs text-gray-500 mb-1 h-4">Morning Decision</div>
-            <div className="flex gap-2 items-center mt-4">
+            <div className="flex gap-3 items-center mt-4">
               {/* Drink button */}
-              <div className={`relative h-24 px-3 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 border-2 ${
+              <div className={`relative w-28 h-24 px-2 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 border-2 ${
                 drinkSelected
                   ? `bg-gradient-to-b from-gray-100 to-gray-200 ${theme.panelBorder} shadow-md ring-4 ${theme.buttonRing}`
                   : drinkActive
                     ? 'bg-gradient-to-b from-white to-gray-100 border-gray-300 border-b-gray-400 shadow-md'
                     : 'bg-gray-100 border-gray-200'
               } ${drinkHighlight}`}>
-                <DrinkIcon className={`w-5 h-5 ${drinkActive ? theme.iconColor : 'text-gray-400'}`} drinkName={playerName0} />
-                <div className={`text-[10px] whitespace-nowrap ${drinkActive ? 'text-gray-700' : 'text-gray-400'}`}>Drink {playerName0}</div>
-                <div className={`text-[8px] ${drinkActive ? 'text-gray-500' : 'text-gray-300'}`}>-{CONFIG.currency}{CONFIG.aCost}</div>
+                <DrinkIcon className={`w-8 h-8 ${drinkActive ? theme.iconColor : 'text-gray-400'}`} drinkName={playerName0} />
+                <div className={`text-sm ${drinkActive ? 'text-gray-500' : 'text-gray-300'}`}>-{CONFIG.currency}{CONFIG.aCost}</div>
+                <div className={`text-[9px] whitespace-nowrap ${drinkActive ? 'text-gray-700' : 'text-gray-400'}`}>Drink {playerName0}</div>
               </div>
               {/* Skip button */}
-              <div className={`relative h-24 px-3 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 border-2 ${
+              <div className={`relative w-28 h-24 px-2 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 border-2 ${
                 skipSelected
                   ? `bg-gradient-to-b from-gray-100 to-gray-200 ${theme.panelBorder} shadow-md ring-4 ${theme.buttonRing}`
                   : skipActive
                     ? 'bg-gradient-to-b from-white to-gray-100 border-gray-300 border-b-gray-400 shadow-md'
                     : 'bg-gray-100 border-gray-200'
               } ${skipHighlight}`}>
-                <SkipIcon className={`w-5 h-5 ${skipActive ? theme.iconColor : 'text-gray-400'}`} />
-                <div className={`text-[10px] ${skipActive ? 'text-gray-700' : 'text-gray-400'}`}>Skip</div>
-                <div className={`text-[8px] ${skipActive ? 'text-gray-500' : 'text-gray-300'}`}>{CONFIG.currency}0</div>
+                <SkipIcon className={`w-8 h-8 ${skipActive ? theme.iconColor : 'text-gray-400'}`} />
+                <div className={`text-sm ${skipActive ? 'text-gray-500' : 'text-gray-300'}`}>{CONFIG.currency}0</div>
+                <div className={`text-[9px] ${skipActive ? 'text-gray-700' : 'text-gray-400'}`}>Skip</div>
               </div>
             </div>
           </div>
@@ -957,6 +961,7 @@
       playerName2PosExo,
       playerName2NegExo,
       increasingOrder,
+      skipIntro,
       onComplete
     }) {
       // Stage 0 = walkthrough (with walkthroughStep 0, 1, 2), Stage 3 = verbal question
@@ -1181,25 +1186,33 @@
       return (
         <div className="min-h-screen bg-white px-4 pt-0 pb-4">
           <div className="max-w-5xl mx-auto">
-            {/* Progress */}
-            <div className="mb-6">
-              <div className="flex justify-between text-sm text-gray-600 mb-2">
-                <span>Question {questionNumber} of {totalQuestions}</span>
-                <span>{Math.round((questionNumber / totalQuestions) * 100)}%</span>
+            {/* Progress - hide when skipIntro is true */}
+            {!skipIntro && (
+              <div className="mb-6">
+                <div className="flex justify-between text-sm text-gray-600 mb-2">
+                  <span>Question {questionNumber} of {totalQuestions}</span>
+                  <span>{Math.round((questionNumber / totalQuestions) * 100)}%</span>
+                </div>
+                <div className="h-2 bg-gray-300 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full ${getThemeClassesLocal().buttonBg} transition-all duration-300`}
+                    style={{ width: `${(questionNumber / totalQuestions) * 100}%` }}
+                  />
+                </div>
               </div>
-              <div className="h-2 bg-gray-300 rounded-full overflow-hidden">
-                <div
-                  className={`h-full ${getThemeClassesLocal().buttonBg} transition-all duration-300`}
-                  style={{ width: `${(questionNumber / totalQuestions) * 100}%` }}
-                />
-              </div>
-            </div>
+            )}
 
             {/* Main Card - Contains everything */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               {/* Walkthrough Stage */}
               {stage === 0 && (
                 <div className="animate-fadeIn">
+                  {/* Intro message when redirected from main game */}
+                  {skipIntro && (
+                    <p className="text-gray-700 text-center text-lg mb-4">
+                      Before making your decisions for the rest of the weeks for this drink...<br />How do you think these factors influenced each other?
+                    </p>
+                  )}
                   {/* Walkthrough text */}
                   <div key={walkthroughStep} className="border border-yellow-200 rounded-lg p-4 mb-4 animate-blink">
                     <p className="text-gray-700 text-center text-lg" dangerouslySetInnerHTML={{ __html: walkthroughContent.text }} />
@@ -1593,6 +1606,10 @@
         onInitialized(() => {
           clearTimeout(timeout);
           setReady(true);
+          // Skip intro if configured (when embedded from main game)
+          if (CONFIG.skipIntro) {
+            setShowIntro(false);
+          }
         });
         
         return () => clearTimeout(timeout);
@@ -1675,7 +1692,7 @@
       }
 
       const currentScenario = CONFIG.mainCausals[currentIndex];
-      
+
       return (
         <BeliefElicitation
           key={currentIndex}
@@ -1689,6 +1706,7 @@
           playerName2PosExo={CONFIG.playerName2PosExo}
           playerName2NegExo={CONFIG.playerName2NegExo}
           increasingOrder={CONFIG.increasingOrder}
+          skipIntro={CONFIG.skipIntro}
           onComplete={handleComplete}
         />
       );
