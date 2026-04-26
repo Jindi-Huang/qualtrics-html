@@ -37,6 +37,17 @@
         filter: drop-shadow(0 0 16px rgba(251, 191, 36, 1));
       }
     }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .fade-in {
+      animation: fadeIn 0.5s ease-in forwards;
+    }
+    .fade-in-slow {
+      animation: fadeIn 1.5s ease-in forwards;
+    }
   </style>
 </head>
 <body>
@@ -128,7 +139,7 @@
   </script>
 
   <script type="text/babel">
-    const { useState, useRef } = React;
+    const { useState, useRef, useEffect } = React;
 
     // Get theme classes for buttons (uses shared getThemeClasses from shared-icons.js)
     const theme = getThemeClasses(CONFIG.themeColor);
@@ -205,8 +216,20 @@
       const [confidence, setConfidence] = useState(null);
       const [showDetails, setShowDetails] = useState(false);
       const [finalEdges, setFinalEdges] = useState(null);
+      const [showNextButton, setShowNextButton] = useState(false);
       const alertCountRef = useRef(0);
       const pageEnteredRef = useRef(Date.now());
+
+      // 5-second delay for showing the continue button in confidence elicitation
+      useEffect(() => {
+        if (showConfidence) {
+          setShowNextButton(false);
+          const timer = setTimeout(() => {
+            setShowNextButton(true);
+          }, 5000);
+          return () => clearTimeout(timer);
+        }
+      }, [showConfidence]);
       const dagTimesRef = useRef({ initialDAGTime: 0, finalDAGTime: 0, confidenceTime: 0 });
 
       // Node definitions
@@ -589,17 +612,21 @@
                     </div>
                   </div>
 
-                  <button
-                    onClick={handleConfidenceSubmit}
-                    disabled={confidence === null}
-                    className={`w-full py-3 rounded-lg font-medium text-lg ${
-                      confidence !== null
-                        ? `${theme.buttonBg} ${theme.buttonHover} text-white`
-                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    }`}
-                  >
-                    Continue
-                  </button>
+                  <div className="flex justify-end">
+                    <button
+                      onClick={handleConfidenceSubmit}
+                      disabled={confidence === null || !showNextButton}
+                      className={`px-8 py-3 rounded-lg font-medium text-lg ${
+                        showNextButton ? 'opacity-100 transition-opacity duration-[2000ms] ease-in' : 'opacity-0 pointer-events-none'
+                      } ${
+                        confidence !== null
+                          ? `${theme.buttonBg} ${theme.buttonHover} text-white`
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      Continue
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -613,7 +640,7 @@
             <div className="bg-white rounded-2xl p-6">
               <div className="mb-4">
                 <h2 className="text-2xl font-bold text-gray-800 mb-3 text-center">
-                  {CONFIG.noConfirmation !== 1 && `Before making your decisions for the final ${Math.floor(CONFIG.nRounds / 2)} weeks for this drink, `}how do you think these factors influenced each other?
+                  {CONFIG.noConfirmation !== 1 && <>{`Before making your decisions for the final ${Math.floor(CONFIG.nRounds / 2)} weeks for this drink...`}<br /></>}How do you think these factors influenced each other?
                 </h2>
                 <ul className="text-gray-600 space-y-2 text-base list-disc list-inside">
                   <li>Please draw arrows between the three factors below. An arrow from one factor to another means the former could directly influence the latter. Draw an arrow if you think there was a direct influence, regardless of whether the influence was strong or weak, positive or negative.</li>
@@ -848,7 +875,7 @@
                         <button
                           onClick={handleConfirm}
                           disabled={!hasAnyEdge}
-                          className={`px-6 py-2 rounded-lg font-medium ${
+                          className={`px-6 py-2 rounded-lg font-medium transition-all duration-[2500ms] ${
                             hasAnyEdge
                               ? `${theme.buttonBg} ${theme.buttonHover} text-white`
                               : 'bg-gray-300 text-gray-500 cursor-not-allowed'

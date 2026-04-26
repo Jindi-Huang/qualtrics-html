@@ -335,6 +335,28 @@
             opacity: 1;
         }
 
+        /* Attention check styling */
+        .clickable-word {
+            cursor: pointer;
+        }
+
+        .clickable-word:hover {
+            text-decoration: underline;
+        }
+
+        .clickable-word.clicked {
+            color: #27ae60;
+        }
+
+        .attention-check-notice {
+            margin-top: 15px;
+        }
+
+        .attention-check-notice .checkmark {
+            color: #27ae60;
+            margin-left: 8px;
+        }
+
     </style>
 </head>
 <body>
@@ -343,7 +365,7 @@
         <h1>Instructions</h1>
 
         <div class="instructions">
-            <p>In this part, imagine that you are a <strong>microbiologist</strong> working in a research laboratory. Your task is to study how exposure to various types of rays influences whether viruses mutate.</p>
+            <p>In this study, imagine that you are a <strong><span id="attention-word" class="clickable-word" onclick="handleAttentionClick()">microbiologist</span></strong> working in a research laboratory. Your task is to study how exposure to various types of rays influences whether viruses mutate.</p>
 
             <p>You will review <strong>laboratory records</strong> from experiments conducted on petri dishes containing viruses. In each experiment:</p>
 
@@ -363,6 +385,8 @@
             </ol>
 
             <p>You will evaluate <strong>2 different types of rays</strong> and their effects on 2 different viruses.</p>
+
+            <p class="attention-check-notice">To show you are following this, click the word "microbiologist" in the first sentence above. If you do not, the survey will terminate.<span id="attention-checkmark" class="checkmark" style="display: none;">✓</span></p>
         </div>
 
         <button class="btn fade-in-btn" id="begin-experiment-btn" onclick="startExperiment()">Begin</button>
@@ -547,6 +571,7 @@
         let gameId = null;
         let isInitialized = false;
         const experimentStartTime = Date.now();
+        let attentionCheckPassed = false;
 
         // Receive config from Qualtrics
         window.addEventListener('message', function(event) {
@@ -919,6 +944,22 @@
 
         // Start main experiment
         function startExperiment() {
+            // Check attention check (only for first game, gameCounterBuehner == 1)
+            if (gameConfig.gameCounterBuehner == 1 && !attentionCheckPassed) {
+                // Failed attention check - send termination data to Qualtrics
+                sendDataToQualtrics('COMPLETE', {
+                    attentionCheck: 0,
+                    buehnerAnswers: JSON.stringify([]),
+                    buehnerTimes: JSON.stringify({
+                        trialTimes: [],
+                        conditionTimes: [],
+                        ratingTimes: [],
+                        totalTime: 0
+                    })
+                });
+                return; // Do not proceed
+            }
+
             state.results = [];
 
             // Reset timing arrays
@@ -943,6 +984,7 @@
             const ratingTimesInSec = state.ratingTimes.map(t => t / 1000);
 
             sendDataToQualtrics('COMPLETE', {
+                attentionCheck: 1,
                 buehnerAnswers: JSON.stringify(state.results),
                 buehnerTimes: JSON.stringify({
                     trialTimes: trialTimesInSec,           // [[t1, t2, ...16 trials], [...]] in seconds
@@ -951,6 +993,13 @@
                     totalTime: totalTimeSec                // total time in seconds
                 })
             });
+        }
+
+        // Handle attention check click
+        function handleAttentionClick() {
+            attentionCheckPassed = true;
+            document.getElementById('attention-word').classList.add('clicked');
+            document.getElementById('attention-checkmark').style.display = 'inline';
         }
 
         // Fade in the Begin Experiment button after 10 seconds

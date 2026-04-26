@@ -226,8 +226,8 @@
       priceElicitationBonus: 50,
       increasingPrice: 0,       // 1 = low to high, 0 = high to low
 
-      playerName0: 'Qivex-norm', // Drink name (A)
-      playerName1: 'Qivex',   // Chemical name (X)
+      playerName0: 'Zerqalase-norm', // Drink name (A)
+      playerName1: 'Zerqalase',   // Chemical name (X)
       playerName2: 'Feeling',   // Outcome name (Y)
       playerName2Pos: 'energetic', // Positive outcome (Y=1)
       playerName2Neg: 'tired',     // Negative outcome (Y=0)
@@ -316,7 +316,7 @@
       }
       // Qivex-norm (default): cup with straw icon
       return (
-        <svg className={className} viewBox="0 0 462.848 462.848" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+        <svg className={className} viewBox="80 0 305 462.848" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
           <polygon points="246.784,94.208 246.784,53.248 344.064,29.184 336.384,0 216.064,29.184 216.064,94.208 82.432,94.208 82.432,160.768 380.416,160.768 380.416,94.208"/>
           <path d="M102.912,186.368l35.328,249.856c2.048,15.36,15.36,26.624,30.208,26.624h124.416c15.36,0,28.16-11.264,30.208-26.624L358.4,186.368H102.912z"/>
         </svg>
@@ -697,7 +697,7 @@
       return (
         <div className={`${theme.panelBg} rounded-2xl p-5 border-2 ${theme.panelBorder} shadow-sm`}>
           <h3 className="text-gray-900 font-bold text-lg mb-4 text-center">
-            {CONFIG.playerName1} ⇢ {CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}
+            Chemical and Mood
           </h3>
 
           <div className="grid grid-cols-2 gap-4">
@@ -706,7 +706,7 @@
             }`}>
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-4 h-4 rounded-full bg-green-500" />
-                <span className="text-green-600 font-medium">Normal</span>
+                <span className="text-green-600 font-medium">When normal</span>
               </div>
               <div className="text-4xl font-bold text-gray-900 mb-1">
                 {isAYOrder ? '—' : X1Y1Rate !== null ? `${X1Y1Rate}%` : '—'}
@@ -727,7 +727,7 @@
             }`}>
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-4 h-4 rounded-full bg-red-500" />
-                <span className="text-red-600 font-medium">Abnormal</span>
+                <span className="text-red-600 font-medium whitespace-nowrap">When abnormal</span>
               </div>
               <div className="text-4xl font-bold text-gray-900 mb-1">
                 {isAYOrder ? '—' : X0Y1Rate !== null ? `${X0Y1Rate}%` : '—'}
@@ -764,7 +764,7 @@
             <button
               onClick={() => onChoice(1)}
               disabled={disabled}
-              className={`w-36 h-24 px-4 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 ${
+              className={`w-36 h-24 px-2 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 ${
                 disabled
                   ? selectedChoice === 1
                     ? `bg-gradient-to-b from-gray-100 to-gray-200 border-2 ${theme.panelBorder} shadow-md ring-4 ${theme.buttonRing}`
@@ -772,16 +772,16 @@
                   : `bg-gradient-to-b from-white to-gray-100 border-2 border-gray-300 border-b-gray-400 shadow-md hover:shadow-lg hover:from-gray-50 hover:to-gray-150 active:shadow-sm active:translate-y-0.5 active:border-b-gray-300 cursor-pointer ${isFirstRound ? 'first-round-shine-panel' : ''}`
               }`}
             >
-              <DrinkIcon className={`w-8 h-8 ${disabled && selectedChoice !== 1 ? 'text-gray-400' : theme.iconColor}`} drinkName={CONFIG.playerName0} />
+              <DrinkIcon className={`w-10 h-10 ${disabled && selectedChoice !== 1 ? 'text-gray-400' : theme.iconColor}`} drinkName={CONFIG.playerName0} />
               <div className="text-center">
-                <div className={`whitespace-nowrap text-sm ${disabled && selectedChoice !== 1 ? 'text-gray-400' : 'text-gray-700'}`}>Drink {CONFIG.playerName0}</div>
-                <div className={`text-xs ${disabled && selectedChoice !== 1 ? 'text-gray-300' : 'text-gray-500'}`}>-{CONFIG.currency}{CONFIG.aCost}</div>
+                <div className={`text-[10px] ${disabled && selectedChoice !== 1 ? 'text-gray-400' : 'text-gray-700'}`}>Drink {CONFIG.playerName0}</div>
+                <div className={`text-[10px] ${disabled && selectedChoice !== 1 ? 'text-gray-300' : 'text-gray-500'}`}>-{CONFIG.currency}{CONFIG.aCost}</div>
               </div>
             </button>
             <button
               onClick={() => onChoice(0)}
               disabled={disabled}
-              className={`w-36 h-24 px-4 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 ${
+              className={`w-36 h-24 px-2 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 ${
                 disabled
                   ? selectedChoice === 0
                     ? `bg-gradient-to-b from-gray-100 to-gray-200 border-2 ${theme.panelBorder} shadow-md ring-4 ${theme.buttonRing}`
@@ -789,10 +789,10 @@
                   : `bg-gradient-to-b from-white to-gray-100 border-2 border-gray-300 border-b-gray-400 shadow-md hover:shadow-lg hover:from-gray-50 hover:to-gray-150 active:shadow-sm active:translate-y-0.5 active:border-b-gray-300 cursor-pointer ${isFirstRound ? 'first-round-shine-panel' : ''}`
               }`}
             >
-              <SkipIcon className={`w-8 h-8 ${disabled && selectedChoice !== 0 ? 'text-gray-400' : theme.iconColor}`} />
+              <SkipIcon className={`w-10 h-10 ${disabled && selectedChoice !== 0 ? 'text-gray-400' : theme.iconColor}`} />
               <div className="text-center">
-                <div className={`text-sm ${disabled && selectedChoice !== 0 ? 'text-gray-400' : 'text-gray-700'}`}>Skip</div>
-                <div className={`text-xs ${disabled && selectedChoice !== 0 ? 'text-gray-300' : 'text-gray-500'}`}>{CONFIG.currency}0</div>
+                <div className={`text-[10px] ${disabled && selectedChoice !== 0 ? 'text-gray-400' : 'text-gray-700'}`}>Skip</div>
+                <div className={`text-[10px] ${disabled && selectedChoice !== 0 ? 'text-gray-300' : 'text-gray-500'}`}>{CONFIG.currency}0</div>
               </div>
             </button>
           </div>
@@ -1126,7 +1126,7 @@
           <div className="flex justify-center gap-3">
             <button
               onClick={() => onChoice(1)}
-              className={`w-36 h-28 px-4 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
+              className={`w-36 h-36 px-2 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
                 selectedChoice === 1
                   ? `bg-gradient-to-b from-gray-100 to-gray-200 border-2 ${theme.panelBorder} shadow-md ring-4 ${theme.buttonRing}`
                   : selectedChoice === 0
@@ -1134,9 +1134,9 @@
                     : `bg-gradient-to-b from-white to-gray-100 border-2 border-gray-300 border-b-gray-400 shadow-md hover:shadow-lg hover:from-gray-50 hover:to-gray-150 active:shadow-sm active:translate-y-0.5 active:border-b-gray-300 ${isFirstRound ? 'first-round-shine-panel' : ''}`
               }`}
             >
-              <DrinkIcon className={`w-8 h-8 ${selectedChoice === 0 ? 'text-gray-400' : theme.iconColor}`} drinkName={CONFIG.playerName0} />
+              <DrinkIcon className={`w-10 h-10 ${selectedChoice === 0 ? 'text-gray-400' : theme.iconColor}`} drinkName={CONFIG.playerName0} />
               <div className="text-center">
-                <div className={`whitespace-nowrap text-sm ${selectedChoice === 0 ? 'text-gray-400' : 'text-gray-700'}`}>Drink {CONFIG.playerName0}</div>
+                <div className={`text-[10px] ${selectedChoice === 0 ? 'text-gray-400' : 'text-gray-700'}`}>Drink {CONFIG.playerName0}</div>
                 <div className="text-sm rounded px-2 py-0.5 mt-1 font-bold bg-amber-400 text-amber-900">
                   {price === 0 ? 'Free' : `-${CONFIG.currency}${price.toFixed(2)}`}
                 </div>
@@ -1144,7 +1144,7 @@
             </button>
             <button
               onClick={() => onChoice(0)}
-              className={`w-36 h-28 px-4 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
+              className={`w-36 h-36 px-2 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
                 selectedChoice === 0
                   ? `bg-gradient-to-b from-gray-100 to-gray-200 border-2 ${theme.panelBorder} shadow-md ring-4 ${theme.buttonRing}`
                   : selectedChoice === 1
@@ -1152,10 +1152,10 @@
                     : `bg-gradient-to-b from-white to-gray-100 border-2 border-gray-300 border-b-gray-400 shadow-md hover:shadow-lg hover:from-gray-50 hover:to-gray-150 active:shadow-sm active:translate-y-0.5 active:border-b-gray-300 ${isFirstRound ? 'first-round-shine-panel' : ''}`
               }`}
             >
-              <SkipIcon className={`w-8 h-8 ${selectedChoice === 1 ? 'text-gray-400' : theme.iconColor}`} />
+              <SkipIcon className={`w-10 h-10 ${selectedChoice === 1 ? 'text-gray-400' : theme.iconColor}`} />
               <div className="text-center">
-                <div className={`text-sm ${selectedChoice === 1 ? 'text-gray-400' : 'text-gray-700'}`}>Skip</div>
-                <div className={`text-xs ${selectedChoice === 1 ? 'text-gray-300' : 'text-gray-500'}`}>{CONFIG.currency}0</div>
+                <div className={`text-[10px] ${selectedChoice === 1 ? 'text-gray-400' : 'text-gray-700'}`}>Skip</div>
+                <div className={`text-[10px] ${selectedChoice === 1 ? 'text-gray-300' : 'text-gray-500'}`}>{CONFIG.currency}0</div>
               </div>
             </button>
           </div>
@@ -1352,61 +1352,60 @@
             return;
           }
 
-          if (e.code === 'Space' && waitingForSpace) {
+          if (e.code === 'Space' && waitingForSpace === 'outcome') {
             e.preventDefault();
+            // Record time spent viewing chemical level
+            const currentTimestamps = roundTimestampsRef.current[roundTimestampsRef.current.length - 1];
+            if (currentTimestamps) {
+              currentTimestamps.chemicalViewTime = (Date.now() - phaseStartTimeRef.current) / 1000;
+            }
+            phaseStartTimeRef.current = Date.now();
 
-            if (waitingForSpace === 'outcome') {
-              // Record time spent viewing chemical level
-              const currentTimestamps = roundTimestampsRef.current[roundTimestampsRef.current.length - 1];
-              if (currentTimestamps) {
-                currentTimestamps.chemicalViewTime = (Date.now() - phaseStartTimeRef.current) / 1000;
-              }
-              phaseStartTimeRef.current = Date.now();
+            // Show outcome
+            setPhase('outcome');
+            setCurrentY(pendingResult.Y);
+            setHistory(prev => [...prev, [pendingResult.A, pendingResult.X, pendingResult.Y]]);
+            setWaitingForSpace('nextRound');
+          }
 
-              // Show outcome
-              setPhase('outcome');
-              setCurrentY(pendingResult.Y);
-              setHistory(prev => [...prev, [pendingResult.A, pendingResult.X, pendingResult.Y]]);
-              setWaitingForSpace('nextRound');
-            } else if (waitingForSpace === 'nextRound') {
-              // Record time spent viewing outcome
-              const currentTimestamps = roundTimestampsRef.current[roundTimestampsRef.current.length - 1];
-              if (currentTimestamps) {
-                currentTimestamps.outcomeViewTime = (Date.now() - phaseStartTimeRef.current) / 1000;
-              }
+          if (e.code === 'Enter' && waitingForSpace === 'nextRound') {
+            e.preventDefault();
+            // Record time spent viewing outcome
+            const currentTimestamps = roundTimestampsRef.current[roundTimestampsRef.current.length - 1];
+            if (currentTimestamps) {
+              currentTimestamps.outcomeViewTime = (Date.now() - phaseStartTimeRef.current) / 1000;
+            }
 
-              setWaitingForSpace(null);
-              setPendingResult(null);
+            setWaitingForSpace(null);
+            setPendingResult(null);
 
-              if (currentRound >= CONFIG.totalRounds) {
-                setPhase('priceIntro');
+            if (currentRound >= CONFIG.totalRounds) {
+              setPhase('priceIntro');
+            } else {
+              // Check if we're at the halfway point and haven't shown DAG yet (skip for AY order)
+              const halfwayPoint = Math.floor(CONFIG.totalRounds / 2);
+              if (currentRound === halfwayPoint && !halfwayDAGShownRef.current && CONFIG.order !== 'AY') {
+                halfwayDAGShownRef.current = true;
+                setShowDAG(true);
               } else {
-                // Check if we're at the halfway point and haven't shown DAG yet (skip for AY order)
-                const halfwayPoint = Math.floor(CONFIG.totalRounds / 2);
-                if (currentRound === halfwayPoint && !halfwayDAGShownRef.current && CONFIG.order !== 'AY') {
-                  halfwayDAGShownRef.current = true;
-                  setShowDAG(true);
-                } else {
-                  // Show overlay immediately, reset values while overlay is visible
-                  setNextDayNumber(currentRound + 1);
-                  setShowNewDay(true);
+                // Trigger "New Day" overlay
+                setShowNewDay(true);
 
-                  // Reset values while overlay is covering (users won't see the change)
-                  setTimeout(() => {
-                    setCurrentA(null);
-                    setCurrentX(null);
-                    setCurrentY(null);
-                  }, 200);
+                // Clear current values after a short delay
+                setTimeout(() => {
+                  setCurrentA(null);
+                  setCurrentX(null);
+                  setCurrentY(null);
+                }, 200);
 
-                  // Hide overlay and advance to next round
-                  setTimeout(() => {
-                    setShowNewDay(false);
-                    setCurrentRound(prev => prev + 1);
-                    setPhase('decision');
-                    roundStartTimeRef.current = Date.now();
-                    phaseStartTimeRef.current = Date.now();
-                  }, 1200);
-                }
+                // Hide overlay and advance to next round
+                setTimeout(() => {
+                  setShowNewDay(false);
+                  setCurrentRound(prev => prev + 1);
+                  setPhase('decision');
+                  roundStartTimeRef.current = Date.now();
+                  phaseStartTimeRef.current = Date.now();
+                }, 1200);
               }
             }
           }
@@ -1637,7 +1636,7 @@
                   )}
                   {phase === 'outcome' && (
                     waitingForSpace === 'nextRound'
-                      ? <>{currentY === 1 ? `${CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}!` : `${CONFIG.playerName2Neg.charAt(0).toUpperCase() + CONFIG.playerName2Neg.slice(1)}`} {currentY === 1 ? <HappyFaceIcon className="w-5 h-5 inline-block" /> : <SadFaceIcon className="w-5 h-5 inline-block" />}<br />Press "Space" to continue to the next week</>
+                      ? <>{currentY === 1 ? `${CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}!` : `${CONFIG.playerName2Neg.charAt(0).toUpperCase() + CONFIG.playerName2Neg.slice(1)}`} {currentY === 1 ? <HappyFaceIcon className="w-5 h-5 inline-block" /> : <SadFaceIcon className="w-5 h-5 inline-block" />}<br />Press "Return ↵" to continue to the next week</>
                       : <>Later this day: {currentY === 1 ? `${CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}!` : `${CONFIG.playerName2Neg.charAt(0).toUpperCase() + CONFIG.playerName2Neg.slice(1)}`} {currentY === 1 ? <HappyFaceIcon className="w-5 h-5 inline-block" /> : <SadFaceIcon className="w-5 h-5 inline-block" />}</>
                   )}
                 </span>

@@ -36,6 +36,10 @@
       }
     }
 
+    .fade-in {
+      animation: fadeIn 0.5s ease-in forwards;
+    }
+
     .animate-blink {
       position: relative;
     }
@@ -175,7 +179,7 @@
       rationalInference: null,    // Will be set from Qualtrics
       // Default mainCausals - will be overwritten by Qualtrics
       increasingOrder: Math.random() < 0.5 ? 1 : 0,  // 1 = increases first, 0 = decreases first
-      order: 'AY',               // 'AXY' shows all questions, 'AY' shows only AY question
+      order: 'AXY',               // 'AXY' shows all questions, 'AY' shows only AY question
       themeColor: 'purple',      // Theme color: 'blue', 'purple', 'teal', 'yellow'
       mainCausals: [
         { causalElicit: "AX", exoButton: 0, id: "AX0" },
@@ -470,7 +474,7 @@
           <div className="grid grid-cols-2 gap-2 mb-2">
             {/* Left column - Decreases */}
             <div className="space-y-1">
-              <div className="text-xs text-gray-500 font-medium mb-1 text-center">Decreases</div>
+              <div className="text-sm text-gray-700 font-medium mb-2 text-center">Decreases</div>
               {decreaseOptions.map((option, idx) => {
                 // decreaseOptions is reversed, so idx 0 = options[9], idx 9 = options[0]
                 const actualIndex = 9 - idx;
@@ -478,7 +482,7 @@
                 return (
                   <label
                     key={actualIndex}
-                    className={`flex items-center p-1.5 rounded-lg border-2 cursor-pointer transition-all text-xs ${
+                    className={`flex items-center p-1.5 rounded-lg border-2 cursor-pointer transition-all text-sm whitespace-nowrap ${
                       isSelected
                         ? `${getThemeClassesLocal().buttonBg} text-white border-transparent font-medium`
                         : 'bg-white border-gray-200 hover:border-gray-300'
@@ -500,7 +504,7 @@
             </div>
             {/* Right column - Increases */}
             <div className="space-y-1">
-              <div className="text-xs text-gray-500 font-medium mb-1 text-center">Increases</div>
+              <div className="text-sm text-gray-700 font-medium mb-2 text-center">Increases</div>
               {increaseOptions.map((option, idx) => {
                 // increaseOptions starts at options[11], so idx 0 = options[11], idx 9 = options[20]
                 const actualIndex = 11 + idx;
@@ -508,7 +512,7 @@
                 return (
                   <label
                     key={actualIndex}
-                    className={`flex items-center p-1.5 rounded-lg border-2 cursor-pointer transition-all text-xs ${
+                    className={`flex items-center p-1.5 rounded-lg border-2 cursor-pointer transition-all text-sm whitespace-nowrap ${
                       isSelected
                         ? `${getThemeClassesLocal().buttonBg} text-white border-transparent font-medium`
                         : 'bg-white border-gray-200 hover:border-gray-300'
@@ -965,8 +969,18 @@
       const [pie2Value, setPie2Value] = useState(null);
       const [verbalValue, setVerbalValue] = useState(null);
       const [startTime] = useState(Date.now());
+      const [showNextButton, setShowNextButton] = useState(false);
 
       const { causalElicit, exoButton, id } = scenario;
+
+      // 5-second delay for showing the next button when stage changes
+      useEffect(() => {
+        setShowNextButton(false);
+        const timer = setTimeout(() => {
+          setShowNextButton(true);
+        }, 5000);
+        return () => clearTimeout(timer);
+      }, [stage, walkthroughStep]);
 
       // Scroll to top when component mounts (new scenario starts)
       useEffect(() => {
@@ -993,14 +1007,6 @@
         
         const instructionConfigs = {
           AX: {
-            title: `How does <strong>your choice to drink ${playerName0}</strong> affect <strong>${playerName1} level</strong> if ...`,
-            bullet1: exoButton === null
-              ? "Your how you feel is determined as before."
-              : exoButton === 1
-                ? `You are required to take ${playerName2PosExo} which makes you feel <strong>${playerName2Pos}</strong>.`
-                : `You are required to take ${playerName2NegExo} which makes you feel <strong>${playerName2Neg}</strong>.`,
-            bullet2: `${playerName1} level is determined as before.`,
-            conditionText: exoButton === null ? null : (exoButton === 1 ? `you are required to take ${playerName2PosExo} which makes you feel <strong>${playerName2Pos}</strong>:` : `you are required to take ${playerName2NegExo} which makes you feel <strong>${playerName2Neg}</strong>:`),
             // Walkthrough text for each step
             walkthroughStep0: exoButton === null
               ? null
@@ -1013,88 +1019,64 @@
             causePanel: 'A',
             outcomePanel: 'X',
             pie1Question: exoButton === null
-              ? `What is the chance that your <strong>${playerName1} level is normal</strong> if you are <strong >required to NOT drink ${playerName0}</strong>?`
-              : `Suppose you are required to take ${exoButton === 1 ? playerName2PosExo : playerName2NegExo} which makes you feel <strong>${exoButton === 1 ? playerName2Pos : playerName2Neg}</strong>. Subsequently, you are <strong >required to NOT drink ${playerName0}</strong>.<br>What is the chance that your <strong>${playerName1} level is normal</strong>?`,
+              ? `What is the chance that your <strong>${playerName1} level is normal</strong> if you are <strong>required to NOT drink ${playerName0}</strong>?`
+              : `Suppose you are required to take ${exoButton === 1 ? playerName2PosExo : playerName2NegExo} which makes you feel <strong>${exoButton === 1 ? playerName2Pos : playerName2Neg}</strong>. Subsequently, you are <strong>required to NOT drink ${playerName0}</strong>.<br>What is the chance that your <strong>${playerName1} level is normal</strong>?`,
             pie2Question: exoButton === null
-              ? `What is the chance that your <strong>${playerName1} level is normal</strong> if you are <strong >required to drink ${playerName0}</strong>?`
-              : `Suppose you are required to take ${exoButton === 1 ? playerName2PosExo : playerName2NegExo} which makes you feel <strong>${exoButton === 1 ? playerName2Pos : playerName2Neg}</strong>. Subsequently, you are <strong >required to drink ${playerName0}</strong>.<br>What is the chance that your <strong>${playerName1} level is normal</strong>?`,
+              ? `What is the chance that your <strong>${playerName1} level is normal</strong> if you are <strong>required to drink ${playerName0}</strong>?`
+              : `Suppose you are required to take ${exoButton === 1 ? playerName2PosExo : playerName2NegExo} which makes you feel <strong>${exoButton === 1 ? playerName2Pos : playerName2Neg}</strong>. Subsequently, you are <strong>required to drink ${playerName0}</strong>.<br>What is the chance that your <strong>${playerName1} level is normal</strong>?`,
             verbalQuestion: exoButton === null
               ? `How does <strong>drinking ${playerName0}</strong> change the chance that your <strong>${playerName1} level is normal</strong>?`
               : `Suppose you are required to take ${exoButton === 1 ? playerName2PosExo : playerName2NegExo} which makes you feel <strong>${exoButton === 1 ? playerName2Pos : playerName2Neg}</strong>.<br>How does <strong>your subsequent choice to drink ${playerName0}</strong> change the chance that your <strong>${playerName1} level is normal</strong>?`,
-            outcomeText: `${playerName1} level is normal`,
             pie1Color: getThemeHexColor(),
             pie2Color: getThemeHexColor()
           },
           AY: {
-            title: `How does <strong>your choice to drink ${playerName0}</strong> affect <strong>how you feel</strong> if ...`,
-            bullet1: exoButton === null
-              ? `Your ${playerName1} level is determined as before.`
-              : exoButton === 1
-                ? `You are required to take ${playerName1}-Normalase which sets your ${playerName1} level to <strong>normal</strong>.`
-                : `You are required to take ${playerName1}-Disrupton which sets your ${playerName1} level to <strong>abnormal</strong>.`,
-            bullet2: "Your how you feel is determined as before.",
-            conditionText: exoButton === null ? null : `you are required to take ${playerName1}-${exoButton === 1 ? 'Normalase' : 'Disrupton'} which sets your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>:`,
             // Walkthrough text for each step
             walkthroughStep0: exoButton === null
               ? null
-              : `In this scenario, immediately after deciding whether to drink ${playerName0}, you are required to take ${playerName1}-${exoButton === 1 ? 'Normalase' : 'Disrupton'} which sets your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>...`,
+              : `In this scenario, immediately after deciding whether to drink ${playerName0}, you are required to take ${playerName1}-${exoButton === 1 ? 'normal-injection' : 'abnormal-injection'} which sets your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>...`,
             walkthroughStep1: `Report how <strong>your choice to drink ${playerName0}</strong>...`,
             walkthroughStep2: `...affects <strong>how you feel</strong>.`,
             walkthroughHighlight: { step0: 'X', step1: 'A', step2: ['A', 'Y'] },
             causePanel: 'A',
             outcomePanel: 'Y',
             pie1Question: exoButton === null
-              ? `What is the chance that you feel <strong>${playerName2Pos}</strong> if you are <strong >required to NOT drink ${playerName0}</strong>?`
-              : `Suppose you are <strong>required to NOT drink ${playerName0}</strong>, immediately after that, you are required to take ${playerName1}-${exoButton === 1 ? 'Normalase' : 'Disrupton'} which sets your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
+              ? `What is the chance that you feel <strong>${playerName2Pos}</strong> if you must <strong>not drink ${playerName0}</strong>?`
+              : `Suppose you must <strong>not drink ${playerName0}</strong>, immediately after that, you are required to take ${playerName1}-${exoButton === 1 ? 'normal-injection' : 'abnormal-injection'} which sets your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
             pie2Question: exoButton === null
-              ? `What is the chance that you feel <strong>${playerName2Pos}</strong> if you are <strong>required to drink ${playerName0}</strong>?`
-              : `Suppose you are <strong>required to drink ${playerName0}</strong>, immediately after that, you are required to take ${playerName1}-${exoButton === 1 ? 'Normalase' : 'Disrupton'} which sets your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
+              ? `What is the chance that you feel <strong>${playerName2Pos}</strong> if you must <strong>drink ${playerName0}</strong>?`
+              : `Suppose you must <strong>drink ${playerName0}</strong>, immediately after that, you are required to take ${playerName1}-${exoButton === 1 ? 'normal-injection' : 'abnormal-injection'} which sets your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
             verbalQuestion: exoButton === null
               ? `How does <strong>drinking ${playerName0}</strong> change the chance that you feel <strong>${playerName2Pos}</strong>?`
-              : `Suppose you are required to take ${playerName1}-${exoButton === 1 ? 'Normalase' : 'Disrupton'} which sets your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong> immediately after deciding whether to drink ${playerName0}.<br>How does <strong>your choice to drink ${playerName0}</strong> change the chance that you feel <strong>${playerName2Pos}</strong>?`,
-            outcomeText: playerName2Pos,
+              : `Suppose you are required to take ${playerName1}-${exoButton === 1 ? 'normal-injection' : 'abnormal-injection'} which sets your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong> immediately after deciding whether to drink ${playerName0}.<br>How does <strong>your choice to drink ${playerName0}</strong> change the chance that you feel <strong>${playerName2Pos}</strong>?`,
             pie1Color: getThemeHexColor(),
             pie2Color: getThemeHexColor()
           },
           XY: {
-            title: `How does <strong>${playerName1} level</strong> affect <strong>how you feel</strong> if ...`,
-            bullet1: exoButton === 1
-              ? `You are <strong>required to drink</strong> ${playerName0}.`
-              : `You are <strong>required to NOT drink</strong> ${playerName0}.`,
-            bullet2: "Your how you feel is determined as before.",
-            conditionText: `you are <strong>required to ${exoButton === 1 ? 'drink' : 'NOT drink'}</strong> ${playerName0}:`,
             // Walkthrough text for each step
-            walkthroughStep0: `In this scenario, you are <strong>required to ${exoButton === 1 ? 'drink' : 'NOT drink'}</strong> ${playerName0}...`,
+            walkthroughStep0: `In this scenario, you must <strong>${exoButton === 1 ? 'drink' : 'not drink'} ${playerName0}</strong> ...`,
             walkthroughStep1: `Report how <strong>your ${playerName1} level</strong>...`,
             walkthroughStep2: `...affects <strong>how you feel</strong>.`,
             walkthroughHighlight: { step0: 'A', step1: 'X', step2: ['X', 'Y'] },
             causePanel: 'X',
             outcomePanel: 'Y',
-            pie1Question: `Suppose you are <strong>required to ${exoButton === 1 ? 'drink' : 'NOT drink'}</strong> ${playerName0}. Immediately after, you are required to take ${playerName1}-Disrupton which sets your ${playerName1} level to <strong >abnormal</strong>.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
-            pie2Question: `Suppose you are <strong>required to ${exoButton === 1 ? 'drink' : 'NOT drink'}</strong> ${playerName0}. Immediately after, you are required to take ${playerName1}-Normalase which sets your ${playerName1} level to <strong >normal</strong>.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
-            verbalQuestion: `Suppose you are <strong>required to ${exoButton === 1 ? 'drink' : 'NOT drink'}</strong> ${playerName0}.<br>How does having a <strong>normal ${playerName1}</strong> (vs. abnormal) level change the chance that you feel <strong>${playerName2Pos}</strong>?`,
-            outcomeText: playerName2Pos,
+            pie1Question: `Suppose you must <strong>${exoButton === 1 ? 'drink' : 'not drink'} ${playerName0}</strong>. Immediately after, you are required to take ${playerName1}-abnormal-injection which sets your ${playerName1} level to <strong>abnormal</strong>.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
+            pie2Question: `Suppose you must <strong>${exoButton === 1 ? 'drink' : 'not drink'} ${playerName0}</strong>. Immediately after, you are required to take ${playerName1}-normal-injection which sets your ${playerName1} level to <strong>normal</strong>.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
+            verbalQuestion: `Suppose you must <strong>${exoButton === 1 ? 'drink' : 'not drink'} ${playerName0}</strong>.<br>How does having a <strong>normal ${playerName1}</strong> (rather than abnormal) level change the chance that you feel <strong>${playerName2Pos}</strong>?`,
             pie1Color: getThemeHexColor(),
             pie2Color: getThemeHexColor()
           },
           YX: {
-            title: `How does <strong>how you feel</strong> affect <strong>${playerName1} level</strong> if ...`,
-            bullet1: exoButton === 1
-              ? `You are <strong>required to drink</strong> ${playerName0}.`
-              : `You are <strong>required to NOT drink</strong> ${playerName0}.`,
-            bullet2: `${playerName1} level is determined as before.`,
-            conditionText: `you are <strong>required to ${exoButton === 1 ? 'drink' : 'NOT drink'}</strong> ${playerName0}:`,
             // Walkthrough text for each step
-            walkthroughStep0: `In this scenario, you are <strong>required to ${exoButton === 1 ? 'drink' : 'NOT drink'}</strong> ${playerName0}...`,
+            walkthroughStep0: `In this scenario, you must <strong>${exoButton === 1 ? 'drink' : 'not drink'} ${playerName0}</strong> ...`,
             walkthroughStep1: `Report how <strong>how you feel</strong>...`,
             walkthroughStep2: `...affects your <strong>${playerName1} level</strong>.`,
             walkthroughHighlight: { step0: 'A', step1: 'Y', step2: ['Y', 'X'] },
             causePanel: 'Y',
             outcomePanel: 'X',
-            pie1Question: `Suppose you are <strong>required to ${exoButton === 1 ? 'drink' : 'NOT drink'}</strong> ${playerName0}. Immediately after, you are required to take ${playerName2NegExo} which makes you feel <strong >${playerName2Neg}</strong>.<br>What is the chance that your <strong>${playerName1} level is normal</strong>?`,
-            pie2Question: `Suppose you are <strong>required to ${exoButton === 1 ? 'drink' : 'NOT drink'}</strong> ${playerName0}. Immediately after, you are required to take ${playerName2PosExo} which makes you feel <strong >${playerName2Pos}</strong>.<br>What is the chance that your <strong>${playerName1} level is normal</strong>?`,
-            verbalQuestion: `Suppose you are <strong>required to ${exoButton === 1 ? 'drink' : 'NOT drink'}</strong> ${playerName0}.<br>How does feeling <strong>${playerName2Pos}</strong> (vs. being ${playerName2Neg}) change the chance that your <strong>${playerName1} level is normal</strong>?`,
-            outcomeText: `${playerName1} level is normal`,
+            pie1Question: `Suppose you must <strong>${exoButton === 1 ? 'drink' : 'not drink'} ${playerName0}</strong>. Immediately after, you are required to take ${playerName2NegExo} which makes you feel <strong>${playerName2Neg}</strong>.<br>What is the chance that your <strong>${playerName1} level is normal</strong>?`,
+            pie2Question: `Suppose you must <strong>${exoButton === 1 ? 'drink' : 'not drink'} ${playerName0}</strong>. Immediately after, you are required to take ${playerName2PosExo} which makes you feel <strong>${playerName2Pos}</strong>.<br>What is the chance that your <strong>${playerName1} level is normal</strong>?`,
+            verbalQuestion: `Suppose you must <strong>${exoButton === 1 ? 'drink' : 'not drink'} ${playerName0}</strong>.<br>How does feeling <strong>${playerName2Pos}</strong> (rather than being ${playerName2Neg}) change the chance that your <strong>${playerName1} level is normal</strong>?`,
             pie1Color: getThemeHexColor(),
             pie2Color: getThemeHexColor()
           }
@@ -1239,7 +1221,7 @@
                       onClick={handleWalkthroughNext}
                       className="px-8 py-3 rounded-lg font-medium text-lg transition-all bg-yellow-500 hover:bg-yellow-600 text-white"
                     >
-                      {walkthroughStep === 2 ? 'I understand this scenario →' : 'Next →'}
+                      {walkthroughStep === 2 ? 'I understand this scenario →' : 'Continue'}
                     </button>
                   </div>
                 </div>
@@ -1309,19 +1291,21 @@
                     <div className="flex justify-center">
                       <button
                         onClick={() => setStage(2)}
-                        disabled={!canProceedToStage2}
-                        className={`px-8 py-3 rounded-lg font-medium text-lg transition-all ${
+                        disabled={!canProceedToStage2 || !showNextButton}
+                        className={`px-8 py-3 rounded-lg font-medium text-lg ${
+                          showNextButton ? 'opacity-100 transition-opacity duration-[2000ms] ease-in' : 'opacity-0 pointer-events-none'
+                        } ${
                           canProceedToStage2
                             ? `${getThemeClassesLocal().buttonBg} ${getThemeClassesLocal().buttonHover} text-white`
                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         }`}
                       >
-                        Next →
+                        Continue
                       </button>
                     </div>
                   </div>
                 )}
-                
+
                 {/* Stage 2: Second Pie Chart */}
                 {stage === 2 && (
                   <div className="animate-fadeIn">
@@ -1342,24 +1326,26 @@
                       </button>
                       <button
                         onClick={() => setStage(3)}
-                        disabled={!canProceedToStage3}
-                        className={`px-8 py-3 rounded-lg font-medium text-lg transition-all ${
+                        disabled={!canProceedToStage3 || !showNextButton}
+                        className={`px-8 py-3 rounded-lg font-medium text-lg ${
+                          showNextButton ? 'opacity-100 transition-opacity duration-[2000ms] ease-in' : 'opacity-0 pointer-events-none'
+                        } ${
                           canProceedToStage3
                             ? `${getThemeClassesLocal().buttonBg} ${getThemeClassesLocal().buttonHover} text-white`
                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         }`}
                       >
-                        Next →
+                        Continue
                       </button>
                     </div>
                   </div>
                 )}
-                
+
                 {/* Stage 3: Verbal Scale */}
                 {stage === 3 && (
                   <div className="animate-fadeIn">
                     <p className="text-gray-700 text-center mb-4" dangerouslySetInnerHTML={{ __html: config.verbalQuestion }} />
-                    <div className="max-w-lg mx-auto">
+                    <div className="max-w-2xl mx-auto">
                       <VerbalScale
                         value={verbalValue}
                         onChange={setVerbalValue}
@@ -1378,14 +1364,16 @@
                       )}
                       <button
                         onClick={handleSubmit}
-                        disabled={!canSubmit}
-                        className={`px-8 py-3 rounded-lg font-medium text-lg transition-all ${
+                        disabled={!canSubmit || !showNextButton}
+                        className={`px-8 py-3 rounded-lg font-medium text-lg ${
+                          showNextButton ? 'opacity-100 transition-opacity duration-[2000ms] ease-in' : 'opacity-0 pointer-events-none'
+                        } ${
                           canSubmit
                             ? `${getThemeClassesLocal().buttonBg} ${getThemeClassesLocal().buttonHover} text-white`
                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         }`}
                       >
-                        Submit & Continue
+                        Submit
                       </button>
                     </div>
                   </div>
@@ -1402,11 +1390,26 @@
     // Intro Page Component
     function IntroPage({ onContinue }) {
       const [showDetails, setShowDetails] = useState(false);
+      const [introStep, setIntroStep] = useState(0);
+      const [showNextButton, setShowNextButton] = useState(false);
+
+      // Delay for showing next button at each step
+      useEffect(() => {
+        setShowNextButton(false);
+        const timer = setTimeout(() => {
+          setShowNextButton(true);
+        }, 3000); // 3 seconds delay for all steps
+        return () => clearTimeout(timer);
+      }, [introStep]);
+
+      const handleNextStep = () => {
+        setIntroStep(prev => prev + 1);
+      };
 
       return (
         <div className="min-h-screen bg-white px-4 pt-0 pb-4">
           <div className="max-w-5xl mx-auto">
-            <div className="bg-white rounded-xl shadow-lg p-8">
+            <div className="p-8">
               {/* Title */}
               <div className="text-center mb-6">
                 <div className="flex items-center justify-center gap-3 mb-4">
@@ -1420,7 +1423,7 @@
                 </div>
               </div>
 
-              {/* Description */}
+              {/* Step 0: Introduction paragraph */}
               <div className="text-gray-700 space-y-4 mb-6">
                 <p>
                   {CONFIG.order === 'AY' ? (
@@ -1429,72 +1432,135 @@
                     <>What do you believe about how your decision to drink <strong>{CONFIG.playerName0}</strong>, your <strong>{CONFIG.playerName1} level</strong>, and <strong>how you feel</strong> are related? To answer this question, each of the next {CONFIG.mainCausals.length} decision screens show you a different scenario.</>
                   )}
                 </p>
-
-                {CONFIG.order !== 'AY' && (
-                  <>
-                    <p>
-                      There will be {CONFIG.mainCausals.length} different scenarios. Some scenarios ask what will happen if your {CONFIG.playerName1} level are set by one of two medications:
-                    </p>
-                    <ul className="list-disc list-inside space-y-2 ml-4 mb-4">
-                      <li><strong>{CONFIG.playerName1}-Normalase</strong> normalizes your {CONFIG.playerName1} level for sure.</li>
-                      <li><strong>{CONFIG.playerName1}-Disrupton</strong> makes your {CONFIG.playerName1} levels abnormal for sure.</li>
-                    </ul>
-                    <p>
-                      These medications have <i>no direct effects</i> on how you feel. However, <i>if</i> how you feel is a response of your body to your {CONFIG.playerName1} level, you may feel different if you consume {CONFIG.playerName1}-Normalase or {CONFIG.playerName1}-Disrupton.
-                    </p>
-
-                    <p>
-                      Other scenarios ask what will happen if how you feel is set fixed by one of two other medications:
-                    </p>
-                    <ul className="list-disc list-inside space-y-2 ml-4 mb-4">
-                      <li><strong>{CONFIG.playerName2PosExo}</strong> makes you <strong>{CONFIG.playerName2Pos}</strong> for sure.</li>
-                      <li><strong>{CONFIG.playerName2NegExo}</strong> makes you <strong>{CONFIG.playerName2Neg}</strong> for sure.</li>
-                    </ul>
-                    <p>
-                      These medications have <i>no direct effects</i> on your {CONFIG.playerName1} levels. However, <i>if</i> {CONFIG.playerName1} is a response of your body to feeling {CONFIG.playerName2Neg} or {CONFIG.playerName2Pos}, you may see your {CONFIG.playerName1} level change if you consume {CONFIG.playerName2PosExo} or {CONFIG.playerName2NegExo}.
-                    </p>
-                  </>
-                )}
-
-                <p>
-                  One of your responses in this part may randomly be chosen to determine your bonus payment. If so, then you will receive {CONFIG.currency}{CONFIG.beliefPaymentMax} if your report is accurate. The less accurate your report, the lower this bonus will be. The payment system is designed such that it is in your own interest to report your beliefs truthfully.
-                </p>
               </div>
 
-              {/* Show Details Button */}
-              {!showDetails && (
-                <button
-                  onClick={() => setShowDetails(true)}
-                  className={`${getThemeClassesLocal().pillText} hover:opacity-80 underline mb-6 block`}
-                >
-                  Show payment details
-                </button>
+              {/* Next button for step 0 */}
+              {introStep === 0 && (
+                <div className="flex justify-end mb-6">
+                  <button
+                    onClick={handleNextStep}
+                    disabled={!showNextButton}
+                    className={`px-8 py-3 ${getThemeClassesLocal().buttonBg} ${getThemeClassesLocal().buttonHover} text-white font-medium text-lg rounded-lg ${
+                      showNextButton ? 'opacity-100 transition-opacity duration-[2000ms] ease-in' : 'opacity-0 pointer-events-none'
+                    }`}
+                  >
+                    Continue
+                  </button>
+                </div>
               )}
 
-              {/* Details Content */}
-              {showDetails && (
-                <div className="bg-gray-50 rounded-lg p-6 mb-6 text-sm text-gray-700">
-                  <p className="font-bold mb-3">How is my payment determined if this part counts?</p>
-
-                  <p className="mb-3">
-                    You will select a line from a list describing how much one factor affects another.
-                  </p>
-
+              {/* Step 1: Qivex medications (only for non-AY orders) */}
+              {CONFIG.order !== 'AY' && introStep >= 1 && (
+                <div className="text-gray-700 space-y-4 mb-6 fade-in">
                   <p>
-                    You will earn <strong>{CONFIG.currency}{CONFIG.beliefPaymentMax}</strong> if you choose the segment or line that matches
-                    what actually happened. For each segment or line by which your estimate deviates from the correct answer,
-                    your bonus shrinks by <strong>{CONFIG.currency}{CONFIG.beliefPaymentIncentive}</strong>.
+                    Some scenarios ask what will happen if your {CONFIG.playerName1} level are set by one of two medications:
+                  </p>
+                  <ul className="list-disc list-inside space-y-2 ml-4 mb-4">
+                    <li><strong>{CONFIG.playerName1}-normal-injection</strong> normalizes your {CONFIG.playerName1} level <strong>for sure</strong>.</li>
+                    <li><strong>{CONFIG.playerName1}-abnormal-injection</strong> makes your {CONFIG.playerName1} levels abnormal <strong>for sure</strong>.</li>
+                  </ul>
+                  <p>
+                    These medications have <i>no direct effects</i> on how you feel. However, <i>if</i> how you feel is a response of your body to your {CONFIG.playerName1} level, you may feel different if you consume {CONFIG.playerName1}-normal-injection or {CONFIG.playerName1}-abnormal-injection.
                   </p>
                 </div>
               )}
 
-              {/* Continue Button */}
-              <button
-                onClick={onContinue}
-                className={`w-full py-3 ${getThemeClassesLocal().buttonBg} ${getThemeClassesLocal().buttonHover} text-white font-medium rounded-lg transition-colors`}
-              >
-                Continue
-              </button>
+              {/* Next button for step 1 */}
+              {CONFIG.order !== 'AY' && introStep === 1 && (
+                <div className="flex justify-end mb-6">
+                  <button
+                    onClick={handleNextStep}
+                    disabled={!showNextButton}
+                    className={`px-8 py-3 ${getThemeClassesLocal().buttonBg} ${getThemeClassesLocal().buttonHover} text-white font-medium text-lg rounded-lg ${
+                      showNextButton ? 'opacity-100 transition-opacity duration-[2000ms] ease-in' : 'opacity-0 pointer-events-none'
+                    }`}
+                  >
+                    Continue
+                  </button>
+                </div>
+              )}
+
+              {/* Step 2: Energenix/Somnexil medications (only for non-AY orders) */}
+              {CONFIG.order !== 'AY' && introStep >= 2 && (
+                <div className="text-gray-700 space-y-4 mb-6 fade-in">
+                  <p>
+                    Other scenarios ask what will happen if how you feel is set fixed by one of two other medications:
+                  </p>
+                  <ul className="list-disc list-inside space-y-2 ml-4 mb-4">
+                    <li><strong>{CONFIG.playerName2PosExo}</strong> makes you <strong>{CONFIG.playerName2Pos}</strong> for sure.</li>
+                    <li><strong>{CONFIG.playerName2NegExo}</strong> makes you <strong>{CONFIG.playerName2Neg}</strong> for sure.</li>
+                  </ul>
+                  <p>
+                    These medications have <i>no direct effects</i> on your {CONFIG.playerName1} levels. However, <i>if</i> {CONFIG.playerName1} is a response of your body to feeling {CONFIG.playerName2Neg} or {CONFIG.playerName2Pos}, you may see your {CONFIG.playerName1} level change if you consume {CONFIG.playerName2PosExo} or {CONFIG.playerName2NegExo}.
+                  </p>
+                </div>
+              )}
+
+              {/* Next button for step 2 */}
+              {CONFIG.order !== 'AY' && introStep === 2 && (
+                <div className="flex justify-end mb-6">
+                  <button
+                    onClick={handleNextStep}
+                    disabled={!showNextButton}
+                    className={`px-8 py-3 ${getThemeClassesLocal().buttonBg} ${getThemeClassesLocal().buttonHover} text-white font-medium text-lg rounded-lg ${
+                      showNextButton ? 'opacity-100 transition-opacity duration-[2000ms] ease-in' : 'opacity-0 pointer-events-none'
+                    }`}
+                  >
+                    Continue
+                  </button>
+                </div>
+              )}
+
+              {/* Step 3 (or step 1 for AY): Payment info */}
+              {((CONFIG.order === 'AY' && introStep >= 1) || (CONFIG.order !== 'AY' && introStep >= 3)) && (
+                <div className="fade-in">
+                  <div className="text-gray-700 space-y-4 mb-6">
+                    <p>
+                      One of your responses in this part may randomly be chosen to determine your bonus payment. If so, then you will receive {CONFIG.currency}{CONFIG.beliefPaymentMax} if your report is accurate. The less accurate your report, the lower this bonus will be. The payment system is designed such that it is in your own interest to report your beliefs truthfully.
+                    </p>
+                  </div>
+
+                  {/* Show Details Button */}
+                  {!showDetails && (
+                    <button
+                      onClick={() => setShowDetails(true)}
+                      className={`${getThemeClassesLocal().pillText} hover:opacity-80 underline mb-6 block`}
+                    >
+                      Show payment details
+                    </button>
+                  )}
+
+                  {/* Details Content */}
+                  {showDetails && (
+                    <div className="bg-gray-50 rounded-lg p-6 mb-6 text-sm text-gray-700">
+                      <p className="font-bold mb-3">How is my payment determined if this part counts?</p>
+
+                      <p className="mb-3">
+                        You will select a line from a list describing how much one factor affects another.
+                      </p>
+
+                      <p>
+                        You will earn <strong>{CONFIG.currency}{CONFIG.beliefPaymentMax}</strong> if you choose the segment or line that matches
+                        what actually happened. For each segment or line by which your estimate deviates from the correct answer,
+                        your bonus shrinks by <strong>{CONFIG.currency}{CONFIG.beliefPaymentIncentive}</strong>.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Continue Button */}
+                  <div className="flex justify-end">
+                    <button
+                      onClick={onContinue}
+                      disabled={!showNextButton}
+                      className={`px-8 py-3 ${getThemeClassesLocal().buttonBg} ${getThemeClassesLocal().buttonHover} text-white font-medium text-lg rounded-lg ${
+                        showNextButton ? 'opacity-100 transition-opacity duration-[2000ms] ease-in' : 'opacity-0 pointer-events-none'
+                      }`}
+                    >
+                      Continue
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
