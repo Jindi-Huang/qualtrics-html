@@ -274,12 +274,12 @@
 
       // Calculate verbal scale payment
       const beliefPayment = correctAnswers.map((correct, index) => {
-        if (correct === null || correct === undefined) {
-          return beliefPaymentMax;
-        }
         const userChoice = responses[index].verbalValue;
         if (userChoice === null || userChoice === undefined) {
           return null;
+        }
+        if (correct === null || correct === undefined) {
+          return beliefPaymentMax;
         }
         const correctOptionIndex = getOptionIndex(correct);
         const absoluteDifference = Math.abs(correctOptionIndex - userChoice);
@@ -288,12 +288,12 @@
 
       // Calculate slider 1 (pie1) payment
       const beliefPaymentSlider1 = correctAnswersSlider1.map((correct, index) => {
-        if (correct === null || correct === undefined) {
-          return beliefPaymentMax;
-        }
         const userValue = responses[index].pie1Value;
         if (userValue === null || userValue === undefined) {
           return null;
+        }
+        if (correct === null || correct === undefined) {
+          return beliefPaymentMax;
         }
         const nearestCategory = Math.round(correct / 10) * 10;
         const absoluteDifference = Math.abs(nearestCategory - userValue) / 10;
@@ -302,12 +302,12 @@
 
       // Calculate slider 2 (pie2) payment
       const beliefPaymentSlider2 = correctAnswersSlider2.map((correct, index) => {
-        if (correct === null || correct === undefined) {
-          return beliefPaymentMax;
-        }
         const userValue = responses[index].pie2Value;
         if (userValue === null || userValue === undefined) {
           return null;
+        }
+        if (correct === null || correct === undefined) {
+          return beliefPaymentMax;
         }
         const nearestCategory = Math.round(correct / 10) * 10;
         const absoluteDifference = Math.abs(nearestCategory - userValue) / 10;
