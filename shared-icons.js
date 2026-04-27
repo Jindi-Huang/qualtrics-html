@@ -94,7 +94,7 @@ const SHARED_ICON_COMPONENTS = `
   // Drink Icon - shows different icons based on drink name
   function DrinkIcon({ className, drinkName, style }) {
     // Zyrax-norm: cup/glass icon
-    if (drinkName && drinkName.toLowerCase().includes('zyrax')) {
+    if (drinkName && drinkName.toLowerCase().includes('zerqalase')) {
       return (
         <svg className={className} style={style} viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
           <path d="M443.882,5.28C440.842,1.92,436.554,0,432.01,0h-352c-4.512,0-8.832,1.92-11.872,5.28c-3.008,3.328-4.512,7.808-4.064,12.32l48,480c0.832,8.192,7.712,14.4,15.936,14.4h256c8.224,0,15.104-6.208,15.904-14.4l48-480C448.394,13.088,446.922,8.608,443.882,5.28z M401.29,162.496c-40.672,13.152-93.6,19.232-135.136-14.848c-52.064-42.72-115.872-35.36-159.136-22.496L97.706,32h316.608L401.29,162.496z"/>
@@ -102,7 +102,7 @@ const SHARED_ICON_COMPONENTS = `
       );
     }
     // Nexol-norm: bottle/flask icon
-    if (drinkName && drinkName.toLowerCase().includes('nexol')) {
+    if (drinkName && drinkName.toLowerCase().includes('melythor')) {
       return (
         <svg className={className} style={style} viewBox="25 0 50 100" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
           <path d="m68.3983231 39.4338799v51.373867c0 3.6944504-2.9977417 6.6922531-6.6921844 6.6922531h-23.4122773c-3.6944466 0-6.6921864-2.9978027-6.6921864-6.6922531v-51.373867c0-3.2933311 1.0977535-6.4916306 3.1244678-9.0988846l5.3199768-6.8294144c1.2877464-1.6572304 1.9844475-3.6839428 1.9844475-5.773922v-2.7444191h15.9388657v2.7444191c0 2.0899792.696701 4.1166916 1.9844475 5.773922l5.3199768 6.8294144c2.0267105 2.607254 3.124466 5.8055534 3.124466 9.0988846z"/>
@@ -189,7 +189,7 @@ const SHARED_SVG_ICON_COMPONENTS = `
     const scale = size / 50;
 
     // Zyrax-norm: cup/glass icon
-    if (drinkName && drinkName.toLowerCase().includes('zyrax')) {
+    if (drinkName && drinkName.toLowerCase().includes('zerqalase')) {
       return (
         <g transform={\`translate(\${x - size/2}, \${y - size/2}) scale(\${scale * 0.1})\`}>
           <path d="M443.882,5.28C440.842,1.92,436.554,0,432.01,0h-352c-4.512,0-8.832,1.92-11.872,5.28c-3.008,3.328-4.512,7.808-4.064,12.32l48,480c0.832,8.192,7.712,14.4,15.936,14.4h256c8.224,0,15.104-6.208,15.904-14.4l48-480C448.394,13.088,446.922,8.608,443.882,5.28z M401.29,162.496c-40.672,13.152-93.6,19.232-135.136-14.848c-52.064-42.72-115.872-35.36-159.136-22.496L97.706,32h316.608L401.29,162.496z" fill={color} />
@@ -197,7 +197,7 @@ const SHARED_SVG_ICON_COMPONENTS = `
       );
     }
     // Nexol-norm: bottle/flask icon
-    if (drinkName && drinkName.toLowerCase().includes('nexol')) {
+    if (drinkName && drinkName.toLowerCase().includes('melythor')) {
       return (
         <g transform={\`translate(\${x}, \${y}) scale(\${scale * 0.45})\`}>
           <path d="m68.3983231 39.4338799v51.373867c0 3.6944504-2.9977417 6.6922531-6.6921844 6.6922531h-23.4122773c-3.6944466 0-6.6921864-2.9978027-6.6921864-6.6922531v-51.373867c0-3.2933311 1.0977535-6.4916306 3.1244678-9.0988846l5.3199768-6.8294144c1.2877464-1.6572304 1.9844475-3.6839428 1.9844475-5.773922v-2.7444191h15.9388657v2.7444191c0 2.0899792.696701 4.1166916 1.9844475 5.773922l5.3199768 6.8294144c2.0267105 2.607254 3.124466 5.8055534 3.124466 9.0988846z" fill={color} transform="translate(-50, -50)" />
@@ -251,13 +251,13 @@ function getDrinkIconSVG(drinkName, size, color) {
   const fillColor = color || getThemeIconColor(typeof CONFIG !== 'undefined' ? CONFIG.themeColor : 'blue');
 
   // Zyrax-norm: cup/glass icon
-  if (drinkName && drinkName.toLowerCase().includes('zyrax')) {
+  if (drinkName && drinkName.toLowerCase().includes('zerqalase')) {
     return `<svg style="width: ${size}; height: ${size};" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" fill="${fillColor}">
       <path d="M443.882,5.28C440.842,1.92,436.554,0,432.01,0h-352c-4.512,0-8.832,1.92-11.872,5.28c-3.008,3.328-4.512,7.808-4.064,12.32l48,480c0.832,8.192,7.712,14.4,15.936,14.4h256c8.224,0,15.104-6.208,15.904-14.4l48-480C448.394,13.088,446.922,8.608,443.882,5.28z M401.29,162.496c-40.672,13.152-93.6,19.232-135.136-14.848c-52.064-42.72-115.872-35.36-159.136-22.496L97.706,32h316.608L401.29,162.496z"/>
     </svg>`;
   }
   // Nexol-norm: bottle/flask icon
-  if (drinkName && drinkName.toLowerCase().includes('nexol')) {
+  if (drinkName && drinkName.toLowerCase().includes('melythor')) {
     return `<svg style="width: ${size}; height: ${size};" viewBox="25 0 50 100" xmlns="http://www.w3.org/2000/svg" fill="${fillColor}">
       <path d="m68.3983231 39.4338799v51.373867c0 3.6944504-2.9977417 6.6922531-6.6921844 6.6922531h-23.4122773c-3.6944466 0-6.6921864-2.9978027-6.6921864-6.6922531v-51.373867c0-3.2933311 1.0977535-6.4916306 3.1244678-9.0988846l5.3199768-6.8294144c1.2877464-1.6572304 1.9844475-3.6839428 1.9844475-5.773922v-2.7444191h15.9388657v2.7444191c0 2.0899792.696701 4.1166916 1.9844475 5.773922l5.3199768 6.8294144c2.0267105 2.607254 3.124466 5.8055534 3.124466 9.0988846z"/>
       <path d="m58.727375 11.8242331h-17.45475c-.7878952 0-1.426609-.6387148-1.426609-1.426609v-6.471015c-.0000001-.7878943.6387138-1.4266091 1.426609-1.4266091h17.45475c.7878952 0 1.426609.6387148 1.426609 1.4266093v6.471015c.0000001.787894-.6387138 1.4266088-1.426609 1.4266088z"/>
