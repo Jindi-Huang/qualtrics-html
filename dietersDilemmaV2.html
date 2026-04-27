@@ -1380,6 +1380,7 @@
       const dataSentRef = useRef(false);
       const halfwayDAGShownRef = useRef(false);
       const beliefShownRef = useRef(false);
+      const advancePendingRef = useRef(false);
 
       // Detailed timestamps for each round: { decision, chemical, outcome, nextRound }
       const roundTimestampsRef = useRef([]);
@@ -1450,18 +1451,21 @@
 
           if (e.code === 'Space' && waitingForSpace === 'nextRound') {
             e.preventDefault();
+            // Block further presses while the deferred advance is pending
+            if (advancePendingRef.current) return;
+            advancePendingRef.current = true;
             // If pressed before 1000ms has elapsed, defer the advance until 1000ms has passed
             const remaining = Math.max(0, 1000 - (Date.now() - phaseStartTimeRef.current));
-            // Block further presses while the deferred advance is pending
-            setWaitingForSpace(null);
 
             setTimeout(() => {
+              advancePendingRef.current = false;
               // Record time spent viewing outcome
               const currentTimestamps = roundTimestampsRef.current[roundTimestampsRef.current.length - 1];
               if (currentTimestamps) {
                 currentTimestamps.outcomeViewTime = (Date.now() - phaseStartTimeRef.current) / 1000;
               }
 
+              setWaitingForSpace(null);
               setPendingResult(null);
 
               if (currentRound >= CONFIG.totalRounds) {
@@ -1790,7 +1794,7 @@
                   {phase === 'chemical' && (CONFIG.order === 'AY' ? 'Later this day...' : `Reading your ${CONFIG.playerName1} level...`)}
                   {phase === 'outcome' && (
                     waitingForSpace === 'nextRound'
-                      ? <>{currentY === 1 ? `${CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}!` : `${CONFIG.playerName2Neg.charAt(0).toUpperCase() + CONFIG.playerName2Neg.slice(1)}`} {currentY === 1 ? <HappyFaceIcon className="w-5 h-5 inline-block" /> : <SadFaceIcon className="w-5 h-5 inline-block" />}<br />Press "Space" to continue</>
+                      ? <>Later this day: {currentY === 1 ? `${CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}!` : `${CONFIG.playerName2Neg.charAt(0).toUpperCase() + CONFIG.playerName2Neg.slice(1)}`} {currentY === 1 ? <HappyFaceIcon className="w-5 h-5 inline-block" /> : <SadFaceIcon className="w-5 h-5 inline-block" />}<br />Press "Space" to continue</>
                       : <>Later this day: {currentY === 1 ? `${CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}!` : `${CONFIG.playerName2Neg.charAt(0).toUpperCase() + CONFIG.playerName2Neg.slice(1)}`} {currentY === 1 ? <HappyFaceIcon className="w-5 h-5 inline-block" /> : <SadFaceIcon className="w-5 h-5 inline-block" />}</>
                   )}
                 </span>
