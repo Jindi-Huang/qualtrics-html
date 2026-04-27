@@ -203,6 +203,8 @@
 
     // DAG Drawing Component
     function DAGDrawer({ onComplete, playerName0, playerName1, playerIcon0 }) {
+      // Re-evaluate theme on each render — module-scope `theme` was bound before INIT arrived
+      const theme = getThemeClasses(CONFIG.themeColor);
       const svgRef = useRef(null);
       const [edges, setEdges] = useState([]);
       const [dragging, setDragging] = useState(null);
