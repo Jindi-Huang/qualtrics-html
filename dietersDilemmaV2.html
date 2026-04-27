@@ -1223,10 +1223,10 @@
             >
               <DrinkIcon className={`w-10 h-10 ${selectedChoice === 0 ? 'text-gray-400' : theme.iconColor}`} drinkName={CONFIG.playerName0} />
               <div className="text-center">
-                <div className={`text-[10px] ${selectedChoice === 0 ? 'text-gray-400' : 'text-gray-700'}`}>Drink {CONFIG.playerName0}</div>
-                <div className="text-sm rounded px-2 py-0.5 mt-1 font-bold bg-amber-400 text-amber-900">
+                <div className="text-base inline-block rounded px-2 py-0.5 font-bold bg-amber-400 text-amber-900">
                   {price === 0 ? 'Free' : `-${CONFIG.currency}${price.toFixed(2)}`}
                 </div>
+                <div className={`text-[10px] mt-1 ${selectedChoice === 0 ? 'text-gray-400' : 'text-gray-700'}`}>Drink {CONFIG.playerName0}</div>
               </div>
             </button>
             <button
@@ -1241,8 +1241,8 @@
             >
               <SkipIcon className={`w-10 h-10 ${selectedChoice === 1 ? 'text-gray-400' : theme.iconColor}`} />
               <div className="text-center">
+                <div className={`text-base ${selectedChoice === 1 ? 'text-gray-300' : 'text-gray-500'}`}>{CONFIG.currency}0</div>
                 <div className={`text-[10px] ${selectedChoice === 1 ? 'text-gray-400' : 'text-gray-700'}`}>Skip</div>
-                <div className={`text-[10px] ${selectedChoice === 1 ? 'text-gray-300' : 'text-gray-500'}`}>{CONFIG.currency}0</div>
               </div>
             </button>
           </div>
@@ -1616,6 +1616,12 @@
           ...data,
           completedAtRound: currentRound
         });
+
+        // Scroll to top so the next round is visible (works for both standalone and Qualtrics iframe)
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (window.parent !== window) {
+          window.parent.postMessage({ type: 'SCROLL_TO_TOP' }, '*');
+        }
 
         // Continue to next round - immediately show new day overlay
         setCurrentA(null);
