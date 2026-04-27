@@ -1043,11 +1043,11 @@
             causePanel: 'A',
             outcomePanel: 'Y',
             pie1Question: exoButton === null
-              ? `What is the chance that you feel <strong>${playerName2Pos}</strong> if you must <strong>not drink ${playerName0}</strong>?`
+              ? `What is the chance that you feel <strong>${playerName2Pos}</strong> if you must <strong>not</strong> drink ${playerName0}?`
               : `Suppose you must <strong>not</strong> drink ${playerName0}, immediately after that, you are required to take ${playerName1}-${exoButton === 1 ? 'normal-injection' : 'abnormal-injection'} which sets your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
             pie2Question: exoButton === null
-              ? `What is the chance that you feel <strong>${playerName2Pos}</strong> if you must <strong>drink ${playerName0}</strong>?`
-              : `Suppose you must <strong>drink ${playerName0}</strong>, immediately after that, you are required to take ${playerName1}-${exoButton === 1 ? 'normal-injection' : 'abnormal-injection'} which sets your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
+              ? `What is the chance that you feel <strong>${playerName2Pos}</strong> if you must <strong>drink</strong> ${playerName0}?`
+              : `Suppose you must <strong>drink</strong> ${playerName0}, immediately after that, you are required to take ${playerName1}-${exoButton === 1 ? 'normal-injection' : 'abnormal-injection'} which sets your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
             verbalQuestion: exoButton === null
               ? `How does <strong>drinking ${playerName0}</strong> change the chance that you feel <strong>${playerName2Pos}</strong>?`
               : `Suppose you are required to take ${playerName1}-${exoButton === 1 ? 'normal-injection' : 'abnormal-injection'} which sets your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong> immediately after deciding whether to drink ${playerName0}.<br>How does <strong>your choice to drink ${playerName0}</strong> change the chance that you feel <strong>${playerName2Pos}</strong>?`,
@@ -1066,13 +1066,13 @@
             outcomePanel: 'Y',
             pie1Question: exoButton === null
               ? `What is the chance that you feel <strong>${playerName2Pos}</strong> if your <strong>${playerName1} level is abnormal</strong>?`
-              : `Suppose you must <strong>${exoButton === 1 ? 'drink' : 'not drink'} ${playerName0}</strong>. Immediately after, you are required to take ${playerName1}-abnormal-injection which sets your ${playerName1} level to <strong>abnormal</strong>.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
+              : `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}. Immediately after, you are required to take ${playerName1}-abnormal-injection which sets your ${playerName1} level to <strong>abnormal</strong>.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
             pie2Question: exoButton === null
               ? `What is the chance that you feel <strong>${playerName2Pos}</strong> if your <strong>${playerName1} level is normal</strong>?`
-              : `Suppose you must <strong>${exoButton === 1 ? 'drink' : 'not drink'} ${playerName0}</strong>. Immediately after, you are required to take ${playerName1}-normal-injection which sets your ${playerName1} level to <strong>normal</strong>.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
+              : `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}. Immediately after, you are required to take ${playerName1}-normal-injection which sets your ${playerName1} level to <strong>normal</strong>.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
             verbalQuestion: exoButton === null
               ? `How does having a <strong>normal ${playerName1}</strong> (rather than abnormal) level change the chance that you feel <strong>${playerName2Pos}</strong>?`
-              : `Suppose you must <strong>${exoButton === 1 ? 'drink' : 'not drink'} ${playerName0}</strong>.<br>How does having a <strong>normal ${playerName1}</strong> (rather than abnormal) level change the chance that you feel <strong>${playerName2Pos}</strong>?`,
+              : `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}.<br>How does having a <strong>normal ${playerName1}</strong> (rather than abnormal) level change the chance that you feel <strong>${playerName2Pos}</strong>?`,
             pie1Color: getThemeHexColor(),
             pie2Color: getThemeHexColor()
           },
@@ -1084,9 +1084,9 @@
             walkthroughHighlight: { step0: 'A', step1: 'Y', step2: ['Y', 'X'] },
             causePanel: 'Y',
             outcomePanel: 'X',
-            pie1Question: `Suppose you must <strong>${exoButton === 1 ? 'drink' : 'not drink'} ${playerName0}</strong>. Immediately after, you are required to take ${playerName2NegExo} which makes you feel <strong>${playerName2Neg}</strong>.<br>What is the chance that your <strong>${playerName1} level is normal</strong>?`,
-            pie2Question: `Suppose you must <strong>${exoButton === 1 ? 'drink' : 'not drink'} ${playerName0}</strong>. Immediately after, you are required to take ${playerName2PosExo} which makes you feel <strong>${playerName2Pos}</strong>.<br>What is the chance that your <strong>${playerName1} level is normal</strong>?`,
-            verbalQuestion: `Suppose you must <strong>${exoButton === 1 ? 'drink' : 'not drink'} ${playerName0}</strong>.<br>How does feeling <strong>${playerName2Pos}</strong> (rather than being ${playerName2Neg}) change the chance that your <strong>${playerName1} level is normal</strong>?`,
+            pie1Question: `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}. Immediately after, you are required to take ${playerName2NegExo} which makes you feel <strong>${playerName2Neg}</strong>.<br>What is the chance that your <strong>${playerName1} level is normal</strong>?`,
+            pie2Question: `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}. Immediately after, you are required to take ${playerName2PosExo} which makes you feel <strong>${playerName2Pos}</strong>.<br>What is the chance that your <strong>${playerName1} level is normal</strong>?`,
+            verbalQuestion: `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}.<br>How does feeling <strong>${playerName2Pos}</strong> (rather than being ${playerName2Neg}) change the chance that your <strong>${playerName1} level is normal</strong>?`,
             pie1Color: getThemeHexColor(),
             pie2Color: getThemeHexColor()
           }
