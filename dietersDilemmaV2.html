@@ -25,6 +25,10 @@
     .first-round-shine-panel {
       animation: shineGlow 0.8s ease-in-out 2s infinite;
     }
+    /* Salient prompt: shines continuously from the start */
+    .attention-shine-pill {
+      animation: shineGlow 0.8s ease-in-out infinite;
+    }
 
     /* Hide slider thumb when confidence not yet selected */
     .slider-hidden-thumb::-webkit-slider-thumb {
@@ -198,7 +202,7 @@
     const CONFIG = {
       yBonus: 2.00,           // Bonus when Y=1
       aCost: 1.50,            // Cost of drinking (A=1)
-      totalRounds: 80,
+      totalRounds: 2,
       currency: '$',
       id: 1,
       
@@ -1287,7 +1291,7 @@
           <div className="max-w-6xl mx-auto">
             <div className={`${theme.panelBg} rounded-2xl p-6 mb-4 border ${theme.panelBorder} shadow-sm relative overflow-hidden`}>
               <div className="text-center mb-4 h-14 flex items-center justify-center">
-                <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium bg-amber-50 text-amber-700 border border-amber-200 ${waitingForSpace ? 'animate-pulse' : ''}`}>
+                <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium bg-amber-50 text-amber-700 border border-amber-200 ${waitingForSpace ? 'attention-shine-pill' : ''}`}>
                   {waitingForSpace
                     ? 'Press "Space" to continue'
                     : `High-Stakes Choice: Would you drink ${CONFIG.playerName0} at this price?`
