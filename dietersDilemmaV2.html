@@ -1450,49 +1450,55 @@
 
           if (e.code === 'Space' && waitingForSpace === 'nextRound') {
             e.preventDefault();
-            // Record time spent viewing outcome
-            const currentTimestamps = roundTimestampsRef.current[roundTimestampsRef.current.length - 1];
-            if (currentTimestamps) {
-              currentTimestamps.outcomeViewTime = (Date.now() - phaseStartTimeRef.current) / 1000;
-            }
-
+            // If pressed before 1000ms has elapsed, defer the advance until 1000ms has passed
+            const remaining = Math.max(0, 1000 - (Date.now() - phaseStartTimeRef.current));
+            // Block further presses while the deferred advance is pending
             setWaitingForSpace(null);
-            setPendingResult(null);
 
-            if (currentRound >= CONFIG.totalRounds) {
-              setPhase('priceIntro');
-            } else {
-              // Check if we're at round 10 and haven't shown belief elicitation yet
-              if (currentRound === 10 && !beliefShownRef.current) {
-                beliefShownRef.current = true;
-                setShowBelief(true);
+            setTimeout(() => {
+              // Record time spent viewing outcome
+              const currentTimestamps = roundTimestampsRef.current[roundTimestampsRef.current.length - 1];
+              if (currentTimestamps) {
+                currentTimestamps.outcomeViewTime = (Date.now() - phaseStartTimeRef.current) / 1000;
               }
-              // Check if we're at the halfway point and haven't shown DAG yet (skip for AY order)
-              else if (currentRound === Math.floor(CONFIG.totalRounds / 2) && !halfwayDAGShownRef.current && CONFIG.order !== 'AY') {
-                halfwayDAGShownRef.current = true;
-                setShowDAG(true);
+
+              setPendingResult(null);
+
+              if (currentRound >= CONFIG.totalRounds) {
+                setPhase('priceIntro');
               } else {
-                // Trigger "New Day" overlay
-                setNextDayNumber(currentRound + 1);
-                setShowNewDay(true);
+                // Check if we're at round 10 and haven't shown belief elicitation yet
+                if (currentRound === 10 && !beliefShownRef.current) {
+                  beliefShownRef.current = true;
+                  setShowBelief(true);
+                }
+                // Check if we're at the halfway point and haven't shown DAG yet (skip for AY order)
+                else if (currentRound === Math.floor(CONFIG.totalRounds / 2) && !halfwayDAGShownRef.current && CONFIG.order !== 'AY') {
+                  halfwayDAGShownRef.current = true;
+                  setShowDAG(true);
+                } else {
+                  // Trigger "New Day" overlay
+                  setNextDayNumber(currentRound + 1);
+                  setShowNewDay(true);
 
-                // Clear current values after a short delay
-                setTimeout(() => {
-                  setCurrentA(null);
-                  setCurrentX(null);
-                  setCurrentY(null);
-                }, 200);
+                  // Clear current values after a short delay
+                  setTimeout(() => {
+                    setCurrentA(null);
+                    setCurrentX(null);
+                    setCurrentY(null);
+                  }, 200);
 
-                // Hide overlay and advance to next round
-                setTimeout(() => {
-                  setShowNewDay(false);
-                  setCurrentRound(prev => prev + 1);
-                  setPhase('decision');
-                  roundStartTimeRef.current = Date.now();
-                  phaseStartTimeRef.current = Date.now();
-                }, 1000);
+                  // Hide overlay and advance to next round
+                  setTimeout(() => {
+                    setShowNewDay(false);
+                    setCurrentRound(prev => prev + 1);
+                    setPhase('decision');
+                    roundStartTimeRef.current = Date.now();
+                    phaseStartTimeRef.current = Date.now();
+                  }, 1000);
+                }
               }
-            }
+            }, remaining);
           }
         };
 
