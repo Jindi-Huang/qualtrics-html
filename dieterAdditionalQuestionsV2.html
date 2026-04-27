@@ -8,7 +8,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="shared-icons.js"></script>
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; background: #ffffff; }
@@ -112,8 +111,36 @@
       themeColor: 'purple'  // Theme color: 'blue', 'purple', 'teal', 'yellow'
     };
 
-    // Use shared getThemeClasses with CONFIG.themeColor
-    // This shadows the shared function for convenience
+    // Theme color helper (inlined from shared-icons.js to keep this file self-contained)
+    function getThemeClasses(themeColor) {
+      const themes = {
+        blue: {
+          panelBg: 'bg-blue-50', panelBorder: 'border-blue-200', statBoxBg: 'bg-blue-50/50',
+          buttonBg: 'bg-blue-600', buttonHover: 'hover:bg-blue-500', buttonRing: 'ring-blue-300',
+          pillBg: 'bg-blue-50', pillText: 'text-blue-700', pillBorder: 'border-blue-200',
+          iconColor: 'text-blue-600', focusRing: 'focus:ring-blue-400', focusBorder: 'focus:border-blue-400',
+        },
+        purple: {
+          panelBg: 'bg-purple-50', panelBorder: 'border-purple-200', statBoxBg: 'bg-purple-50/50',
+          buttonBg: 'bg-purple-600', buttonHover: 'hover:bg-purple-500', buttonRing: 'ring-purple-300',
+          pillBg: 'bg-purple-50', pillText: 'text-purple-700', pillBorder: 'border-purple-200',
+          iconColor: 'text-purple-600', focusRing: 'focus:ring-purple-400', focusBorder: 'focus:border-purple-400',
+        },
+        teal: {
+          panelBg: 'bg-teal-50', panelBorder: 'border-teal-200', statBoxBg: 'bg-teal-50/50',
+          buttonBg: 'bg-teal-600', buttonHover: 'hover:bg-teal-500', buttonRing: 'ring-teal-300',
+          pillBg: 'bg-teal-50', pillText: 'text-teal-700', pillBorder: 'border-teal-200',
+          iconColor: 'text-teal-600', focusRing: 'focus:ring-teal-400', focusBorder: 'focus:border-teal-400',
+        },
+        yellow: {
+          panelBg: 'bg-amber-50', panelBorder: 'border-amber-300', statBoxBg: 'bg-amber-50/50',
+          buttonBg: 'bg-amber-600', buttonHover: 'hover:bg-amber-500', buttonRing: 'ring-amber-400',
+          pillBg: 'bg-amber-100', pillText: 'text-amber-800', pillBorder: 'border-amber-400',
+          iconColor: 'text-amber-700', focusRing: 'focus:ring-amber-400', focusBorder: 'focus:border-amber-400',
+        }
+      };
+      return themes[themeColor] || themes.blue;
+    }
     const getThemeClassesLocal = () => getThemeClasses(CONFIG.themeColor);
   </script>
 
