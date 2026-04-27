@@ -480,69 +480,75 @@
 
       const accentColor = getThemeHexColor();
 
+      const decreaseColumn = (
+        <div className="space-y-1">
+          <div className="text-sm text-gray-700 font-medium mb-2 text-center">Decreases</div>
+          {decreaseOptions.map((option, idx) => {
+            // decreaseOptions is reversed, so idx 0 = options[9], idx 9 = options[0]
+            const actualIndex = 9 - idx;
+            const isSelected = value === actualIndex;
+            return (
+              <label
+                key={actualIndex}
+                className={`flex items-center p-1.5 rounded-lg border-2 cursor-pointer transition-all text-sm whitespace-nowrap ${
+                  isSelected
+                    ? `${getThemeClassesLocal().buttonBg} text-white border-transparent font-medium`
+                    : 'bg-white border-gray-200 hover:border-gray-300'
+                }`}
+                onClick={() => onChange(actualIndex)}
+              >
+                <input
+                  type="radio"
+                  name="causalEffect"
+                  checked={isSelected}
+                  onChange={() => onChange(actualIndex)}
+                  className="mr-1.5 w-3 h-3"
+                  style={{ accentColor }}
+                />
+                <span>{option}</span>
+              </label>
+            );
+          })}
+        </div>
+      );
+
+      const increaseColumn = (
+        <div className="space-y-1">
+          <div className="text-sm text-gray-700 font-medium mb-2 text-center">Increases</div>
+          {increaseOptions.map((option, idx) => {
+            // increaseOptions starts at options[11], so idx 0 = options[11], idx 9 = options[20]
+            const actualIndex = 11 + idx;
+            const isSelected = value === actualIndex;
+            return (
+              <label
+                key={actualIndex}
+                className={`flex items-center p-1.5 rounded-lg border-2 cursor-pointer transition-all text-sm whitespace-nowrap ${
+                  isSelected
+                    ? `${getThemeClassesLocal().buttonBg} text-white border-transparent font-medium`
+                    : 'bg-white border-gray-200 hover:border-gray-300'
+                }`}
+                onClick={() => onChange(actualIndex)}
+              >
+                <input
+                  type="radio"
+                  name="causalEffect"
+                  checked={isSelected}
+                  onChange={() => onChange(actualIndex)}
+                  className="mr-1.5 w-3 h-3"
+                  style={{ accentColor }}
+                />
+                <span>{option}</span>
+              </label>
+            );
+          })}
+        </div>
+      );
+
       return (
         <div>
           <div className="grid grid-cols-2 gap-2 mb-2">
-            {/* Left column - Decreases */}
-            <div className="space-y-1">
-              <div className="text-sm text-gray-700 font-medium mb-2 text-center">Decreases</div>
-              {decreaseOptions.map((option, idx) => {
-                // decreaseOptions is reversed, so idx 0 = options[9], idx 9 = options[0]
-                const actualIndex = 9 - idx;
-                const isSelected = value === actualIndex;
-                return (
-                  <label
-                    key={actualIndex}
-                    className={`flex items-center p-1.5 rounded-lg border-2 cursor-pointer transition-all text-sm whitespace-nowrap ${
-                      isSelected
-                        ? `${getThemeClassesLocal().buttonBg} text-white border-transparent font-medium`
-                        : 'bg-white border-gray-200 hover:border-gray-300'
-                    }`}
-                    onClick={() => onChange(actualIndex)}
-                  >
-                    <input
-                      type="radio"
-                      name="causalEffect"
-                      checked={isSelected}
-                      onChange={() => onChange(actualIndex)}
-                      className="mr-1.5 w-3 h-3"
-                      style={{ accentColor }}
-                    />
-                    <span>{option}</span>
-                  </label>
-                );
-              })}
-            </div>
-            {/* Right column - Increases */}
-            <div className="space-y-1">
-              <div className="text-sm text-gray-700 font-medium mb-2 text-center">Increases</div>
-              {increaseOptions.map((option, idx) => {
-                // increaseOptions starts at options[11], so idx 0 = options[11], idx 9 = options[20]
-                const actualIndex = 11 + idx;
-                const isSelected = value === actualIndex;
-                return (
-                  <label
-                    key={actualIndex}
-                    className={`flex items-center p-1.5 rounded-lg border-2 cursor-pointer transition-all text-sm whitespace-nowrap ${
-                      isSelected
-                        ? `${getThemeClassesLocal().buttonBg} text-white border-transparent font-medium`
-                        : 'bg-white border-gray-200 hover:border-gray-300'
-                    }`}
-                    onClick={() => onChange(actualIndex)}
-                  >
-                    <input
-                      type="radio"
-                      name="causalEffect"
-                      checked={isSelected}
-                      onChange={() => onChange(actualIndex)}
-                      className="mr-1.5 w-3 h-3"
-                      style={{ accentColor }}
-                    />
-                    <span>{option}</span>
-                  </label>
-                );
-              })}
-            </div>
+            {increasingOrder ? increaseColumn : decreaseColumn}
+            {increasingOrder ? decreaseColumn : increaseColumn}
           </div>
           {/* No change option - centered below */}
           <label
