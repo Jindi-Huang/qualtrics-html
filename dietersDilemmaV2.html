@@ -89,11 +89,18 @@
         
         // Mark as initialized and trigger callbacks
         markInitialized();
-        
+
         sendDataToQualtrics('GAME_START', { started: true });
       }
     });
-    
+
+    // Tell Qualtrics we're ready and need an INIT (handles refresh — Qualtrics's
+    // initial INIT setTimeout only fires once per question load, so on refresh
+    // we ask explicitly).
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: 'IFRAME_READY' }, '*');
+    }
+
     // Send data to Qualtrics
     function sendDataToQualtrics(dataType, data) {
       if (window.parent !== window) {
@@ -1385,6 +1392,19 @@
       const halfwayDAGShownRef = useRef(false);
       const beliefShownRef = useRef(false);
       const advancePendingRef = useRef(false);
+      const gameCompleteRef = useRef(false);
+
+      // Warn the user before they refresh / close / navigate away.
+      // Released when the game finishes so Qualtrics auto-advance isn't blocked.
+      useEffect(() => {
+        const handler = (e) => {
+          if (gameCompleteRef.current) return;
+          e.preventDefault();
+          e.returnValue = '';
+        };
+        window.addEventListener('beforeunload', handler);
+        return () => window.removeEventListener('beforeunload', handler);
+      }, []);
 
       // Detailed timestamps for each round: { decision, chemical, outcome, nextRound }
       const roundTimestampsRef = useRef([]);
@@ -1699,6 +1719,7 @@
         });
 
         setTimeout(() => {
+          gameCompleteRef.current = true;
           sendDataToQualtrics('GAME_COMPLETE', { completed: true, tracking: getTrackingData() });
         }, 500);
       }
