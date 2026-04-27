@@ -219,7 +219,7 @@
       rho1: 0.80,             // P(Y=1 | X=1)
 
       // Display order
-      order: 'AXY',            // 'AXY' shows all, 'AY' hides X
+      order: 'AY',             // 'AXY' shows all, 'AY' hides X
 
       // Price elicitation prices (low to high)
       priceElicitationPrices: [0, 2.5, 5, 7.5, 9.5, 12, 14.5],
@@ -1530,7 +1530,10 @@
         const result = simulateRound(A);
         setPendingResult({ A, X: result.X, Y: result.Y });
 
-        // Show chemical level after a brief delay, then automatically show outcome
+        // Show chemical level after a brief delay, then automatically show outcome.
+        // For AY order: no chemical level is displayed, so collapse the pre-chemical delay
+        // (total choice→outcome = 1200ms). For non-AY: 800ms before chemical, 1200ms before outcome (total 2000ms).
+        const preChemicalDelay = CONFIG.order === 'AY' ? 0 : 800;
         setTimeout(() => {
           setCurrentX(result.X);
           phaseStartTimeRef.current = Date.now();
@@ -1550,7 +1553,7 @@
             setHistory(prev => [...prev, [A, result.X, result.Y]]);
             setWaitingForSpace('nextRound');
           }, 1200); // 1.2 second delay to view chemical level
-        }, 800);
+        }, preChemicalDelay);
       }, [currentRound]);
       
       // Handle price elicitation intro continue
