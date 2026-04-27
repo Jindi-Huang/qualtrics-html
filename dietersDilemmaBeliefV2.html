@@ -105,17 +105,14 @@
           if (qConfig.themeColor) CONFIG.themeColor = qConfig.themeColor;
           if (qConfig.skipIntro !== undefined) CONFIG.skipIntro = qConfig.skipIntro;
 
-          // Accept mainCausals as a single array OR as individual fields (mainCausal1-10)
+          // Accept mainCausals as a single array OR as individual fields (mainCausal1, mainCausal2, ...)
           if (qConfig.mainCausals) {
             CONFIG.mainCausals = qConfig.mainCausals;
           } else if (qConfig.mainCausal1) {
-            // Build mainCausals from individual fields
+            // Build mainCausals from individual fields - keep going until we miss one
             const allMetaData = [];
-            for (let i = 1; i <= 10; i++) {
-              const causalData = qConfig['mainCausal' + i];
-              if (causalData) {
-                allMetaData.push(causalData);
-              }
+            for (let i = 1; qConfig['mainCausal' + i]; i++) {
+              allMetaData.push(qConfig['mainCausal' + i]);
             }
             if (allMetaData.length > 0) {
               CONFIG.mainCausals = allMetaData;
@@ -974,6 +971,7 @@
       const [verbalValue, setVerbalValue] = useState(null);
       const [startTime] = useState(Date.now());
       const [showNextButton, setShowNextButton] = useState(false);
+      const [showPaymentDetails, setShowPaymentDetails] = useState(false);
 
       const { causalElicit, exoButton, id } = scenario;
 
@@ -1046,7 +1044,7 @@
             outcomePanel: 'Y',
             pie1Question: exoButton === null
               ? `What is the chance that you feel <strong>${playerName2Pos}</strong> if you must <strong>not drink ${playerName0}</strong>?`
-              : `Suppose you must <strong>not drink ${playerName0}</strong>, immediately after that, you are required to take ${playerName1}-${exoButton === 1 ? 'normal-injection' : 'abnormal-injection'} which sets your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
+              : `Suppose you must <strong>not</strong> drink ${playerName0}, immediately after that, you are required to take ${playerName1}-${exoButton === 1 ? 'normal-injection' : 'abnormal-injection'} which sets your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
             pie2Question: exoButton === null
               ? `What is the chance that you feel <strong>${playerName2Pos}</strong> if you must <strong>drink ${playerName0}</strong>?`
               : `Suppose you must <strong>drink ${playerName0}</strong>, immediately after that, you are required to take ${playerName1}-${exoButton === 1 ? 'normal-injection' : 'abnormal-injection'} which sets your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
@@ -1060,7 +1058,7 @@
             // Walkthrough text for each step
             walkthroughStep0: exoButton === null
               ? null
-              : `In this scenario, you must <strong>${exoButton === 1 ? 'drink' : 'not drink'} ${playerName0}</strong>...`,
+              : `In this scenario, you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0} ...`,
             walkthroughStep1: `Report how <strong>your ${playerName1} level</strong>...`,
             walkthroughStep2: `...affects <strong>how you feel</strong>.`,
             walkthroughHighlight: { step0: 'A', step1: 'X', step2: ['X', 'Y'] },
@@ -1080,7 +1078,7 @@
           },
           YX: {
             // Walkthrough text for each step
-            walkthroughStep0: `In this scenario, you must <strong>${exoButton === 1 ? 'drink' : 'not drink'} ${playerName0}</strong> ...`,
+            walkthroughStep0: `In this scenario, you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0} ...`,
             walkthroughStep1: `Report how <strong>how you feel</strong>...`,
             walkthroughStep2: `...affects your <strong>${playerName1} level</strong>.`,
             walkthroughHighlight: { step0: 'A', step1: 'Y', step2: ['Y', 'X'] },
@@ -1209,9 +1207,37 @@
                 <div className="animate-fadeIn">
                   {/* Intro message when redirected from main game */}
                   {skipIntro && (
-                    <p className="text-gray-700 text-center text-lg mb-4">
-                      Before making your decisions for the rest of the weeks for this drink...<br />How do you think these factors influenced each other?
-                    </p>
+                    <h2 className="text-2xl font-bold text-gray-800 text-center mb-4">
+                      Before making your decisions for the rest of the weeks for this drink...<br />Please answer the following question.
+                    </h2>
+                  )}
+
+                  {/* Payment notice when redirected from main game */}
+                  {skipIntro && (
+                    <div className="mb-4">
+                      <p className="text-gray-600 text-sm">
+                        If this question is randomly selected to determine your bonus payment, you will receive {CONFIG.currency}{Number(CONFIG.beliefPaymentMax).toFixed(0)} if your report is accurate. The less accurate your report, the lower this bonus will be.{' '}
+                        {!showPaymentDetails && (
+                          <button
+                            onClick={() => setShowPaymentDetails(true)}
+                            className={`${getThemeClassesLocal().pillText} hover:opacity-80 underline`}
+                          >
+                            Show details
+                          </button>
+                        )}
+                      </p>
+                      {showPaymentDetails && (
+                        <div className="bg-gray-50 rounded-lg p-4 mt-3 text-sm text-gray-700">
+                          <p className="font-bold mb-2">How is my payment determined if this part counts?</p>
+                          <p className="mb-2">
+                            You will select a line from a list describing how much one factor affects another.
+                          </p>
+                          <p>
+                            You will earn <strong>{CONFIG.currency}{Number(CONFIG.beliefPaymentMax).toFixed(0)}</strong> if you choose the segment or line that matches what actually happened. For each segment or line by which your estimate deviates from the correct answer, your bonus shrinks by <strong>{CONFIG.currency}{Number(CONFIG.beliefPaymentIncentive).toFixed(2)}</strong>.
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   )}
                   {/* Walkthrough text */}
                   <div key={walkthroughStep} className="border border-yellow-200 rounded-lg p-4 mb-4 animate-blink">
