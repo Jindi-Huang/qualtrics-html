@@ -7,7 +7,7 @@
   <script src="shared-icons.js"></script>
   <style>
     :root {
-      --size: 120px;
+      --size: 145px;
       --gap: 20px;
     }
 
@@ -131,10 +131,11 @@
       text-transform: uppercase;
       letter-spacing: 0.5px;
       margin-bottom: 2px;
+      white-space: nowrap;
     }
 
     .tile.chosen .drink-name {
-      font-size: 1rem;
+      font-size: 0.8rem;
       margin-bottom: 5px;
     }
 
@@ -338,8 +339,8 @@
 
     // =============== CONFIGURATION ===============
     const CONFIG = {
-      playerName0: 'Qivex-norm',  // Drink name (A)
-      playerName1: 'Qivex',       // Chemical name (X)
+      playerName0: 'Zerqalase-norm',  // Drink name (A)
+      playerName1: 'Zerqalase',       // Chemical name (X)
       playerIcon0: '',            // Deprecated - now using SVG
       gameCounter: 2,             // Current game number
       nSupergames: 1,             // Total number of games
@@ -455,6 +456,7 @@
           color: ${theme.textColor};
           text-transform: uppercase;
           letter-spacing: 0.5px;
+          white-space: nowrap;
         ">${scenario.drinkName.toUpperCase()}</div>
       </div>`;
     }
