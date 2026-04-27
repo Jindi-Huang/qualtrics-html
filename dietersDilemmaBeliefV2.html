@@ -277,8 +277,11 @@
         if (correct === null || correct === undefined) {
           return beliefPaymentMax;
         }
-        const correctOptionIndex = getOptionIndex(correct);
         const userChoice = responses[index].verbalValue;
+        if (userChoice === null || userChoice === undefined) {
+          return null;
+        }
+        const correctOptionIndex = getOptionIndex(correct);
         const absoluteDifference = Math.abs(correctOptionIndex - userChoice);
         return beliefPaymentMax - (absoluteDifference * beliefPaymentIncentive);
       });
@@ -288,8 +291,12 @@
         if (correct === null || correct === undefined) {
           return beliefPaymentMax;
         }
+        const userValue = responses[index].pie1Value;
+        if (userValue === null || userValue === undefined) {
+          return null;
+        }
         const nearestCategory = Math.round(correct / 10) * 10;
-        const absoluteDifference = Math.abs(nearestCategory - responses[index].pie1Value) / 10;
+        const absoluteDifference = Math.abs(nearestCategory - userValue) / 10;
         return beliefPaymentMax - (absoluteDifference * beliefPaymentIncentive);
       });
 
@@ -298,8 +305,12 @@
         if (correct === null || correct === undefined) {
           return beliefPaymentMax;
         }
+        const userValue = responses[index].pie2Value;
+        if (userValue === null || userValue === undefined) {
+          return null;
+        }
         const nearestCategory = Math.round(correct / 10) * 10;
-        const absoluteDifference = Math.abs(nearestCategory - responses[index].pie2Value) / 10;
+        const absoluteDifference = Math.abs(nearestCategory - userValue) / 10;
         return beliefPaymentMax - (absoluteDifference * beliefPaymentIncentive);
       });
 
