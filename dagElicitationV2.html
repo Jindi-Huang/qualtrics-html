@@ -91,10 +91,12 @@
     observer.observe(document.body, { childList: true, subtree: true, attributes: true });
 
     let isInitialized = false;
+    let configReceived = false;
 
     window.addEventListener('message', function(event) {
       if (event.data.type === 'INIT') {
         console.log('Received INIT:', event.data);
+        configReceived = true;
 
         if (event.data.gameConfig) {
           const qConfig = event.data.gameConfig;
@@ -138,6 +140,7 @@
           type: 'DAG_DATA',
           dataType: dataType,
           data: data,
+          configReceived: configReceived,
           timestamp: new Date().toISOString()
         }, parentOrigin);
       }

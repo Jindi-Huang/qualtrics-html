@@ -21,10 +21,12 @@
     // =============== QUALTRICS COMMUNICATION ===============
     let participantId = null;
     let gameId = null;
+    let configReceived = false;
 
     window.addEventListener('message', function(event) {
       if (event.data.type === 'INIT') {
         console.log('Received INIT from Qualtrics:', event.data);
+        configReceived = true;
         participantId = event.data.participantId;
         gameId = event.data.gameId;
 
@@ -70,6 +72,7 @@
           dataType: dataType,
           data: data,
           participantId: participantId,
+          configReceived: configReceived,
           timestamp: new Date().toISOString()
         }, '*');
       }
@@ -569,7 +572,7 @@
               You make decisions only on Mondays. Because there's a whole week in between, what happens on one Monday does not affect what happens the next Monday.
             </p>
             <p className="text-gray-600 mt-4">
-              To show you are following this, click the word "Monday" in the first sentence above. If you do not, the survey will terminate.
+              To show you are following this, click the word "Monday" in the first sentence of this section. If you do not, the survey will terminate.
               {attentionCheck === 1 && <span className="text-green-600 ml-2">✓</span>}
             </p>
           </div>

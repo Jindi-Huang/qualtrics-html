@@ -36,10 +36,12 @@
     // =============== QUALTRICS COMMUNICATION ===============
     let participantId = null;
     let gameId = null;
+    let configReceived = false;
 
     window.addEventListener('message', function(event) {
       if (event.data.type === 'INIT') {
         console.log('Received INIT from Qualtrics:', event.data);
+        configReceived = true;
         participantId = event.data.participantId;
         gameId = event.data.gameId;
 
@@ -81,6 +83,7 @@
           dataType: dataType,
           data: data,
           participantId: participantId,
+          configReceived: configReceived,
           timestamp: new Date().toISOString()
         }, '*');
       }
