@@ -55,6 +55,13 @@
       }
     });
 
+    // Tell Qualtrics we're ready and need an INIT (handles refresh — Qualtrics's
+    // initial INIT setTimeout only fires once per question load, so on refresh
+    // we ask explicitly).
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: 'IFRAME_READY' }, '*');
+    }
+
     function sendDataToQualtrics(dataType, data) {
       if (window.parent !== window) {
         window.parent.postMessage({

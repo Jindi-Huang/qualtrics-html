@@ -116,6 +116,13 @@
       }
     });
 
+    // Tell Qualtrics we're ready and need an INIT (handles refresh — Qualtrics's
+    // initial INIT setTimeout only fires once per question load, so on refresh
+    // we ask explicitly).
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: 'IFRAME_READY' }, '*');
+    }
+
     // Wait up to 3 seconds for INIT, then render with defaults
     setTimeout(function() {
       if (!isInitialized) {
