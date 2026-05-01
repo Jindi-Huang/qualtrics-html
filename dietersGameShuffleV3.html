@@ -282,6 +282,15 @@
 
     window.addEventListener('message', function(event) {
       if (event.data.type === 'INIT') {
+        // Reject INITs meant for a different game (e.g., a stale instructions
+        // listener still attached to window posting to the wrong iframe).
+        if (event.data.gameId &&
+            typeof event.data.gameId === 'string' &&
+            event.data.gameId !== 'scenarioReveal' &&
+            !event.data.gameId.startsWith('scenarioReveal_')) {
+          console.log('Ignoring INIT for different game:', event.data.gameId);
+          return;
+        }
         console.log('Received INIT from Qualtrics:', event.data);
         configReceived = true;
         participantId = event.data.participantId;
