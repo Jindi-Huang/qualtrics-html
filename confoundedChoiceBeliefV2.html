@@ -180,7 +180,7 @@
       id: 1,                      // Participant ID for data storage
       beliefPaymentMax: 6.00,     // Max payment per question
       beliefPaymentIncentive: 0.10, // Payment reduction per step wrong
-      aCost: 0.00,                // Cost of drinking
+      aCost: 1.50,                // Cost of drinking
       currency: '$',              // Currency symbol
       nRounds: 10,                // Number of rounds played
       currentSymbol: null,        // HTML for scenario tile display
@@ -190,20 +190,29 @@
       order: 'AXY',               // 'AXY' shows all questions, 'AY' shows only AY question
       themeColor: 'purple',      // Theme color: 'blue', 'purple', 'teal', 'yellow'
       skipIntro: false,          // Skip intro page when embedded from main game
-      mainCausals: [
-        { causalElicit: "XY", exoButton: null, id: "XY" },
-        { causalElicit: "AX", exoButton: 0, id: "AX0" },
-        { causalElicit: "AX", exoButton: 1, id: "AX1" },
-        { causalElicit: "AY", exoButton: 0, id: "AY0" },
-        { causalElicit: "AY", exoButton: 1, id: "AY1" },
-        { causalElicit: "AX", exoButton: null, id: "AX" },
-        { causalElicit: "AY", exoButton: null, id: "AY" },
-        { causalElicit: "XY", exoButton: 0, id: "XY0" },
-        { causalElicit: "XY", exoButton: 1, id: "XY1" },
-        { causalElicit: "YX", exoButton: 0, id: "YX0" },
-        { causalElicit: "YX", exoButton: 1, id: "YX1" }
-      ]
+      mainCausals: []
     };
+
+    const groupsMigraines = [
+        [
+            { causalElicit: "AY", exoButton: 0, id: "AY0"},
+            { causalElicit: "AY", exoButton: 1, id: "AY1"},
+        ],
+        [
+            { causalElicit: "XY", exoButton: 0, id: "XY0"},
+            { causalElicit: "XY", exoButton: 1, id: "XY1"},
+            { causalElicit: "XY", exoButton: null, id: "XY"},
+        ],
+        [
+            { causalElicit: "YX", exoButton: 0, id: "YX0"},
+            { causalElicit: "YX", exoButton: 1, id: "YX1"},
+        ],
+        [
+            { causalElicit: "XA", exoButton: null, id: "XA"},
+        ]
+    ];
+
+    CONFIG.mainCausals = groupsMigraines.flat();
 
     // Apply order-based filtering to mainCausals
     function applyOrderFilter() {
@@ -368,6 +377,56 @@
       return (
         <svg className={className} viewBox="0 0 512.095 512.095" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
           <path d="m256.047 0c-141.411 0-256.047 114.636-256.047 256.047s114.636 256.047 256.047 256.047 256.047-114.636 256.047-256.047-114.636-256.047-256.047-256.047zm-192.313 256.047c0-106.212 86.102-192.313 192.313-192.313 41.614 0 80.139 13.221 111.61 35.687l-268.236 268.237c-22.466-31.471-35.687-69.996-35.687-111.611zm192.313 192.314c-41.589 0-80.092-13.204-111.552-35.644l268.221-268.221c22.441 31.46 35.644 69.964 35.644 111.552.001 106.211-86.101 192.313-192.313 192.313z"/>
+        </svg>
+      );
+    }
+
+    // MorningIcon SVG Component - dialog bubble with craving content
+    function MorningIcon({ className, drinkName, X }) {
+      const theme = { iconColor: getThemeClassesLocal().iconColor };
+      const isDriftwell = drinkName && drinkName.toLowerCase().includes('driftwell');
+      const isMelloway = drinkName && drinkName.toLowerCase().includes('melloway');
+      let cravingInner;
+      if (X === null || X === undefined) {
+        cravingInner = (
+          <g className="text-gray-700">
+            <circle cx="11.5" cy="10" r="0.8"/>
+            <circle cx="14" cy="10" r="0.8"/>
+            <circle cx="16.5" cy="10" r="0.8"/>
+          </g>
+        );
+      } else if (X === 0) {
+        cravingInner = (
+          <g className="text-gray-700" transform="translate(10.5, 6) scale(0.0156)">
+            <path d="m256.047 0c-141.411 0-256.047 114.636-256.047 256.047s114.636 256.047 256.047 256.047 256.047-114.636 256.047-256.047-114.636-256.047-256.047-256.047zm-192.313 256.047c0-106.212 86.102-192.313 192.313-192.313 41.614 0 80.139 13.221 111.61 35.687l-268.236 268.237c-22.466-31.471-35.687-69.996-35.687-111.611zm192.313 192.314c-41.589 0-80.092-13.204-111.552-35.644l268.221-268.221c22.441 31.46 35.644 69.964 35.644 111.552.001 106.211-86.101 192.313-192.313 192.313z"/>
+          </g>
+        );
+      } else if (isDriftwell) {
+        cravingInner = (
+          <g className={theme.iconColor} transform="translate(10.5, 6) scale(0.0156)">
+            <path d="M443.882,5.28C440.842,1.92,436.554,0,432.01,0h-352c-4.512,0-8.832,1.92-11.872,5.28c-3.008,3.328-4.512,7.808-4.064,12.32l48,480c0.832,8.192,7.712,14.4,15.936,14.4h256c8.224,0,15.104-6.208,15.904-14.4l48-480C448.394,13.088,446.922,8.608,443.882,5.28z M401.29,162.496c-40.672,13.152-93.6,19.232-135.136-14.848c-52.064-42.72-115.872-35.36-159.136-22.496L97.706,32h316.608L401.29,162.496z"/>
+          </g>
+        );
+      } else if (isMelloway) {
+        cravingInner = (
+          <g className={theme.iconColor} transform="translate(10, 6) scale(0.08) translate(-25, 0)">
+            <path d="m68.3983231 39.4338799v51.373867c0 3.6944504-2.9977417 6.6922531-6.6921844 6.6922531h-23.4122773c-3.6944466 0-6.6921864-2.9978027-6.6921864-6.6922531v-51.373867c0-3.2933311 1.0977535-6.4916306 3.1244678-9.0988846l5.3199768-6.8294144c1.2877464-1.6572304 1.9844475-3.6839428 1.9844475-5.773922v-2.7444191h15.9388657v2.7444191c0 2.0899792.696701 4.1166916 1.9844475 5.773922l5.3199768 6.8294144c2.0267105 2.607254 3.124466 5.8055534 3.124466 9.0988846z"/>
+            <path d="m58.727375 11.8242331h-17.45475c-.7878952 0-1.426609-.6387148-1.426609-1.426609v-6.471015c-.0000001-.7878943.6387138-1.4266091 1.426609-1.4266091h17.45475c.7878952 0 1.426609.6387148 1.426609 1.4266093v6.471015c.0000001.787894-.6387138 1.4266088-1.426609 1.4266088z"/>
+          </g>
+        );
+      } else {
+        cravingInner = (
+          <g className={theme.iconColor} transform="translate(10.5, 6.5) scale(0.017)">
+            <polygon points="246.784,94.208 246.784,53.248 344.064,29.184 336.384,0 216.064,29.184 216.064,94.208 82.432,94.208 82.432,160.768 380.416,160.768 380.416,94.208" transform="translate(-80, 0)"/>
+            <path d="M102.912,186.368l35.328,249.856c2.048,15.36,15.36,26.624,30.208,26.624h124.416c15.36,0,28.16-11.264,30.208-26.624L358.4,186.368H102.912z" transform="translate(-80, 0)"/>
+          </g>
+        );
+      }
+      return (
+        <svg className={className} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+          <path d="M21,5.5V15a1.5,1.5,0,0,1-1.5,1.5H17.707L16.28,17.927A.751.751,0,0,1,15,17.4v-.9H14a.5.5,0,0,1,0-1h1.5a.5.5,0,0,1,.5.5v.793l1.146-1.147A.5.5,0,0,1,17.5,15.5h2A.5.5,0,0,0,20,15V5.5a.5.5,0,0,0-.5-.5H8.5a.5.5,0,0,0-.5.5V11a.5.5,0,0,1-1,0V5.5A1.5,1.5,0,0,1,8.5,4h11A1.5,1.5,0,0,1,21,5.5Z"/>
+          {cravingInner}
+          <path d="M13,16.5A4.5,4.5,0,1,1,8.5,12,4.505,4.505,0,0,1,13,16.5Zm-2.959-3.127a6.394,6.394,0,0,1-.405.6,3.483,3.483,0,0,0,2.173,1.439A3.5,3.5,0,0,0,10.041,13.373Zm-4.863,2.08a5.5,5.5,0,0,0,3.882-2.4A3.439,3.439,0,0,0,8.5,13,3.492,3.492,0,0,0,5.178,15.453ZM12,16.469a4.212,4.212,0,0,1-1.054-.248A.5.5,0,0,1,10,16v-.261a4.539,4.539,0,0,1-1.067-1,6.5,6.5,0,0,1-.939.734c.011.187,0,.344.006.531a.5.5,0,0,1-1,0V16a6.483,6.483,0,0,1-2,.471,3.5,3.5,0,1,0,6.994,0Zm-2.382.712a.767.767,0,0,1-1.23,0,.5.5,0,1,0-.77.638,1.748,1.748,0,0,0,2.77,0,.5.5,0,1,0-.77-.638Z"/>
         </svg>
       );
     }
@@ -681,6 +740,14 @@
         const isQuestion = state === 'question';
         const isCause = state === 'cause';
 
+        const xIsOn = xState === 'on' || xState === 'fixed-on';
+        const xIsOff = xState === 'off' || xState === 'fixed-off';
+        const drinkPayoffText = xIsOn
+          ? `+${CONFIG.currency}${CONFIG.aCost}`
+          : xIsOff
+            ? `-${CONFIG.currency}${CONFIG.aCost}`
+            : `±${CONFIG.currency}${CONFIG.aCost}`;
+
         const drinkHighlight = (highlightButton === 'drink' || highlightButton === 'both') ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-white' : '';
         const skipHighlight = (highlightButton === 'skip' || highlightButton === 'both') ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-white' : '';
         const isNeutral = state === 'neutral';
@@ -696,26 +763,26 @@
 
         return (
           <div className="flex flex-col items-center">
-            <div className="text-xs text-gray-500 mb-1 h-4">Morning Decision</div>
+            <div className="text-xs text-gray-500 mb-1 h-4">Decision</div>
             <div className="flex gap-3 items-center mt-4">
-              {/* Drink button (green) */}
+              {/* Drink button (red) */}
               <div className={`relative w-28 h-24 px-2 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 border-2 ${
                 drinkSelected
-                  ? 'bg-green-600 border-green-600 shadow-md ring-4 ring-green-300'
+                  ? 'bg-red-600 border-red-600 shadow-md ring-4 ring-red-300'
                   : drinkActive
-                    ? 'bg-green-500 border-green-500 shadow-md'
+                    ? 'bg-red-500 border-red-500 shadow-md'
                     : 'bg-gray-100 border-gray-200'
               } ${drinkHighlight}`}>
                 <DrinkIcon className={`w-8 h-8 ${drinkActive ? theme.iconColor : 'text-gray-400'}`} drinkName={playerName0} />
-                <div className={`text-sm ${drinkActive ? 'text-white' : 'text-gray-300'}`}>-{CONFIG.currency}{CONFIG.aCost}</div>
+                <div className={`text-sm ${drinkActive ? 'text-white' : 'text-gray-300'}`}>{drinkPayoffText}</div>
                 <div className={`text-[9px] whitespace-nowrap ${drinkActive ? 'text-white' : 'text-gray-400'}`}>Drink {playerName0}</div>
               </div>
-              {/* Skip button (red) */}
+              {/* Skip button (green) */}
               <div className={`relative w-28 h-24 px-2 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 border-2 ${
                 skipSelected
-                  ? 'bg-red-600 border-red-600 shadow-md ring-4 ring-red-300'
+                  ? 'bg-green-600 border-green-600 shadow-md ring-4 ring-green-300'
                   : skipActive
-                    ? 'bg-red-500 border-red-500 shadow-md'
+                    ? 'bg-green-500 border-green-500 shadow-md'
                     : 'bg-gray-100 border-gray-200'
               } ${skipHighlight}`}>
                 <SkipIcon className={`w-8 h-8 ${skipActive ? 'text-white' : 'text-gray-400'}`} />
@@ -727,85 +794,21 @@
         );
       };
       
-      // BioClip machine component (X) - matches game exactly
-      const MachinePanel = ({ state }) => {
+      // Morning panel (X) - dialog bubble with craving status
+      const MorningPanel = ({ state }) => {
         const isOn = state === 'on' || state === 'fixed-on';
         const isOff = state === 'off' || state === 'fixed-off';
-        const isLocked = state === 'fixed-on' || state === 'fixed-off';
         const isQuestion = state === 'question';
-        const isCause = state === 'cause';
-        const isAYOrder = CONFIG.order === 'AY';
+        const X = isOn ? 1 : isOff ? 0 : null;
 
-        const getStatusColor = () => {
-          if (isAYOrder && !isOn && !isOff) return '#475569';
-          if (isOn) return '#22c55e';
-          if (isOff) return '#ef4444';
-          if (isQuestion || isCause) return '#64748b';
-          return '#64748b';
-        };
-
-        const getStatusBg = () => {
-          if (isOn) return '#14532d';
-          if (isOff) return '#7f1d1d';
-          return '#1e293b';
-        };
-
-        const getStatusText = () => {
-          if (isOn) return 'NORMAL';
-          if (isOff) return 'ABNORMAL';
-          if (isAYOrder) return null; // Handle separately with tspan
-          return 'READING...';
-        };
-        
         return (
           <div className="flex flex-col items-center">
-            <div className="text-xs text-gray-500 mb-1 h-4">{playerName1} Level</div>
-            <div className="relative flex items-center justify-center h-32">
-              <svg viewBox="0 0 120 160" className="w-24 h-32">
-                {/* Main body */}
-                <rect x="10" y="10" width="100" height="140" rx="12" fill="#0f172a" stroke="#334155" strokeWidth="2" />
-                {/* Screen border */}
-                <rect x="18" y="20" width="84" height="100" rx="6" fill="#1e293b" />
-                {/* Screen background */}
-                <rect x="22" y="24" width="76" height="92" rx="4" fill={getStatusBg()} className="transition-all duration-500" />
-                {/* Status circle */}
-                <circle cx="60" cy="55" r="24" fill={getStatusColor()} className="transition-all duration-300">
-                  {isQuestion && <animate attributeName="opacity" values="1;0.5;1" dur="1.5s" repeatCount="indefinite" />}
-                </circle>
-                {/* Checkmark for normal */}
-                {isOn && (
-                  <path d="M48 55 L56 63 L72 47" stroke="white" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                )}
-                {/* X for abnormal */}
-                {isOff && (
-                  <g stroke="white" strokeWidth="4" strokeLinecap="round">
-                    <line x1="50" y1="45" x2="70" y2="65" />
-                    <line x1="70" y1="45" x2="50" y2="65" />
-                  </g>
-                )}
-                {/* Question mark - in place of status text */}
-                {isQuestion && (
-                  <text x="60" y="62" textAnchor="middle" fill="white" fontSize="28" fontWeight="bold">?</text>
-                )}
-                {/* Status text */}
-                {isAYOrder && !isOn && !isOff ? (
-                  <text x="60" y="93" textAnchor="middle" fill="#94a3b8" fontSize="9" fontWeight="bold">
-                    <tspan x="60" dy="0">SUBSCRIPTION</tspan>
-                    <tspan x="60" dy="12">EXPIRED</tspan>
-                  </text>
-                ) : (
-                  <text x="60" y="100" textAnchor="middle" fill={isOn || isOff ? 'white' : '#64748b'} fontSize="11" fontWeight="bold">
-                    {getStatusText()}
-                  </text>
-                )}
-                {/* BioClip label area */}
-                <rect x="30" y="126" width="60" height="18" rx="4" fill="#334155" />
-                <text x="60" y="139" textAnchor="middle" fill="#94a3b8" fontSize="10" fontFamily="monospace">
-                  BioClip™
-                </text>
-                {/* Arm/clip on the side */}
-                <path d="M0 50 L10 50 L10 110 L0 110 C-4 110 -6 105 -6 100 L-6 60 C-6 55 -4 50 0 50 Z" fill="#475569" />
-              </svg>
+            <div className="text-xs text-gray-500 mb-1 h-4">Morning</div>
+            <div className="relative flex items-center justify-center h-24">
+              <MorningIcon className="w-24 h-24 text-gray-700" drinkName={playerName0} X={X} />
+            </div>
+            <div className={`${isQuestion ? 'text-2xl leading-none' : 'text-sm'} font-bold text-gray-900 mt-1 h-6 flex items-center justify-center`}>
+              {isQuestion ? '?' : X === 1 ? 'Craving' : X === 0 ? 'NOT Craving' : ' '}
             </div>
           </div>
         );
@@ -847,7 +850,7 @@
                 {getIcon()}
               </div>
               <div className="text-center mt-2">
-                <span className="text-sm font-bold text-gray-900">{getStatusText()}</span>
+                <span className={`${isQuestion ? 'text-2xl leading-none' : 'text-sm'} font-bold text-gray-900`}>{getStatusText()}</span>
               </div>
             </div>
           </div>
@@ -858,21 +861,21 @@
       // Adjusted for actual panel widths with justify-around layout
       const RectArrow = () => {
         // Panel center positions (percentage of container width)
-        const aCenter = 21;
-        const xCenter = 56;
+        const xCenter = 12;
+        const aCenter = 48;
         const yCenter = 86;
 
         if (causalElicit === 'AX') {
-          // Arrow from A to X
+          // Arrow from A (middle) to X (left)
           return (
-            <div className="absolute top-0 h-12 flex items-start" style={{ left: `${aCenter}%`, width: `${xCenter - aCenter}%` }}>
+            <div className="absolute top-0 h-12 flex items-start" style={{ left: `${xCenter}%`, width: `${aCenter - xCenter}%` }}>
               <svg className="w-full h-full overflow-visible" viewBox="0 0 100 48" preserveAspectRatio="none">
                 <defs>
                   <marker id="arrowhead-ax" markerWidth="10" markerHeight="8" refX="5" refY="4" orient="auto">
                     <polygon points="0 0, 10 4, 0 8" fill="#f59e0b" />
                   </marker>
                 </defs>
-                <path d="M 0 46 L 0 6 L 100 6 L 100 42" stroke="#f59e0b" strokeWidth="4" fill="none" strokeLinejoin="round" markerEnd="url(#arrowhead-ax)" vectorEffect="non-scaling-stroke" />
+                <path d="M 100 46 L 100 6 L 0 6 L 0 42" stroke="#f59e0b" strokeWidth="4" fill="none" strokeLinejoin="round" markerEnd="url(#arrowhead-ax)" vectorEffect="non-scaling-stroke" />
               </svg>
               <span className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 text-amber-500 text-5xl bg-gray-50 px-2">?</span>
             </div>
@@ -950,16 +953,16 @@
             {showArrow && <RectArrow />}
             <div className="flex justify-around items-start">
               <div className="flex flex-col items-center">
+                <div className={`rounded-xl p-2 transition-all ${isXHighlighted ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-white bg-gray-100' : ''}`}>
+                  <MorningPanel state={xState} />
+                </div>
+                {isXLocked && <LockBadge />}
+              </div>
+              <div className="flex flex-col items-center -ml-8">
                 <div className={`rounded-xl p-2 transition-all ${isAHighlighted ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-white bg-gray-100' : ''}`}>
                   <DrinkPanel state={aState} highlightButton={highlightButton} />
                 </div>
                 {isALocked && <LockBadge />}
-              </div>
-              <div className="flex flex-col items-center -ml-8">
-                <div className={`rounded-xl p-2 transition-all ${isXHighlighted ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-white bg-gray-100' : ''}`}>
-                  <MachinePanel state={xState} />
-                </div>
-                {isXLocked && <LockBadge />}
               </div>
               <div className="flex flex-col items-center">
                 <div className={`rounded-xl p-2 transition-all ${isYHighlighted ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-white bg-gray-100' : ''}`}>
@@ -989,8 +992,8 @@
       onComplete
     }) {
       // Stage 0 = walkthrough (with walkthroughStep 0, 1, 2), Stage 3 = verbal question
-      // Skip stages 1 and 2 (pie charts), except for AY-only order or the standalone AY (exoButton=null) scenario
-      const skipPieCharts = !(CONFIG.order === 'AY' || (scenario.causalElicit === 'AY' && scenario.exoButton === null));
+      // Skip stages 1 and 2 (pie charts), except for AY with a fixed X intervention (AY0/AY1)
+      const skipPieCharts = !(scenario.causalElicit === 'AY' && scenario.exoButton !== null);
       const [stage, setStage] = useState(0);
       const [walkthroughStep, setWalkthroughStep] = useState(0); // 0 = condition, 1 = cause, 2 = effect
       const [pie1Value, setPie1Value] = useState(null);
@@ -1043,7 +1046,7 @@
             walkthroughStep1: exoButton === null
               ? `Report how <strong>your choice to drink ${playerName0}</strong>...`
               : `Report how <strong>your subsequent choice to drink ${playerName0}</strong>...`,
-            walkthroughStep2: `...affects your <strong>${playerName1} level</strong>.`,
+            walkthroughStep2: `...affects your <strong>craving for ${playerName0}</strong>.`,
             walkthroughHighlight: { step0: 'Y', step1: 'A', step2: ['A', 'X'] },
             causePanel: 'A',
             outcomePanel: 'X',
@@ -1063,7 +1066,7 @@
             // Walkthrough text for each step
             walkthroughStep0: exoButton === null
               ? null
-              : `In this scenario, immediately after deciding whether to drink ${playerName0}, you are required to take ${playerName1}-${exoButton === 1 ? 'normal-injection' : 'abnormal-injection'} which sets your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>...`,
+              : `In this scenario, you are required to take ${exoButton === 1 ? 'CraveOn' : 'CraveOff'} which makes you <strong>${exoButton === 1 ? 'craving' : 'not craving'}</strong>, so ${exoButton === 1 ? `you get ${CONFIG.currency}${CONFIG.aCost}` : `it costs you ${CONFIG.currency}${CONFIG.aCost}`} if you drink ${playerName0}...`,
             walkthroughStep1: `Report how <strong>your choice to drink ${playerName0}</strong>...`,
             walkthroughStep2: `...affects <strong>how you feel</strong>.`,
             walkthroughHighlight: { step0: 'X', step1: 'A', step2: ['A', 'Y'] },
@@ -1071,13 +1074,13 @@
             outcomePanel: 'Y',
             pie1Question: exoButton === null
               ? `What is the chance that you feel <strong>${playerName2Pos}</strong> if you must <strong>not</strong> drink ${playerName0}?`
-              : `Suppose you must <strong>not</strong> drink ${playerName0}, immediately after that, you are required to take ${playerName1}-${exoButton === 1 ? 'normal-injection' : 'abnormal-injection'} which sets your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
+              : `Suppose you are required to take ${exoButton === 1 ? 'CraveOn' : 'CraveOff'} which makes you <strong>${exoButton === 1 ? 'craving' : 'not craving'}</strong>, so ${exoButton === 1 ? `you get ${CONFIG.currency}${CONFIG.aCost}` : `it costs you ${CONFIG.currency}${CONFIG.aCost}`} if you drink ${playerName0}. Subsequently, you must <strong>not</strong> drink ${playerName0}.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
             pie2Question: exoButton === null
               ? `What is the chance that you feel <strong>${playerName2Pos}</strong> if you must <strong>drink</strong> ${playerName0}?`
-              : `Suppose you must <strong>drink</strong> ${playerName0}, immediately after that, you are required to take ${playerName1}-${exoButton === 1 ? 'normal-injection' : 'abnormal-injection'} which sets your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
+              : `Suppose you are required to take ${exoButton === 1 ? 'CraveOn' : 'CraveOff'} which makes you <strong>${exoButton === 1 ? 'craving' : 'not craving'}</strong>, so ${exoButton === 1 ? `you get ${CONFIG.currency}${CONFIG.aCost}` : `it costs you ${CONFIG.currency}${CONFIG.aCost}`} if you drink ${playerName0}. Subsequently, you must <strong>drink</strong> ${playerName0}.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
             verbalQuestion: exoButton === null
               ? `How does <strong>drinking ${playerName0}</strong> change the chance that you feel <strong>${playerName2Pos}</strong>?`
-              : `Suppose you are required to take ${playerName1}-${exoButton === 1 ? 'normal-injection' : 'abnormal-injection'} which sets your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong> immediately after deciding whether to drink ${playerName0}.<br>How does <strong>your choice to drink ${playerName0}</strong> change the chance that you feel <strong>${playerName2Pos}</strong>?`,
+              : `Suppose you are required to take ${exoButton === 1 ? 'CraveOn' : 'CraveOff'} which makes you <strong>${exoButton === 1 ? 'craving' : 'not craving'}</strong>, so ${exoButton === 1 ? `you get ${CONFIG.currency}${CONFIG.aCost}` : `it costs you ${CONFIG.currency}${CONFIG.aCost}`} if you drink ${playerName0}.<br>How does <strong>your choice to drink ${playerName0}</strong> change the chance that you feel <strong>${playerName2Pos}</strong>?`,
             pie1Color: getThemeHexColor(),
             pie2Color: getThemeHexColor()
           },
@@ -1086,20 +1089,20 @@
             walkthroughStep0: exoButton === null
               ? null
               : `In this scenario, you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0} ...`,
-            walkthroughStep1: `Report how <strong>your ${playerName1} level</strong>...`,
+            walkthroughStep1: `Report how <strong>craving</strong>...`,
             walkthroughStep2: `...affects <strong>how you feel</strong>.`,
             walkthroughHighlight: { step0: 'A', step1: 'X', step2: ['X', 'Y'] },
             causePanel: 'X',
             outcomePanel: 'Y',
             pie1Question: exoButton === null
-              ? `What is the chance that you feel <strong>${playerName2Pos}</strong> if your <strong>${playerName1} level is abnormal</strong>?`
-              : `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}. Immediately after, you are required to take ${playerName1}-abnormal-injection which sets your ${playerName1} level to <strong>abnormal</strong>.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
+              ? `What is the chance that you feel <strong>${playerName2Pos}</strong> if you are <strong>not craving</strong>?`
+              : `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}. Immediately after, you are required to take CraveOff which makes you <strong>not craving</strong>, so it costs you ${CONFIG.currency}${CONFIG.aCost} if you drink ${playerName0}.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
             pie2Question: exoButton === null
-              ? `What is the chance that you feel <strong>${playerName2Pos}</strong> if your <strong>${playerName1} level is normal</strong>?`
-              : `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}. Immediately after, you are required to take ${playerName1}-normal-injection which sets your ${playerName1} level to <strong>normal</strong>.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
+              ? `What is the chance that you feel <strong>${playerName2Pos}</strong> if you are <strong>craving</strong>?`
+              : `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}. Immediately after, you are required to take CraveOn which makes you <strong>craving</strong>, so you get ${CONFIG.currency}${CONFIG.aCost} if you drink ${playerName0}.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
             verbalQuestion: exoButton === null
-              ? `How does having a <strong>normal ${playerName1}</strong> (rather than abnormal) level change the chance that you feel <strong>${playerName2Pos}</strong>?`
-              : `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}.<br>How does having a <strong>normal ${playerName1}</strong> (rather than abnormal) level change the chance that you feel <strong>${playerName2Pos}</strong>?`,
+              ? `How does <strong>craving</strong> (rather than not craving) change the chance that you feel <strong>${playerName2Pos}</strong>?`
+              : `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}.<br>How does <strong>craving</strong> (rather than not craving) change the chance that you feel <strong>${playerName2Pos}</strong>?`,
             pie1Color: getThemeHexColor(),
             pie2Color: getThemeHexColor()
           },
@@ -1107,13 +1110,13 @@
             // Walkthrough text for each step
             walkthroughStep0: `In this scenario, you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0} ...`,
             walkthroughStep1: `Report how <strong>how you feel</strong>...`,
-            walkthroughStep2: `...affects your <strong>${playerName1} level</strong>.`,
+            walkthroughStep2: `...affects your <strong>craving for ${playerName0}</strong>.`,
             walkthroughHighlight: { step0: 'A', step1: 'Y', step2: ['Y', 'X'] },
             causePanel: 'Y',
             outcomePanel: 'X',
             pie1Question: `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}. Immediately after, you are required to take ${playerName2NegExo} which makes you feel <strong>${playerName2Neg}</strong>.<br>What is the chance that your <strong>${playerName1} level is normal</strong>?`,
             pie2Question: `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}. Immediately after, you are required to take ${playerName2PosExo} which makes you feel <strong>${playerName2Pos}</strong>.<br>What is the chance that your <strong>${playerName1} level is normal</strong>?`,
-            verbalQuestion: `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}.<br>How does feeling <strong>${playerName2Pos}</strong> (rather than being ${playerName2Neg}) change the chance that your <strong>${playerName1} level is normal</strong>?`,
+            verbalQuestion: `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}.<br>How does feeling <strong>${playerName2Pos}</strong> (rather than being ${playerName2Neg}) change the chance that you are <strong>craving</strong>?`,
             pie1Color: getThemeHexColor(),
             pie2Color: getThemeHexColor()
           }
@@ -1496,7 +1499,7 @@
                   {CONFIG.order === 'AY' ? (
                     <>The next decision screen will ask about how your decision to drink <strong>{CONFIG.playerName0}</strong> is related to <strong>how you feel</strong>.</>
                   ) : (
-                    <>What do you believe about the relationship between your decision to drink <strong>{CONFIG.playerName0}</strong>, your <strong>{CONFIG.playerName1} level</strong>, and <strong>how you feel</strong>? To answer this question, each of the next {CONFIG.mainCausals.length} decision screens show you a different scenario.</>
+                    <>What do you believe about the relationship between <strong>cravings (or not)</strong>, your decision to drink <strong>{CONFIG.playerName0}</strong>, and <strong>how you feel</strong>? To answer this question, each of the next {CONFIG.mainCausals.length} decision screens show you a different scenario.</>
                   )}
                 </p>
               </div>
@@ -1520,14 +1523,14 @@
               {CONFIG.order !== 'AY' && introStep >= 1 && (
                 <div className="text-gray-700 space-y-4 mb-6 fade-in">
                   <p>
-                    Some scenarios ask what will happen if your {CONFIG.playerName1} level are set by one of two treatments:
+                    Some scenarios ask what will happen if whether you are craving or not are set by one of two medicines:
                   </p>
                   <ul className="list-disc list-inside space-y-2 ml-4 mb-4">
-                    <li><strong>{CONFIG.playerName1}-normal-injection</strong> normalizes your {CONFIG.playerName1} level <strong>for sure</strong>.</li>
-                    <li><strong>{CONFIG.playerName1}-abnormal-injection</strong> makes your {CONFIG.playerName1} levels abnormal <strong>for sure</strong>.</li>
+                    <li><strong>CraveOn</strong> makes you craving <strong>for sure</strong>.</li>
+                    <li><strong>CraveOff</strong> makes you not craving <strong>for sure</strong>.</li>
                   </ul>
                   <p>
-                    These treatments have <i>no direct effects</i> on how you feel. However, <i>if</i> how you feel is a response of your body to your {CONFIG.playerName1} level, you may feel different if you receive {CONFIG.playerName1}-normal-injection or {CONFIG.playerName1}-abnormal-injection.
+                    These medicines have <i>no direct effects</i> on how you feel. However, <i>if</i> how you feel is a response of your body to whether you are craving or not, you may feel different if you take CraveOn or CraveOff.
                   </p>
                 </div>
               )}
@@ -1558,7 +1561,7 @@
                     <li><strong>{CONFIG.playerName2NegExo}</strong> makes you <strong>{CONFIG.playerName2Neg}</strong> for sure.</li>
                   </ul>
                   <p>
-                    These medications have <i>no direct effects</i> on your {CONFIG.playerName1} levels. However, <i>if</i> {CONFIG.playerName1} is a response of your body to feeling {CONFIG.playerName2Neg} or {CONFIG.playerName2Pos}, you may see your {CONFIG.playerName1} level change if you consume {CONFIG.playerName2PosExo} or {CONFIG.playerName2NegExo}.
+                    These medications do not directly affect whether you experience cravings. However, <i>if</i> craving is a response of your body to feeling {CONFIG.playerName2Neg} or {CONFIG.playerName2Pos}, taking {CONFIG.playerName2PosExo} or {CONFIG.playerName2NegExo} may affect whether you experience cravings.
                   </p>
                 </div>
               )}

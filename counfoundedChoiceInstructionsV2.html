@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Instructions</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="shared-icons.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 0; background: #ffffff; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script>
+    // =============== QUALTRICS COMMUNICATION ===============
+    let participantId = null;
+    let gameId = null;
+    let configReceived = false;
+
+    window.addEventListener('message', function(event) {
+      if (event.data.type === 'INIT') {
+        console.log('Received INIT from Qualtrics:', event.data);
+        configReceived = true;
+        participantId = event.data.participantId;
+        gameId = event.data.gameId;
+
+        if (event.data.gameConfig) {
+          const qConfig = event.data.gameConfig;
+          if (qConfig.currency) CONFIG.currency = qConfig.currency;
+          if (qConfig.basePay !== undefined) CONFIG.basePay = qConfig.basePay;
+          if (qConfig.aCost !== undefined) CONFIG.aCost = qConfig.aCost;
+          if (qConfig.yBonus !== undefined) CONFIG.yBonus = qConfig.yBonus;
+          if (qConfig.nRounds !== undefined) CONFIG.nRounds = qConfig.nRounds;
+          if (qConfig.playerName0) CONFIG.playerName0 = qConfig.playerName0;
+          if (qConfig.playerName1) CONFIG.playerName1 = qConfig.playerName1;
+          if (qConfig.playerIcon0) CONFIG.playerIcon0 = qConfig.playerIcon0;
+          // 3 drink-chemical pairs with colors
+          if (qConfig.playerName0_1) CONFIG.playerName0_1 = qConfig.playerName0_1;
+          if (qConfig.playerName1_1) CONFIG.playerName1_1 = qConfig.playerName1_1;
+          if (qConfig.color_1) CONFIG.color_1 = qConfig.color_1;
+          if (qConfig.playerName0_2) CONFIG.playerName0_2 = qConfig.playerName0_2;
+          if (qConfig.playerName1_2) CONFIG.playerName1_2 = qConfig.playerName1_2;
+          if (qConfig.color_2) CONFIG.color_2 = qConfig.color_2;
+          if (qConfig.playerName0_3) CONFIG.playerName0_3 = qConfig.playerName0_3;
+          if (qConfig.playerName1_3) CONFIG.playerName1_3 = qConfig.playerName1_3;
+          if (qConfig.color_3) CONFIG.color_3 = qConfig.color_3;
+          console.log('Applied config:', CONFIG);
+        }
+
+        markInitialized();
+      }
+    });
+
+    // Tell Qualtrics we're ready and need an INIT (handles refresh — Qualtrics's
+    // initial INIT setTimeout only fires once per question load, so on refresh
+    // we ask explicitly).
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: 'IFRAME_READY' }, '*');
+    }
+
+    function sendDataToQualtrics(dataType, data) {
+      if (window.parent !== window) {
+        window.parent.postMessage({
+          type: 'GAME_DATA',
+          gameId: gameId,
+          dataType: dataType,
+          data: data,
+          participantId: participantId,
+          configReceived: configReceived,
+          timestamp: new Date().toISOString()
+        }, '*');
+      }
+      console.log('Sent to Qualtrics:', dataType, data);
+    }
+
+    let isInitialized = false;
+    let initCallbacks = [];
+
+    function onInitialized(callback) {
+      if (isInitialized) callback();
+      else initCallbacks.push(callback);
+    }
+
+    function markInitialized() {
+      isInitialized = true;
+      initCallbacks.forEach(cb => cb());
+      initCallbacks = [];
+    }
+
+    // Configuration
+    const CONFIG = {
+      currency: '$',
+      basePay: 2.00,
+      aCost: 0.00,
+      yBonus: 2.00,
+      nRounds: 10,
+      playerName0: 'Qivex-norm',
+      playerName1: 'Qivex',
+      playerIcon0: '',
+      // 3 drink-chemical pairs with colors
+      playerName0_1: 'Qivex-norm',
+      playerName1_1: 'Qivex',
+      color_1: 'purple',
+      playerName0_2: 'Zerqalase-norm',
+      playerName1_2: 'Zerqalase',
+      color_2: 'blue',
+      playerName0_3: 'Melythor-norm',
+      playerName1_3: 'Melythor',
+      color_3: 'teal'
+    };
+
+    // Note: getThemeIconColor() is loaded from shared-icons.js
+
+    // Get examples from config (dynamically)
+    function getExamples() {
+      return [
+        { drink: CONFIG.playerName0_1, chemical: CONFIG.playerName1_1, color: CONFIG.color_1 },
+        { drink: CONFIG.playerName0_2, chemical: CONFIG.playerName1_2, color: CONFIG.color_2 },
+        { drink: CONFIG.playerName0_3, chemical: CONFIG.playerName1_3, color: CONFIG.color_3 }
+      ];
+    }
+  </script>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    // SVG Icons
+    function DrinkIcon({ className, drinkName, style }) {
+      // Zerqalase-norm: cup/glass icon
+      if (drinkName && drinkName.toLowerCase().includes('zerqalase')) {
+        return (
+          <svg className={className} style={style} viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+            <path d="M443.882,5.28C440.842,1.92,436.554,0,432.01,0h-352c-4.512,0-8.832,1.92-11.872,5.28c-3.008,3.328-4.512,7.808-4.064,12.32l48,480c0.832,8.192,7.712,14.4,15.936,14.4h256c8.224,0,15.104-6.208,15.904-14.4l48-480C448.394,13.088,446.922,8.608,443.882,5.28z M401.29,162.496c-40.672,13.152-93.6,19.232-135.136-14.848c-52.064-42.72-115.872-35.36-159.136-22.496L97.706,32h316.608L401.29,162.496z"/>
+          </svg>
+        );
+      }
+      // Melythor-norm: bottle/flask icon
+      if (drinkName && drinkName.toLowerCase().includes('melythor')) {
+        return (
+          <svg className={className} style={style} viewBox="25 0 50 100" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+            <path d="m68.3983231 39.4338799v51.373867c0 3.6944504-2.9977417 6.6922531-6.6921844 6.6922531h-23.4122773c-3.6944466 0-6.6921864-2.9978027-6.6921864-6.6922531v-51.373867c0-3.2933311 1.0977535-6.4916306 3.1244678-9.0988846l5.3199768-6.8294144c1.2877464-1.6572304 1.9844475-3.6839428 1.9844475-5.773922v-2.7444191h15.9388657v2.7444191c0 2.0899792.696701 4.1166916 1.9844475 5.773922l5.3199768 6.8294144c2.0267105 2.607254 3.124466 5.8055534 3.124466 9.0988846z"/>
+            <path d="m58.727375 11.8242331h-17.45475c-.7878952 0-1.426609-.6387148-1.426609-1.426609v-6.471015c-.0000001-.7878943.6387138-1.4266091 1.426609-1.4266091h17.45475c.7878952 0 1.426609.6387148 1.426609 1.4266093v6.471015c.0000001.787894-.6387138 1.4266088-1.426609 1.4266088z"/>
+          </svg>
+        );
+      }
+      // Qivex-norm (default): cup with straw icon
+      return (
+        <svg className={className} style={style} viewBox="0 0 462.848 462.848" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+          <polygon points="246.784,94.208 246.784,53.248 344.064,29.184 336.384,0 216.064,29.184 216.064,94.208 82.432,94.208 82.432,160.768 380.416,160.768 380.416,94.208"/>
+          <path d="M102.912,186.368l35.328,249.856c2.048,15.36,15.36,26.624,30.208,26.624h124.416c15.36,0,28.16-11.264,30.208-26.624L358.4,186.368H102.912z"/>
+        </svg>
+      );
+    }
+
+    function SkipIcon({ className }) {
+      return (
+        <svg className={className} viewBox="0 0 512.095 512.095" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+          <path d="m256.047 0c-141.411 0-256.047 114.636-256.047 256.047s114.636 256.047 256.047 256.047 256.047-114.636 256.047-256.047-114.636-256.047-256.047-256.047zm-192.313 256.047c0-106.212 86.102-192.313 192.313-192.313 41.614 0 80.139 13.221 111.61 35.687l-268.236 268.237c-22.466-31.471-35.687-69.996-35.687-111.611zm192.313 192.314c-41.589 0-80.092-13.204-111.552-35.644l268.221-268.221c22.441 31.46 35.644 69.964 35.644 111.552.001 106.211-86.101 192.313-192.313 192.313z"/>
+        </svg>
+      );
+    }
+
+    function HappyFaceIcon({ className }) {
+      return (
+        <svg className={className} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+          <path d="m50 98c-26.467 0-48-21.533-48-48s21.533-48 48-48 48 21.533 48 48-21.533 48-48 48zm0-90c-23.159 0-42 18.841-42 42s18.841 42 42 42 42-18.841 42-42-18.841-42-42-42zm26.684 52.342c.737-1.475.141-3.258-1.327-4.006-1.471-.743-3.271-.158-4.03 1.304-.22.422-5.549 10.36-21.327 10.36-15.74 0-21.081-9.889-21.325-10.356-.743-1.474-2.542-2.071-4.017-1.327-1.482.741-2.083 2.543-1.342 4.025.28.558 7.055 13.658 26.684 13.658s26.404-13.1 26.684-13.658zm-11.684-16.342c-3.309 0-6-2.691-6-6s2.691-6 6-6 6 2.691 6 6-2.691 6-6 6zm-30 0c-3.309 0-6-2.691-6-6s2.691-6 6-6 6 2.691 6 6-2.691 6-6 6z"/>
+        </svg>
+      );
+    }
+
+    function SadFaceIcon({ className }) {
+      return (
+        <svg className={className} viewBox="0 0 1960040 1960040" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+          <path d="m980022 0c270553 0 515558 109746 692917 287105s287105 422365 287105 692917c0 270553-109746 515558-287105 692917s-422365 287105-692917 287105c-270553 0-515558-109746-692917-287105s-287105-422365-287105-692917c0-270553 109746-515558 287105-692917s422365-287105 692917-287105zm593936 386086c-152010-152010-362027-246064-593936-246064s-441926 94054-593936 246064-246064 362027-246064 593936 94054 441926 246064 593936 362027 246064 593936 246064 441926-94054 593936-246064 246064-362027 246064-593936-94054-441926-246064-593936z" fillRule="nonzero"/>
+          <path d="m768029 683625c0-77305-62692-139997-139997-139997s-139997 62692-139997 139997 62692 139997 139997 139997 139997-62692 139997-139997z"/>
+          <path d="m1472010 683625c0-77305-62692-139997-139997-139997s-139997 62692-139997 139997 62692 139997 139997 139997 139997-62692 139997-139997z"/>
+          <path d="m1390150 1451840c20983 32310 64224 41487 96534 20504s41487-64224 20504-96534c-84810-130828-211356-220566-352072-261227-140849-40694-295852-32310-437346 33054-54021 24952-104239 57626-149100 96716l-132-165c-44464 38743-83603 84017-115946 134532-20835 32459-11409 75683 21050 96517 32459 20835 75683 11409 96517-21050 24919-38891 55394-74062 90250-104438l-132-165 132-116c34476-30045 73500-55361 115864-74939 110225-50913 230735-57510 340018-25944 109431 31616 207867 101445 273860 203254z" fillRule="nonzero"/>
+        </svg>
+      );
+    }
+
+    function NeutralFaceIcon({ className }) {
+      return (
+        <svg className={className} viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="currentColor" stroke="currentColor">
+          <path d="m42.07179 9.7714a22.99476 22.99476 0 1 1 -4.0696-4.0195" fill="none" strokeLinecap="round" strokeMiterlimit="10" strokeWidth="2"/>
+          <circle cx="40.094" cy="7.781" r="1" stroke="none"/>
+          <ellipse cx="31.6" cy="19.125" rx="2.4" ry="3" stroke="none"/>
+          <ellipse cx="16.4" cy="19.125" rx="2.4" ry="3" stroke="none"/>
+        </svg>
+      );
+    }
+
+    // Small BioClip icon for inline use
+    function BioClipIcon({ className }) {
+      return (
+        <svg viewBox="0 0 120 160" className={className} xmlns="http://www.w3.org/2000/svg">
+          <rect x="10" y="10" width="100" height="140" rx="12" fill="#0f172a" stroke="#334155" strokeWidth="2" />
+          <rect x="18" y="20" width="84" height="100" rx="6" fill="#1e293b" />
+          <rect x="22" y="24" width="76" height="92" rx="4" fill="#14532d" />
+          <circle cx="60" cy="55" r="24" fill="#22c55e" />
+          <path d="M48 55 L56 63 L72 47" stroke="white" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          <text x="60" y="100" textAnchor="middle" fill="white" fontSize="11" fontWeight="bold">NORMAL</text>
+          <rect x="30" y="126" width="60" height="18" rx="4" fill="#334155" />
+          <text x="60" y="139" textAnchor="middle" fill="#94a3b8" fontSize="10" fontFamily="monospace">BioClip™</text>
+          <path d="M0 50 L10 50 L10 110 L0 110 C-4 110 -6 105 -6 100 L-6 60 C-6 55 -4 50 0 50 Z" fill="#475569" />
+        </svg>
+      );
+    }
+
+    function shuffleArray(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    // Mini BioClip illustration (matches BioClipLarge from dietersDilemma.html)
+    // status: 1 = normal, 0 = abnormal, null = reading, 'expired' = subscription expired
+    function BioClipMini({ status }) {
+      const isExpired = status === 'expired';
+
+      const getStatusColor = () => {
+        if (isExpired) return '#475569';
+        if (status === null) return '#64748b';
+        return status === 1 ? '#22c55e' : '#ef4444';
+      };
+
+      const getStatusBg = () => {
+        if (isExpired) return '#1e293b';
+        if (status === null) return '#1e293b';
+        return status === 1 ? '#14532d' : '#7f1d1d';
+      };
+
+      return (
+        <svg viewBox="0 0 120 160" className="w-24 h-32">
+          <rect x="10" y="10" width="100" height="140" rx="12" fill="#0f172a" stroke="#334155" strokeWidth="2" />
+          <rect x="18" y="20" width="84" height="100" rx="6" fill="#1e293b" />
+          <rect x="22" y="24" width="76" height="92" rx="4" fill={getStatusBg()} />
+          <circle cx="60" cy="55" r="24" fill={getStatusColor()} />
+          {status === 1 && (
+            <path d="M48 55 L56 63 L72 47" stroke="white" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          )}
+          {status === 0 && (
+            <g stroke="white" strokeWidth="4" strokeLinecap="round">
+              <line x1="50" y1="45" x2="70" y2="65" />
+              <line x1="70" y1="45" x2="50" y2="65" />
+            </g>
+          )}
+          {isExpired ? (
+            <text x="60" y="93" textAnchor="middle" fill="#94a3b8" fontSize="9" fontWeight="bold">
+              <tspan x="60" dy="0">SUBSCRIPTION</tspan>
+              <tspan x="60" dy="12">EXPIRED</tspan>
+            </text>
+          ) : (
+            <text x="60" y="100" textAnchor="middle" fill={status === null ? '#64748b' : 'white'} fontSize="11" fontWeight="bold">
+              {status === null ? 'READING...' : status === 1 ? 'NORMAL' : 'ABNORMAL'}
+            </text>
+          )}
+          <rect x="30" y="126" width="60" height="18" rx="4" fill="#334155" />
+          <text x="60" y="139" textAnchor="middle" fill="#94a3b8" fontSize="10" fontFamily="monospace">BioClip™</text>
+          <path d="M0 50 L10 50 L10 110 L0 110 C-4 110 -6 105 -6 100 L-6 60 C-6 55 -4 50 0 50 Z" fill="#475569" />
+        </svg>
+      );
+    }
+
+    // Mood indicator mini (matches MoodLarge from dietersDilemma.html)
+    function MoodMini({ mood }) {
+      return (
+        <div className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-500 ${
+          mood === null ? 'bg-gray-200' : mood === 1 ? 'bg-gradient-to-br from-emerald-400 to-green-600' : 'bg-gradient-to-br from-rose-400 to-red-600'
+        }`}>
+          {mood === null ? (
+            <NeutralFaceIcon className="w-10 h-10 text-gray-400" />
+          ) : mood === 1 ? (
+            <HappyFaceIcon className="w-10 h-10 text-white" />
+          ) : (
+            <SadFaceIcon className="w-10 h-10 text-white" />
+          )}
+        </div>
+      );
+    }
+
+    // Drink button mini
+    function DrinkButtonMini({ name, type }) {
+      return (
+        <div className="w-20 py-3 rounded-xl flex flex-col items-center justify-center gap-1 bg-gradient-to-b from-white to-gray-100 border-2 border-gray-300 border-b-gray-400 shadow-md">
+          {type === 'skip' ? (
+            <SkipIcon className="w-5 h-5 text-blue-600" />
+          ) : (
+            <DrinkIcon className="w-5 h-5 text-blue-600" />
+          )}
+          <span className="text-sm font-bold text-gray-700">{name}</span>
+        </div>
+      );
+    }
+
+    // Main Instructions Component
+    function Instructions() {
+      const [ready, setReady] = useState(false);
+      const [currentPage, setCurrentPage] = useState(0);
+      const [attentionCheck, setAttentionCheck] = useState(0);
+      const [comprehension, setComprehension] = useState({});
+      const [wrongCountQ1, setWrongCountQ1] = useState(0);
+      const [wrongCountQ2, setWrongCountQ2] = useState(0);
+      const [allAnswersQ1, setAllAnswersQ1] = useState([]);
+      const [allAnswersQ2, setAllAnswersQ2] = useState([]);
+      const [q1Error, setQ1Error] = useState(null);
+      const [q2Error, setQ2Error] = useState(null);
+      const [showNextButton, setShowNextButton] = useState(false);
+      const totalPages = 8;
+      const nextButtonDelay = 10000; // 10 seconds delay before showing Next button
+
+      // Track time spent on each page (in seconds)
+      const pageTimesRef = React.useRef(Array(8).fill(0));
+      const pageEnteredRef = React.useRef(Date.now());
+      const prevPageRef = React.useRef(0);
+
+      // Track time per comprehension check attempt
+      const comprehTimesRef = React.useRef([]);
+
+      const recordPageTime = (pageIndex) => {
+        const now = Date.now();
+        const elapsed = (now - pageEnteredRef.current) / 1000;
+        pageTimesRef.current[pageIndex] += elapsed;
+        pageEnteredRef.current = now;
+      };
+
+      const [q1Order] = useState(() => shuffleArray([
+        'drinkNoPay', 'drinkCost', 'feelGoodBonus', 'oneRound', 'sumAll', 'bioClipPay'
+      ]));
+
+      // Randomize order of two possibilities (1=cause, 2=response)
+      const [possibilityOrder] = useState(() => shuffleArray([1, 2]));
+      // gameVersionsDescriptionOrderDieter1: position of possibility 1 (cause) — 1 if shown first, 2 if shown second
+      const gameVersionsDescriptionOrderDieter1 = possibilityOrder.indexOf(1) + 1;
+      // gameVersionsDescriptionOrderDieter2: position of possibility 2 (response) — 1 if shown first, 2 if shown second
+      const gameVersionsDescriptionOrderDieter2 = possibilityOrder.indexOf(2) + 1;
+
+      const q1ItemsMap = {
+        drinkNoPay: { id: 'drinkNoPay', text: `Whether I drink the beverage or not does${'\u00A0'}`, underline: 'not', after: ` affect my payment.` },
+        drinkCost: { id: 'drinkCost', text: `Drinking the beverage will cost ${CONFIG.currency}${CONFIG.aCost.toFixed(2)}.` },
+        feelGoodBonus: { id: 'feelGoodBonus', text: `If I feel good at the end of the day, and my decision for that day is selected to determine my bonus payment, I'll receive an additional ${CONFIG.currency}${CONFIG.yBonus.toFixed(2)} bonus.` },
+        oneRound: { id: 'oneRound', text: 'My bonus payment will be determined by one decision randomly selected from throughout the survey.' },
+        sumAll: { id: 'sumAll', text: 'My bonus payment will be the sum of all the payments I collect over all rounds I play.' },
+        bioClipPay: { id: 'bioClipPay', text: 'My blood chemical levels measured by BioClip directly affects my payment.' }
+      };
+      const q1Items = q1Order.map(id => q1ItemsMap[id]);
+
+      const [q2Order] = useState(() => shuffleArray([
+        'normalCausesGood', 'normalNotCausesGood', 'twoVersions'
+      ]));
+
+      const q2ItemsMap = {
+        normalCausesGood: { id: 'normalCausesGood', text: `If my BioClip shows a normal chemical level and I later feel good, this necessarily means that the normal chemical level caused me to feel good.` },
+        normalNotCausesGood: { id: 'normalNotCausesGood', text: `If my BioClip shows a normal chemical level and I later feel good, this does `, underline: 'not necessarily', after: ` mean that the normal chemical level caused me to feel good; the chemical level might have been a response to my feeling good.` },
+        twoVersions: { id: 'twoVersions', text: `Each blood chemical has two possibilities: either it is a cause of how you feel, or is a response to how you feel. Different chemicals may work in different ways.` }
+      };
+      const q2Items = q2Order.map(id => q2ItemsMap[id]);
+
+      const q1Correct = new Set(['drinkCost', 'feelGoodBonus', 'oneRound']);
+      const q1All = ['drinkNoPay', 'drinkCost', 'feelGoodBonus', 'oneRound', 'sumAll', 'bioClipPay'];
+      const q2Correct = new Set(['normalNotCausesGood', 'twoVersions']);
+      const q2All = ['normalCausesGood', 'normalNotCausesGood', 'twoVersions'];
+
+      const checkAnswer = (items, correctSet) => {
+        const selected = new Set(items.filter(id => comprehension[id]));
+        if (selected.size !== correctSet.size) return false;
+        for (const id of correctSet) { if (!selected.has(id)) return false; }
+        return true;
+      };
+
+      useEffect(() => {
+        const timeout = setTimeout(() => {
+          if (!ready) {
+            console.log('Timeout: starting with default config');
+            setReady(true);
+          }
+        }, 3000);
+
+        onInitialized(() => {
+          clearTimeout(timeout);
+          setReady(true);
+        });
+
+        return () => clearTimeout(timeout);
+      }, []);
+
+      // Fade-in effect for Next button (only when going forward)
+      useEffect(() => {
+        if (!ready) return;
+        const isGoingBack = currentPage < prevPageRef.current;
+        prevPageRef.current = currentPage;
+
+        if (isGoingBack) {
+          setShowNextButton(true);
+          return;
+        }
+
+        setShowNextButton(false);
+        const timer = setTimeout(() => setShowNextButton(true), nextButtonDelay);
+        return () => clearTimeout(timer);
+      }, [currentPage, ready]);
+
+      const handleContinue = () => {
+        const now = Date.now();
+        const elapsed = (now - pageEnteredRef.current) / 1000;
+        comprehTimesRef.current.push(elapsed);
+        recordPageTime(currentPage);
+        const q1Selected = q1All.filter(id => comprehension[id]);
+        const q2Selected = q2All.filter(id => comprehension[id]);
+        const q1Ok = checkAnswer(q1All, q1Correct);
+        const q2Ok = checkAnswer(q2All, q2Correct);
+
+        let newWrongQ1 = wrongCountQ1;
+        let newWrongQ2 = wrongCountQ2;
+        let newAllQ1 = [...allAnswersQ1];
+        let newAllQ2 = [...allAnswersQ2];
+
+        if (!q1Ok) {
+          newWrongQ1 = wrongCountQ1 + 1;
+          setWrongCountQ1(newWrongQ1);
+          newAllQ1 = [...allAnswersQ1, q1Selected];
+          setAllAnswersQ1(newAllQ1);
+          setQ1Error('Your answer to Question 1 is incorrect. Please try again.');
+        } else {
+          setQ1Error(null);
+          if (!allAnswersQ1.length || !q1Ok) {
+            newAllQ1 = [...allAnswersQ1, q1Selected];
+            setAllAnswersQ1(newAllQ1);
+          }
+        }
+
+        if (!q2Ok) {
+          newWrongQ2 = wrongCountQ2 + 1;
+          setWrongCountQ2(newWrongQ2);
+          newAllQ2 = [...allAnswersQ2, q2Selected];
+          setAllAnswersQ2(newAllQ2);
+          setQ2Error('Your answer to Question 2 is incorrect. Please try again.');
+        } else {
+          setQ2Error(null);
+          if (!allAnswersQ2.length || !q2Ok) {
+            newAllQ2 = [...allAnswersQ2, q2Selected];
+            setAllAnswersQ2(newAllQ2);
+          }
+        }
+
+        if (q1Ok && q2Ok) {
+          sendDataToQualtrics('INSTRUCTIONS_COMPLETE', {
+            completed: true,
+            attentionCheck: attentionCheck,
+            comprehension: comprehension,
+            wrongCountDieterQ1: newWrongQ1,
+            wrongCountDieterQ2: newWrongQ2,
+            allAnswersDieterQ1: newAllQ1,
+            allAnswersDieterQ2: newAllQ2,
+            pageTimes: pageTimesRef.current,
+            comprehTimes: comprehTimesRef.current,
+            gameVersionsDescriptionOrderDieter1: gameVersionsDescriptionOrderDieter1,
+            gameVersionsDescriptionOrderDieter2: gameVersionsDescriptionOrderDieter2
+          });
+        }
+      };
+
+      if (!ready) {
+        return (
+          <div className="min-h-screen bg-white flex items-start justify-center pt-12">
+            <div className="text-gray-700 text-xl">Loading...</div>
+          </div>
+        );
+      }
+
+      const pages = [
+        // Page 1: The Setup
+        <section>
+          <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
+            <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">1</span>
+            The Setup
+          </h2>
+          <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+            <p className="text-gray-700">
+              In this survey, imagine the following:
+            </p>
+            <p className="text-gray-700">
+              There are new products of two kinds:
+            </p>
+            <ul className="list-disc list-inside space-y-2 text-gray-600 ml-4">
+              <li><strong className="text-gray-900">New functional beverages.</strong> These are drinks that have some effect on you, such as altering certain blood chemicals.</li>
+              <li><strong className="text-gray-900">A new smartphone extension called BioClip</strong> that measures these blood chemicals.</li>
+            </ul>
+            <p className="text-gray-700 mt-4">
+              Each drink is known to affect a specific blood chemical. For instance,
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
+              {getExamples().map((ex, i) => (
+                <div key={i} className="bg-white rounded-lg p-4 flex items-center gap-3 border border-gray-200 shadow-sm">
+                  <DrinkIcon className="w-6 h-6 flex-shrink-0" drinkName={ex.drink} style={{ color: getThemeIconColor(ex.color) }} />
+                  <div>
+                    <div className="text-gray-900 font-medium">{ex.drink}</div>
+                    <div className="text-gray-500 text-sm">affects {ex.chemical}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <p className="text-gray-700 mt-4">
+              You will see three different drinks and three blood chemicals in this survey. <strong>Different drinks and chemicals may work in different ways.</strong> For each drink, you will make decisions across {CONFIG.nRounds} rounds. Think of each round as one day in a week.
+            </p>
+          </div>
+        </section>,
+
+        // Page 2: What Happens Each Week
+        <section>
+          <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
+            <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">2</span>
+            What Happens Each Week
+          </h2>
+          <div className="bg-gray-50 rounded-xl p-4">
+            <p className="text-gray-700 mb-4">
+              Each <span onClick={() => setAttentionCheck(1)} className={`cursor-pointer ${attentionCheck === 1 ? 'text-green-600' : ''}`}>Monday</span> morning, when you get up, you decide whether to consume the drink. Shortly after, your BioClip tells you whether the blood chemical it targets is at a normal level. What you care about is whether you will feel good or bad later in the day.
+            </p>
+            <div className="flex flex-col md:flex-row items-stretch justify-around gap-4 py-4">
+              {/* Step 1: Decision */}
+              <div className="text-center flex flex-col items-center bg-white border border-gray-200 rounded-lg p-4 shadow-sm flex-1">
+                <div className="mb-3">
+                  <div className="text-gray-900 font-medium">Morning</div>
+                  <div className="text-gray-500 text-sm">You decide: Drink or Skip?</div>
+                </div>
+                <div className="flex-1 flex items-center">
+                  <div className="flex gap-2 justify-center">
+                    <DrinkButtonMini name="Drink" type="drink" />
+                    <DrinkButtonMini name="Skip" type="skip" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-gray-400 text-2xl flex items-center justify-center">→</div>
+
+              {/* Step 2: BioClip Reading */}
+              <div className="text-center flex flex-col items-center bg-white border border-gray-200 rounded-lg p-4 shadow-sm flex-1">
+                <div className="mb-3">
+                  <div className="text-gray-900 font-medium">Shortly After</div>
+                  <div className="text-gray-500 text-sm">BioClip shows chemical level</div>
+                </div>
+                <div className="flex-1 flex items-center">
+                  <BioClipMini status={null} />
+                </div>
+              </div>
+
+              <div className="text-gray-400 text-2xl flex items-center justify-center">→</div>
+
+              {/* Step 3: Outcome */}
+              <div className="text-center flex flex-col items-center bg-white border border-gray-200 rounded-lg p-4 shadow-sm flex-1">
+                <div className="mb-3">
+                  <div className="text-gray-900 font-medium">Later That Day</div>
+                  <div className="text-gray-500 text-sm">How do you feel?</div>
+                </div>
+                <div className="flex-1 flex items-center">
+                  <MoodMini mood={null} />
+                </div>
+              </div>
+            </div>
+            <p className="text-gray-700 mt-4">
+              You make decisions only on Mondays. Because there's a whole week in between, what happens on one Monday does not affect what happens the next Monday.
+            </p>
+            <p className="text-gray-600 mt-4">
+              To show you are following this, click the word "Monday" in the first sentence of this section. If you do not, the survey will terminate.
+              {attentionCheck === 1 && <span className="text-green-600 ml-2">✓</span>}
+            </p>
+          </div>
+        </section>,
+
+        // Page 3: BioClip Trial Note
+        <section>
+          <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
+            <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">3</span>
+            You'll Only See BioClip Data for One Drink
+          </h2>
+          <div className="bg-gray-50 rounded-xl p-4">
+            <p className="text-gray-700 mb-4">
+              You will see three drinks in a random order. You only have a trial subscription to the BioClip smartphone extension. Hence, you can only view blood chemical levels for the first drink you see. The trial expires after that, so the blood chemical levels related to the second and third drinks will be hidden.
+            </p>
+            <p className="text-gray-700 mb-4">
+              After the trial expires, the BioClip will display "Subscription Expired" as shown below:
+            </p>
+            <div className="flex justify-center">
+              <BioClipMini status="expired" />
+            </div>
+          </div>
+        </section>,
+
+        // Page 4: What You Know
+        <section>
+          <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
+            <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">4</span>
+            What You Know vs. Don't Know
+          </h2>
+          <div className="bg-gray-50 rounded-xl p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-green-50 border border-green-300 rounded-xl p-4">
+                <h3 className="text-green-600 font-bold mb-2 flex items-center gap-2">
+                  <span>✓</span> What You Know
+                </h3>
+                <p className="text-gray-600">
+                  Consuming a drink makes it <strong className="text-gray-900">more likely</strong> that the blood chemical level it targets will be <strong className="text-green-600">normal</strong>.
+                </p>
+              </div>
+              <div className="bg-amber-50 border border-amber-300 rounded-xl p-4">
+                <h3 className="text-amber-600 font-bold mb-2 flex items-center gap-2">
+                  <span>?</span> What You Don't Know
+                </h3>
+                <p className="text-gray-600">
+                  Whether having a normal or abnormal chemical level affects how you <strong className="text-gray-900">feel later that day</strong>.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>,
+
+        // Page 5: Two Possibilities
+        <section>
+          <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
+            <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">5</span>
+            Two Possibilities
+          </h2>
+          <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+            <p className="text-gray-700">For each blood chemical in this survey, there are two possibilities:</p>
+            {possibilityOrder.map((id, idx) => (
+              id === 1 ? (
+                <div key={id} className="bg-white rounded-xl p-4 border-l-4 border-blue-400">
+                  <h3 className="text-blue-600 font-bold mb-2">Possibility {idx + 1}: The chemical level <span className="underline">is a cause</span> of how you feel.</h3>
+                  <p className="text-gray-600">
+                    Hence, normalizing your chemical level (by consuming the drink) <strong className="text-gray-900">raises the chance that you will feel good</strong> later that day.
+                  </p>
+                </div>
+              ) : (
+                <div key={id} className="bg-white rounded-xl p-4 border-l-4 border-blue-400">
+                  <h3 className="text-blue-600 font-bold mb-2">Possibility {idx + 1}: The chemical level <span className="underline">is a response to</span> how you feel, but <span className="underline">not a cause</span>.</h3>
+                  <p className="text-gray-600">
+                    In this case, consuming the drink will still make a normal chemical level more likely, but this <strong className="text-gray-900">will not affect how you feel</strong>.
+                  </p>
+                </div>
+              )
+            ))}
+            <p className="text-gray-700 mt-4">
+              Some blood chemicals in this survey might be a cause of how you feel, others might be a response to it. For instance, the blood chemical A might be a cause of how you feel whereas the blood chemical B might be a response to it, but not a cause.
+            </p>
+          </div>
+        </section>,
+
+        // Page 6: Note
+        <section>
+          <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
+            <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">6</span>
+            Note
+          </h2>
+          <div className="bg-gray-50 rounded-xl p-4">
+            <p className="text-gray-600">
+              Because many things are going on in your body at any time, <strong className="text-gray-900">even effective decisions will not work 100% of the time</strong>. For instance, even though the drink usually affects the blood chemical level it targets:
+            </p>
+            <ul className="list-disc list-inside space-y-2 text-gray-600 mt-3 ml-4">
+              <li>Sometimes the blood chemical level it targets will be normal even if you don't consume the drink</li>
+              <li>Sometimes the blood chemical level it targets will be abnormal even if you consume the drink</li>
+            </ul>
+            <p className="text-gray-600 mt-3">
+              Therefore, even effective decisions won't give you 100% control, they will only <strong className="text-gray-900">change the chance</strong> with which you feel a certain way.
+            </p>
+          </div>
+        </section>,
+
+        // Page 7: Payment
+        <section>
+          <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
+            <span className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">7</span>
+            Payment
+          </h2>
+          <div className="bg-gray-50 rounded-xl p-4">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 bg-gray-100 rounded-lg p-3">
+                <span className="text-2xl">💰</span>
+                <div>
+                  <div className="text-gray-900 font-medium">Baseline Bonus</div>
+                  <div className="text-gray-500">You begin each round with a baseline bonus of {CONFIG.currency}{CONFIG.basePay.toFixed(2)}.</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 bg-gray-100 rounded-lg p-3">
+                <DrinkIcon className="w-6 h-6 text-blue-600 flex-shrink-0" />
+                <div>
+                  <div className="text-gray-900 font-medium">Drink Cost</div>
+                  <div className="text-gray-500">If you consume the drink, you pay {CONFIG.currency}{CONFIG.aCost.toFixed(2)} for it (deducted from your baseline bonus).</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 bg-gray-100 rounded-lg p-3">
+                <HappyFaceIcon className="w-6 h-6 text-green-600 flex-shrink-0" />
+                <div>
+                  <div className="text-gray-900 font-medium">Feeling Good Bonus</div>
+                  <div className="text-gray-500">If you feel good at the end of the day, you receive an additional {CONFIG.currency}{CONFIG.yBonus.toFixed(2)} bonus, if you feel bad, you don't.</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 bg-gray-100 rounded-lg p-3">
+                <BioClipIcon className="w-6 h-8 flex-shrink-0" />
+                <div>
+                  <div className="text-gray-900 font-medium">BioClip Reading</div>
+                  <div className="text-gray-500">The BioClip's reading of your blood chemicals does not directly affect your payment.</div>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-gray-600 mt-4">
+              <strong className="text-gray-900">For each of the three drinks in this survey and the blood chemical they target, you will make decisions in {CONFIG.nRounds} rounds.</strong> This may sound like a lot, but because each round only takes a few seconds, this is quite manageable. 
+            </p>
+            <p className="text-gray-600 mt-2">
+              You will make some additional decisions related to each drink. <strong className="text-gray-900">Your bonus payment will be determined by a single decision from the entire survey,</strong> randomly selected at the end.
+            </p>
+          </div>
+        </section>,
+
+        // Page 8: Comprehension Check
+        <section>
+          <div className="bg-gray-50 rounded-xl p-4">
+            <p className="text-gray-900 font-bold mb-4">
+              Which of the following statements about your payment are correct? <span className="font-normal text-gray-600">Select all that apply.</span>
+            </p>
+            <div className="space-y-3">
+              {q1Items.map(item => (
+                <label key={item.id} className="flex items-start gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={!!comprehension[item.id]}
+                    onChange={() => setComprehension(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                    className="mt-1 w-5 h-5 rounded border-gray-300 bg-white text-blue-600 cursor-pointer flex-shrink-0"
+                  />
+                  <span className="text-gray-600 group-hover:text-gray-900 transition-colors">
+                    {item.underline ? (<>{item.text}<span className="underline">{item.underline}</span>{item.after}</>) : item.text}
+                  </span>
+                </label>
+              ))}
+            </div>
+            {q1Error && (
+              <p className="text-red-600 mt-3 font-medium">{q1Error}</p>
+            )}
+          </div>
+
+          <div className="bg-gray-50 rounded-xl p-4 mt-6">
+            <p className="text-gray-900 font-bold mb-4">
+              Which of the following statements about the study are correct? <span className="font-normal text-gray-600">Select all that apply.</span>
+            </p>
+            <div className="space-y-3">
+              {q2Items.map(item => (
+                <label key={item.id} className="flex items-start gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={!!comprehension[item.id]}
+                    onChange={() => setComprehension(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                    className="mt-1 w-5 h-5 rounded border-gray-300 bg-white text-blue-600 cursor-pointer flex-shrink-0"
+                  />
+                  <span className="text-gray-600 group-hover:text-gray-900 transition-colors">
+                    {item.underline ? (<>{item.text}<span className="underline">{item.underline}</span>{item.after}</>) : item.text}
+                  </span>
+                </label>
+              ))}
+            </div>
+            {q2Error && (
+              <p className="text-red-600 mt-3 font-medium">{q2Error}</p>
+            )}
+          </div>
+        </section>
+      ];
+
+      const isLastPage = currentPage === totalPages - 1;
+
+      return (
+        <div className="min-h-screen bg-white px-4 pt-0 pb-4">
+          <div className="max-w-5xl mx-auto">
+            {/* Main Content Card */}
+            <div className="bg-white rounded-2xl px-6 pb-6 pt-2">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2 text-center">
+                {currentPage < 7 ? 'Instructions' : 'Comprehension Check'}
+              </h1>
+
+              {currentPage < 7 && (
+                <p className="text-gray-700 text-center mb-2">
+                  Do <span className="text-red-500 font-semibold">NOT</span> click Next on any instructions page without having read all of it carefully. Otherwise, you will fail the attention check!
+                </p>
+              )}
+
+              {currentPage >= 7 && (
+                <p className="text-gray-600 italic text-center mb-4">
+                  To make sure you have understood these instructions, please answer the following questions.
+                </p>
+              )}
+
+              {/* Page indicator - only on instruction pages */}
+              {currentPage < 7 && (
+                <div className="flex items-center justify-center gap-2 mb-6">
+                  {Array.from({ length: 7 }, (_, i) => (
+                    <div
+                      key={i}
+                      className={`w-3 h-3 rounded-full transition-all ${
+                        i === currentPage ? 'bg-blue-400 scale-125' : i < currentPage ? 'bg-blue-300' : 'bg-gray-200'
+                      }`}
+                    />
+                  ))}
+                  <span className="text-gray-500 text-sm ml-2">Page {currentPage + 1} of 7</span>
+                </div>
+              )}
+
+              {/* Current page content */}
+              {pages[currentPage]}
+
+              {/* Navigation buttons */}
+              <div className="flex justify-between items-center mt-8">
+                <button
+                  onClick={() => { recordPageTime(currentPage); setCurrentPage(p => p - 1); }}
+                  disabled={currentPage === 0}
+                  className={`px-6 py-3 rounded-xl font-bold transition-all ${
+                    currentPage === 0
+                      ? 'invisible'
+                      : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                  }`}
+                >
+                  Back
+                </button>
+
+                {isLastPage ? (
+                  <button
+                    onClick={handleContinue}
+                    className={`px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl ${showNextButton ? 'transition-opacity duration-1000 ease-in opacity-100' : 'opacity-0 pointer-events-none'}`}
+                  >
+                    Submit
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      recordPageTime(currentPage);
+                      if (currentPage === 1 && attentionCheck === 0) {
+                        sendDataToQualtrics('INSTRUCTIONS_COMPLETE', { completed: true, attentionCheck: 0, comprehension: {}, pageTimes: pageTimesRef.current, comprehTimes: comprehTimesRef.current, gameVersionsDescriptionOrderDieter1: gameVersionsDescriptionOrderDieter1, gameVersionsDescriptionOrderDieter2: gameVersionsDescriptionOrderDieter2 });
+                        return;
+                      }
+                      setCurrentPage(p => p + 1);
+                      window.scrollTo(0, 0);
+                      if (window.parent !== window) {
+                        window.parent.postMessage({ type: 'SCROLL_TO_TOP' }, '*');
+                      }
+                    }}
+                    className={`px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl ${showNextButton ? 'transition-opacity duration-1000 ease-in opacity-100' : 'opacity-0 pointer-events-none'}`}
+                  >
+                    Next
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Render
+    ReactDOM.createRoot(document.getElementById('root')).render(<Instructions />);
+  </script>
+</body>
+</html>
