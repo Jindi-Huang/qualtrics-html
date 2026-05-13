@@ -903,19 +903,19 @@
       const isOnComprehension = currentPage === instructionCount;
 
       return (
-        <div className="min-h-screen bg-white pt-0 pb-10 px-4">
+        <div className="min-h-screen bg-white px-4 pt-0 pb-4">
           <div className="max-w-5xl mx-auto">
-            <div className="bg-white rounded-xl shadow-lg p-6 mt-6">
-              {currentPage === 0 && (
-                <p className="text-gray-700 text-center mb-4">
-                  Welcome! Please read these instructions carefully — they explain what you'll be doing in this survey.
-                </p>
-              )}
-              {currentPage > 0 && !isOnComprehension && (
-                <p className="text-gray-600 italic text-center mb-4">
+            <div className="bg-white rounded-2xl px-6 pb-6 pt-2">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2 text-center">
+                {isOnComprehension ? 'Comprehension Check' : 'Instructions'}
+              </h1>
+
+              {!isOnComprehension && (
+                <p className="text-gray-700 text-center mb-2">
                   Do <span className="text-red-500 font-semibold">NOT</span> click Next on any instructions page without having read all of it carefully. Otherwise, you will fail the attention check!
                 </p>
               )}
+
               {isOnComprehension && (
                 <p className="text-gray-600 italic text-center mb-4">
                   To make sure you have understood these instructions, please answer the following questions.
