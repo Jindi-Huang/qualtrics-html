@@ -211,6 +211,14 @@
       }
     }
 
+    // Allow standalone testing: ?supergame=migraines or ?supergame=dieter
+    try {
+      const urlSupergame = new URLSearchParams(window.location.search).get('supergame');
+      if (urlSupergame === 'migraines' || urlSupergame === 'dieter') {
+        CONFIG.supergame = urlSupergame;
+      }
+    } catch (e) {}
+
     // Apply defaults for standalone testing
     applySupergameDefaults();
     applyOrderFilter();

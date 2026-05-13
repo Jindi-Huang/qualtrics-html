@@ -203,7 +203,7 @@
     const CONFIG = {
       yBonus: 10.00,          // Bonus when Y=1
       aCost: 1.50,            // Cost of drinking (A=1)
-      totalRounds: 10,
+      totalRounds: 1,
       currency: '$',
       id: 1,
 
@@ -428,15 +428,13 @@
     }
 
     // Check if choices are inconsistent
-    // For decreasing prices: inconsistent if user drinks at higher price but skips at lower price
-    // For increasing prices: inconsistent if user skips at lower price but drinks at higher price
+    // Drinking the drink now PAYS the displayed amount, so higher amount = more attractive.
+    // For decreasing prices (high to low display): rational is Drink...Drink, Skip...Skip
+    //   Inconsistent: any switch from Skip (0) to Drink (1)
+    // For increasing prices (low to high display): rational is Skip...Skip, Drink...Drink
+    //   Inconsistent: any switch from Drink (1) to Skip (0)
     function hasInconsistentChoices(sortedChoices) {
       if (sortedChoices.length < 2) return false;
-
-      // For decreasing prices (high to low), rational behavior is: Skip...Skip, Drink...Drink
-      // Inconsistent: any switch from Drink (1) to Skip (0)
-      // For increasing prices (low to high), rational behavior is: Drink...Drink, Skip...Skip
-      // Inconsistent: any switch from Skip (0) to Drink (1)
 
       const isDecreasing = CONFIG.increasingPrice === 0;
 
@@ -445,11 +443,11 @@
         const currChoice = sortedChoices[i].choice;
 
         if (isDecreasing) {
-          // For decreasing prices: Drink then Skip is inconsistent
-          if (prevChoice === 1 && currChoice === 0) return true;
-        } else {
-          // For increasing prices: Skip then Drink is inconsistent
+          // For decreasing payments: Skip then Drink is inconsistent
           if (prevChoice === 0 && currChoice === 1) return true;
+        } else {
+          // For increasing payments: Drink then Skip is inconsistent
+          if (prevChoice === 1 && currChoice === 0) return true;
         }
       }
 
@@ -643,43 +641,55 @@
     }
 
     // Inline Price Elicitation Drink/Skip buttons (rendered inside XYConnection in place of BioClipLarge)
-    function InlinePriceElicitationButtons({ price, onChoice, isFirstRound, selectedChoice }) {
+    function InlinePriceElicitationButtons({ price, onChoice, isFirstRound, selectedChoice, disabled }) {
       const theme = getThemeClasses();
+      const drinkInactive = disabled && selectedChoice !== 1;
+      const skipInactive = disabled && selectedChoice !== 0;
       return (
         <div className="flex flex-col items-center">
           <div className="h-44 flex items-end justify-center gap-3">
           <button
             onClick={() => onChoice(1)}
-            className={`w-36 h-24 px-2 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
-              selectedChoice === 1
-                ? `bg-red-600 border-2 border-red-600 shadow-md ring-4 ring-red-300`
-                : selectedChoice === 0
-                  ? 'bg-gray-100 border-2 border-gray-200'
-                  : `bg-red-500 border-2 border-red-500 shadow-md hover:shadow-lg hover:bg-red-600 hover:border-red-600 active:shadow-sm active:translate-y-0.5 ${isFirstRound ? 'first-round-shine-panel' : ''}`
+            disabled={disabled}
+            className={`w-36 h-24 px-2 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 ${
+              disabled
+                ? selectedChoice === 1
+                  ? `bg-red-600 border-2 border-red-600 shadow-md ring-4 ring-red-300`
+                  : 'bg-gray-100 border-2 border-gray-200 cursor-not-allowed'
+                : selectedChoice === 1
+                  ? `bg-red-600 border-2 border-red-600 shadow-md ring-4 ring-red-300 cursor-pointer`
+                  : selectedChoice === 0
+                    ? 'bg-gray-100 border-2 border-gray-200 cursor-pointer'
+                    : `bg-red-500 border-2 border-red-500 shadow-md hover:shadow-lg hover:bg-red-600 hover:border-red-600 active:shadow-sm active:translate-y-0.5 cursor-pointer ${isFirstRound ? 'first-round-shine-panel' : ''}`
             }`}
           >
-            <DrinkIcon className={`w-10 h-10 ${selectedChoice === 0 ? 'text-gray-400' : theme.iconColor}`} drinkName={CONFIG.playerName0} />
+            <DrinkIcon className={`w-10 h-10 ${drinkInactive || selectedChoice === 0 ? 'text-gray-400' : theme.iconColor}`} drinkName={CONFIG.playerName0} />
             <div className="text-center">
-              <div className="text-sm inline-block rounded px-2 py-0.5 font-bold bg-amber-400 text-amber-900">
-                {price === 0 ? 'Free' : `-${CONFIG.currency}${price.toFixed(2)}`}
+              <div className={`text-sm inline-block rounded px-2 py-0.5 font-bold ${drinkInactive ? 'bg-gray-200 text-gray-400' : 'bg-amber-400 text-amber-900'}`}>
+                {price === 0 ? 'Free' : `+${CONFIG.currency}${price.toFixed(2)}`}
               </div>
-              <div className={`text-[10px] mt-1 ${selectedChoice === 0 ? 'text-gray-400' : 'text-white'}`}>Drink {CONFIG.playerName0}</div>
+              <div className={`text-[10px] mt-1 ${drinkInactive || selectedChoice === 0 ? 'text-gray-400' : 'text-white'}`}>Drink {CONFIG.playerName0}</div>
             </div>
           </button>
           <button
             onClick={() => onChoice(0)}
-            className={`w-36 h-24 px-2 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
-              selectedChoice === 0
-                ? `bg-green-600 border-2 border-green-600 shadow-md ring-4 ring-green-300`
-                : selectedChoice === 1
-                  ? 'bg-gray-100 border-2 border-gray-200'
-                  : `bg-green-500 border-2 border-green-500 shadow-md hover:shadow-lg hover:bg-green-600 hover:border-green-600 active:shadow-sm active:translate-y-0.5 ${isFirstRound ? 'first-round-shine-panel' : ''}`
+            disabled={disabled}
+            className={`w-36 h-24 px-2 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 ${
+              disabled
+                ? selectedChoice === 0
+                  ? `bg-green-600 border-2 border-green-600 shadow-md ring-4 ring-green-300`
+                  : 'bg-gray-100 border-2 border-gray-200 cursor-not-allowed'
+                : selectedChoice === 0
+                  ? `bg-green-600 border-2 border-green-600 shadow-md ring-4 ring-green-300 cursor-pointer`
+                  : selectedChoice === 1
+                    ? 'bg-gray-100 border-2 border-gray-200 cursor-pointer'
+                    : `bg-green-500 border-2 border-green-500 shadow-md hover:shadow-lg hover:bg-green-600 hover:border-green-600 active:shadow-sm active:translate-y-0.5 cursor-pointer ${isFirstRound ? 'first-round-shine-panel' : ''}`
             }`}
           >
-            <SkipIcon className={`w-10 h-10 ${selectedChoice === 1 ? 'text-gray-400' : 'text-white'}`} />
+            <SkipIcon className={`w-10 h-10 ${skipInactive || selectedChoice === 1 ? 'text-gray-400' : 'text-white'}`} />
             <div className="text-center">
-              <div className={`text-sm ${selectedChoice === 1 ? 'text-gray-300' : 'text-white'}`}>{CONFIG.currency}0</div>
-              <div className={`text-[10px] ${selectedChoice === 1 ? 'text-gray-400' : 'text-white'}`}>Skip</div>
+              <div className={`text-sm ${skipInactive || selectedChoice === 1 ? 'text-gray-300' : 'text-white'}`}>{CONFIG.currency}0</div>
+              <div className={`text-[10px] ${skipInactive || selectedChoice === 1 ? 'text-gray-400' : 'text-white'}`}>Skip</div>
             </div>
           </button>
           </div>
@@ -1077,7 +1087,7 @@
             </h1>
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-8 text-left">
               <p className="text-gray-700 text-lg mb-2">
-                In the next few pages, you will make <strong>{CONFIG.priceElicitationPrices.length} high-stakes choices</strong> about whether to drink {CONFIG.playerName0}.
+                In the next few pages, you will make <strong>{CONFIG.priceElicitationPrices.length} high-stakes choices</strong> about whether to drink {CONFIG.playerName0} <b>when you are craving for it</b>.
               </p>
 
               <h3 className="text-amber-800 font-bold text-lg mt-5 mb-3">What's Different</h3>
@@ -1086,7 +1096,7 @@
                   <strong>The stakes are higher:</strong>
                   <ul className="ml-6 mt-1 space-y-1 list-disc">
                     <li>The bonus for feeling {CONFIG.playerName2Pos} is now <strong>{CONFIG.currency}{CONFIG.priceElicitationBonus}</strong></li>
-                    <li>The price of the drink will vary from {CONFIG.currency}0 to {CONFIG.currency}{CONFIG.priceElicitationPrices[CONFIG.priceElicitationPrices.length - 1]} across these choices</li>
+                    <li>The payment you receive for drinking will range from {CONFIG.currency}0 to {CONFIG.currency}{CONFIG.priceElicitationPrices[CONFIG.priceElicitationPrices.length - 1]} across these choices</li>
                     <li>You will be given <strong>{CONFIG.currency}15</strong> as endowment</li>
                   </ul>
                 </li>
@@ -1097,7 +1107,7 @@
 
               <h3 className="text-amber-800 font-bold text-lg mt-5 mb-3">What Doesn't Change</h3>
               <ul className="text-gray-700 text-lg space-y-2 list-disc ml-6">
-                <li>There will be no change in whether or how strongly {CONFIG.playerName0} and {CONFIG.playerName1} affect each other, or in whether or how strongly either of them affects how you feel.</li>
+                <li>There will be no change in whether or how strongly drinking {CONFIG.playerName0} affects how you feel.</li>
                 <li>One of these choices may be randomly selected to decide your bonus payment at the end of this survey, so please consider each decision carefully.</li>
               </ul>
             </div>
@@ -1159,7 +1169,7 @@
             {!isFinalReview && (
               <div className="mb-6 border-2 border-gray-200 rounded-xl p-6 inline-block">
                 <p className="text-gray-700 text-lg">
-                  The price of {CONFIG.playerName0} is now:
+                  Drinking {CONFIG.playerName0} now pays you:
                 </p>
                 <div className="text-4xl font-bold text-amber-600 mt-3">
                   {nextPrice === 0 ? 'Free' : `${CONFIG.currency}${nextPrice.toFixed(2)}`}
@@ -1221,8 +1231,8 @@
                   <span>Please Double-Check Your Choices</span>
                 </div>
                 <p className="text-red-500 text-xs">
-                  Your choices seem inconsistent: you chose to drink {CONFIG.playerName0} at a higher price
-                  but skip it at a lower price. Usually, people are more willing to drink when the price is lower.
+                  Your choices seem inconsistent: you chose to skip {CONFIG.playerName0} at a higher payment
+                  but drink it at a lower payment. Usually, people are more willing to drink when the payment is higher.
                   Please click on any choice above to change it, or continue if this is intentional.
                 </p>
               </div>
@@ -1240,29 +1250,36 @@
     }
 
     // Price Elicitation Morning panel (buttons now live inside XYConnection)
-    function PriceElicitationDecisionPanel({ stats }) {
+    function PriceElicitationDecisionPanel({ stats, X }) {
       const theme = getThemeClasses();
 
       return (
         <div className={`${theme.panelBg} rounded-xl p-4 border ${theme.panelBorder} shadow-sm flex flex-col items-center`}>
           <h4 className="text-gray-900 text-lg font-bold mb-3 text-center">Morning</h4>
-          <MorningIcon className="w-24 h-24 text-gray-700" drinkName={CONFIG.playerName0} />
+          <MorningIcon className="w-24 h-24 text-gray-700" drinkName={CONFIG.playerName0} X={X} />
+          <div className="mt-2 text-lg font-bold text-gray-900">
+            {X === 1 ? 'Craving' : X === 0 ? 'NOT Craving' : ' '}
+          </div>
         </div>
       );
     }
 
     // Price Elicitation Page (matches main game layout)
-    function PriceElicitationPanel({ price, roundNumber, totalRounds, onChoice, stats, history, waitingForSpace, pendingChoice }) {
+    function PriceElicitationPanel({ price, roundNumber, totalRounds, onChoice, stats, history, waitingForSpace, pendingChoice, currentX, decisionEnabled }) {
       const theme = getThemeClasses();
       return (
         <div className="min-h-screen bg-white px-4 pt-0 pb-4">
           <div className="max-w-6xl mx-auto">
             <div className={`${theme.panelBg} rounded-2xl p-6 mb-4 border ${theme.panelBorder} shadow-sm relative overflow-hidden`}>
               <div className="text-center mb-4 h-14 flex items-center justify-center">
-                <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium bg-amber-50 text-amber-700 border border-amber-200 ${waitingForSpace ? 'attention-shine-pill' : ''}`}>
+                <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium bg-amber-50 text-amber-700 border border-amber-200 ${waitingForSpace ? 'attention-shine-pill' : ''} ${roundNumber === 1 && !waitingForSpace && decisionEnabled ? 'first-round-shine-pill' : ''}`}>
                   {waitingForSpace
                     ? 'Press "Space" to continue'
-                    : `High-Stakes Choice: Would you drink ${CONFIG.playerName0} at this price?`
+                    : currentX === null
+                      ? 'Morning...'
+                      : !decisionEnabled
+                        ? `Morning: ${currentX === 1 ? 'Craving' : 'NOT Craving'}`
+                        : `High-Stakes Choice: Would you drink ${CONFIG.playerName0} for this payment?`
                   }
                 </span>
               </div>
@@ -1296,15 +1313,16 @@
                   <InlinePriceElicitationButtons
                     price={price}
                     onChoice={onChoice}
-                    isFirstRound={roundNumber === 1 && !waitingForSpace}
+                    isFirstRound={roundNumber === 1 && decisionEnabled && !waitingForSpace}
                     selectedChoice={pendingChoice}
+                    disabled={!decisionEnabled || waitingForSpace}
                   />
                 }
               />
             </div>
 
             <div className="grid grid-cols-3 gap-4">
-              <PriceElicitationDecisionPanel stats={stats} />
+              <PriceElicitationDecisionPanel stats={stats} X={currentX} />
               <XStatsPanel stats={stats} currentA={null} />
               <CompactHistory history={history} />
             </div>
@@ -1410,11 +1428,15 @@
             let newChoices;
             const isEditing = existingIndex >= 0;
 
+            // Use the X and Y sampled when the round started (shown to the user)
+            const sampledX = pendingResult ? pendingResult.X : currentX;
+            const sampledY = pendingResult ? pendingResult.Y : currentY;
+
             if (isEditing) {
               newChoices = [...priceElicitationChoices];
-              newChoices[existingIndex] = { price: currentPrice, choice };
+              newChoices[existingIndex] = { price: currentPrice, choice, X: sampledX, Y: sampledY };
             } else {
-              newChoices = [...priceElicitationChoices, { price: currentPrice, choice }];
+              newChoices = [...priceElicitationChoices, { price: currentPrice, choice, X: sampledX, Y: sampledY }];
             }
 
             setPriceElicitationChoices(newChoices);
@@ -1556,6 +1578,46 @@
         }, 1500);
         return () => clearTimeout(timer);
       }, [phase, currentX, decisionEnabled]);
+
+      // High-stakes rounds: reset craving state when entering a new price round
+      const sampledForPriceRoundRef = useRef(null);
+      useEffect(() => {
+        if (phase !== 'priceElicitation') return;
+        setCurrentX(null);
+        setCurrentY(null);
+        setDecisionEnabled(false);
+        setPendingResult(null);
+        sampledForPriceRoundRef.current = null;
+      }, [phase, priceElicitationRound, showPriceDivider]);
+
+      // High-stakes rounds: sample Y for the bonus payoff, but force X=1 (always craving)
+      useEffect(() => {
+        if (!ready) return;
+        if (phase !== 'priceElicitation') return;
+        if (showPriceDivider) return;
+        if (priceElicitationRound === 0) return;
+        if (currentX !== null) return;
+        if (sampledForPriceRoundRef.current === priceElicitationRound) return;
+        sampledForPriceRoundRef.current = priceElicitationRound;
+        const result = simulateRound(0);
+        const X = 1; // High-stakes choices are always presented under "craving"
+        setPendingResult({ A: null, X, Y: result.Y });
+        const timer = setTimeout(() => {
+          setCurrentX(X);
+        }, 1200);
+        return () => clearTimeout(timer);
+      }, [ready, phase, showPriceDivider, currentX, priceElicitationRound]);
+
+      // High-stakes rounds: enable buttons 1.5s after craving is revealed
+      useEffect(() => {
+        if (phase !== 'priceElicitation') return;
+        if (currentX === null) return;
+        if (decisionEnabled) return;
+        const timer = setTimeout(() => {
+          setDecisionEnabled(true);
+        }, 1500);
+        return () => clearTimeout(timer);
+      }, [phase, currentX, decisionEnabled]);
       
       // Handle price elicitation intro continue
       const handlePriceIntroContinue = useCallback(() => {
@@ -1671,10 +1733,11 @@
       if (phase === 'complete' && history.length === CONFIG.totalRounds && priceElicitationChoices.length === CONFIG.priceElicitationPrices.length && !dataSentRef.current) {
         dataSentRef.current = true;
 
-        // Simulate outcomes for high stakes choices using DGP
+        // Use the X+Y sampled (and shown) during each high-stakes round
         const highStakeOutcomes = priceElicitationChoices.map(c => {
-          const result = simulateRound(c.choice);
-          return { price: c.price, choice: c.choice, X: result.X, Y: result.Y };
+          const X = (c.X === 0 || c.X === 1) ? c.X : simulateRound(c.choice).X;
+          const Y = (c.Y === 0 || c.Y === 1) ? c.Y : simulateRound(c.choice).Y;
+          return { price: c.price, choice: c.choice, X, Y };
         });
 
         sendDataToQualtrics('FINAL_DATA', {
@@ -1769,6 +1832,8 @@
             history={history}
             waitingForSpace={priceElicitationWaitingForSpace}
             pendingChoice={pendingPriceChoice?.choice}
+            currentX={currentX}
+            decisionEnabled={decisionEnabled}
           />
         );
       }
