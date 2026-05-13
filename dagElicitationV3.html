@@ -295,7 +295,19 @@
 
       const addEdge = (from, to) => {
         if (from === to || hasEdge(from, to)) return;
-        if (to === 'A') {
+        if (isMigraines) {
+          // In migraines, X (craving) is observed BEFORE the drink decision, so X→A is allowed.
+          // The invalid temporal direction is A→X (decision cannot affect what was already shown).
+          // Y is still revealed AFTER the decision, so Y→A remains invalid.
+          if (from === 'A' && to === 'X') {
+            const sourceLabel = xLabel;
+            alertCountRef.current++;
+            alert(`Alert #${alertCountRef.current}: You see ${xLabel} first. Hence, your choice to drink ${playerName0} cannot affect ${sourceLabel} within any given round. You can double-click an arrow to delete it.`);
+          } else if (to === 'A' && from === 'Y') {
+            alertCountRef.current++;
+            alert(`Alert #${alertCountRef.current}: You choose whether to drink ${playerName0} first. Hence, how you feel cannot affect your choice to drink ${playerName0} within any given round. You can double-click an arrow to delete it.`);
+          }
+        } else if (to === 'A') {
           const sourceLabel = from === 'X' ? xLabel : 'how you feel';
           alertCountRef.current++;
           alert(`Alert #${alertCountRef.current}: You choose whether to drink ${playerName0} first. Hence, ${sourceLabel} cannot affect your choice to drink ${playerName0} within any given round. You can double-click an arrow to delete it.`);

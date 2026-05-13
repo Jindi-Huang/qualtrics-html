@@ -56,7 +56,7 @@
             CONFIG.supergame = qConfig.supergame;
             // Wipe fields we'll re-derive from supergame defaults
             if (qConfig.yBonus === undefined) CONFIG.yBonus = null;
-            if (qConfig.totalRounds === undefined) CONFIG.totalRounds = null;
+            if (qConfig.nRounds === undefined) CONFIG.totalRounds = null;
             if (qConfig.playerName0 === undefined) CONFIG.playerName0 = null;
             if (qConfig.playerName1 === undefined) CONFIG.playerName1 = null;
             if (qConfig.order === undefined) CONFIG.order = null;
@@ -70,7 +70,7 @@
           if (qConfig.currentSymbol) CONFIG.currentSymbol = qConfig.currentSymbol;
           if (qConfig.yBonus !== undefined) CONFIG.yBonus = qConfig.yBonus;
           if (qConfig.aCost !== undefined) CONFIG.aCost = qConfig.aCost;
-          if (qConfig.totalRounds !== undefined) CONFIG.totalRounds = qConfig.totalRounds;
+          if (qConfig.nRounds !== undefined) CONFIG.totalRounds = parseInt(qConfig.nRounds) || CONFIG.totalRounds;
           if (qConfig.currency) CONFIG.currency = qConfig.currency;
           if (qConfig.id !== undefined) CONFIG.id = qConfig.id;
           // Dieter DGP params (collider / causal chain)
@@ -725,7 +725,7 @@
                 <div className="text-3xl font-bold text-center text-gray-900">
                   {rateValue === null ? <span className="text-gray-400">—</span> : `${rateValue}%`}
                 </div>
-                <div className="text-xs text-gray-500 text-center">→ {CONFIG.playerName2Pos}</div>
+                <div className="text-xs text-gray-500 text-center">{CONFIG.playerName2Pos}</div>
               </div>
             )}
           </div>
@@ -1217,63 +1217,89 @@
       const [isLoading, setIsLoading] = useState(true);
       const orderedPrices = getOrderedPrices();
       const theme = getThemeClasses();
-      const sortedChoices = orderedPrices.map(p => choices.find(c => c.price === p)).filter(Boolean);
+
+      const sortedChoices = orderedPrices.map(p => choices.find(c => c.price === p)).filter(c => c !== undefined);
       const isInconsistent = hasInconsistentChoices(sortedChoices);
 
       useEffect(() => {
-        const t = setTimeout(() => setIsLoading(false), 1500);
+        setIsLoading(true);
+        const t = setTimeout(() => setIsLoading(false), 1000);
         return () => clearTimeout(t);
-      }, [nextRound]);
+      }, [nextRound, isFinalReview]);
+
+      if (isLoading) {
+        return (
+          <div className="min-h-screen bg-white flex items-start justify-center pt-12">
+            <div className="text-center">
+              <div className="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+              <p className="text-gray-500">Loading...</p>
+            </div>
+          </div>
+        );
+      }
 
       const headline = isMig ? `Drinking ${CONFIG.playerName0} now pays you:` : `The price of ${CONFIG.playerName0} is now:`;
 
       return (
-        <div className="min-h-screen bg-white px-4 pt-12">
-          <div className="max-w-3xl mx-auto text-center">
+        <div className="min-h-screen bg-white px-4 pt-8">
+          <div className="max-w-6xl mx-auto text-center">
             {!isFinalReview && (
-              <>
-                <h2 className="text-xl text-gray-700 mb-2">High-Stakes Choice {nextRound} of {totalRounds}</h2>
-                <div className="mb-6 border-2 border-gray-200 rounded-xl p-6 inline-block">
-                  <p className="text-gray-700 text-lg">{headline}</p>
-                  <div className="text-4xl font-bold text-amber-600 mt-3">
-                    {nextPrice === 0 ? 'Free' : `${CONFIG.currency}${nextPrice.toFixed(2)}`}
-                  </div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-4">Next Choice</h1>
+            )}
+
+            {!isFinalReview && (
+              <div className="mb-6 border-2 border-gray-200 rounded-xl p-6 inline-block">
+                <p className="text-gray-700 text-lg">{headline}</p>
+                <div className="text-4xl font-bold text-amber-600 mt-3">
+                  {nextPrice === 0 ? 'Free' : `${CONFIG.currency}${nextPrice.toFixed(2)}`}
                 </div>
-              </>
+                <p className="text-gray-700 text-lg mt-4">
+                  Bonus for feeling {CONFIG.playerName2Pos}: <span className="text-3xl font-bold text-green-600">{CONFIG.currency}{CONFIG.priceElicitationBonus}</span>
+                </p>
+              </div>
             )}
 
             {isFinalReview && (
-              <h2 className="text-2xl text-gray-700 mb-6">Review Your Choices</h2>
+              <p className="text-gray-700 text-xl mb-6">
+                You have completed all {totalRounds} choices. Please review your choices below and click "Submit" to continue.
+              </p>
             )}
 
-            {/* Choices table */}
-            {sortedChoices.length > 0 && (
-              <div className="mb-6 border border-gray-200 rounded-xl p-4 inline-block min-w-[400px]">
-                <div className="grid grid-cols-3 gap-3 text-sm font-medium text-gray-500 border-b border-gray-200 pb-2 mb-2">
-                  <div className="text-left">Price</div>
-                  <div className="text-center">Your Choice</div>
-                  <div className="text-right">{!isFinalReview ? '' : ''}</div>
-                </div>
-                {sortedChoices.map((c, i) => (
-                  <div key={i} className="grid grid-cols-3 gap-3 items-center text-sm py-2 border-b last:border-b-0 border-gray-100">
-                    <div className="text-left text-gray-900 font-medium">{c.price === 0 ? 'Free' : `${CONFIG.currency}${c.price.toFixed(2)}`}</div>
-                    <div className="text-center">
-                      {c.choice === 1
-                        ? <span className="text-red-600 font-medium">Drink</span>
-                        : <span className="text-green-600 font-medium">Skip</span>}
-                    </div>
-                    <div className="text-right">
-                      {onGoBack && (
-                        <button
-                          onClick={() => onGoBack(orderedPrices.indexOf(c.price) + 1)}
-                          className="text-blue-600 hover:underline text-xs"
-                        >Edit</button>
-                      )}
-                    </div>
-                  </div>
-                ))}
+            {/* Choices so far — chip grid */}
+            <div className="mb-6">
+              <p className="text-gray-500 text-sm mb-2">Your choices:</p>
+              <div className="flex flex-wrap justify-center gap-1.5">
+                {orderedPrices.map((price, idx) => {
+                  const choiceData = choices.find(c => c.price === price);
+                  const isNextChoice = !isFinalReview && idx === nextRound - 1;
+                  const isPastChoice = choiceData !== undefined;
+                  return (
+                    <button
+                      key={price}
+                      onClick={() => isPastChoice && onGoBack && onGoBack(idx + 1)}
+                      disabled={!isPastChoice}
+                      className={`px-2 py-1 rounded text-xs font-medium transition-all ${
+                        isNextChoice
+                          ? 'bg-amber-50 border border-amber-300 text-amber-600'
+                          : choiceData
+                            ? choiceData.choice === 1
+                              ? 'bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-100 cursor-pointer'
+                              : 'bg-gray-100 border border-gray-200 text-gray-500 hover:bg-gray-200 cursor-pointer'
+                            : 'bg-white border border-gray-100 text-gray-300'
+                      }`}
+                    >
+                      <div>{price === 0 ? 'Free' : `${CONFIG.currency}${price}`}</div>
+                      <div className="text-xs">
+                        {choiceData ? (choiceData.choice === 1 ? 'Drink' : 'Skip') : '—'}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
-            )}
+              {choices.length > 0 && (
+                <p className="text-gray-400 text-xs mt-2">Click on any choice to change it</p>
+              )}
+            </div>
 
             {isInconsistent && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-6">
@@ -1291,8 +1317,7 @@
 
             <button
               onClick={onContinue}
-              disabled={isLoading}
-              className={`px-8 py-4 ${theme.buttonBg} ${theme.buttonHover} text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`px-8 py-4 ${theme.buttonBg} ${theme.buttonHover} text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all`}
             >
               {isFinalReview ? 'Submit' : 'Continue'}
             </button>
