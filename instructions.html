@@ -557,8 +557,8 @@
           <div className="bg-gray-50 rounded-xl p-4 space-y-4">
             <p className="text-gray-700">In this survey, imagine the following:</p>
             {isMig ? (
-              <p className="text-gray-700 font-bold text-gray-900">
-                There are new drinks that may or may not have a negative effect on you.
+              <p className="text-gray-700">
+                <strong className="text-gray-900">There are new drinks that may or may not have a negative effect on you.</strong> For instance:
               </p>
             ) : (
               <>
@@ -735,7 +735,7 @@
                   {isMig ? (
                     <>
                       <h3 className="text-blue-600 font-bold mb-2">Possibility {idx + 1}: The drink <span className="underline">affects</span> how you will feel later that day.</h3>
-                      <p className="text-gray-600">Hence, consuming the drink <strong className="text-gray-900">raises the chance that you will feel good</strong> later that day.</p>
+                      <p className="text-gray-600">Hence, consuming the drink <strong className="text-gray-900">decreases the chance that you will feel good</strong> later that day.</p>
                     </>
                   ) : (
                     <>
