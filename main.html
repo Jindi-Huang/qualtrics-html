@@ -366,7 +366,7 @@
 
     // MorningIcon — speech bubble with craving glyph (migraines only)
     function MorningIcon({ className, drinkName, X }) {
-      const theme = getThemeClasses();
+      const theme = getThemeClasses(CONFIG.themeColor);
       const n = (drinkName || '').toLowerCase();
       const isDriftwell = n.includes('driftwell') || n.includes('zerqalase');
       const isMelloway = n.includes('melloway') || n.includes('melythor');
@@ -453,11 +453,13 @@
     // =============== NEW-DAY OVERLAY ===============
     function NewDayOverlay({ show, dayNumber }) {
       if (!show) return null;
+      const theme = getThemeClasses(CONFIG.themeColor);
       return (
-        <div className="absolute inset-0 bg-white bg-opacity-95 flex items-center justify-center z-50 rounded-2xl">
+        <div className={`absolute inset-0 ${theme.panelBg} flex items-center justify-center z-20 rounded-2xl`}>
           <div className="text-center">
-            <CalendarIcon className="w-20 h-20 mx-auto mb-3 text-gray-600" />
-            <div className="text-2xl font-bold text-gray-800">Week {dayNumber}</div>
+            <CalendarIcon className={`w-16 h-16 mx-auto mb-4 ${theme.iconColor}`} />
+            <div className="text-3xl font-bold text-gray-900">New Monday</div>
+            <div className="text-xl text-gray-600 mt-2">Week {dayNumber}</div>
           </div>
         </div>
       );
@@ -525,7 +527,7 @@
 
     // =============== INLINE DRINK/SKIP BUTTONS (migraines: shown inside XYConnection) ===============
     function InlineDrinkSkipButtons({ onChoice, disabled, isFirstRound, selectedChoice, X }) {
-      const theme = getThemeClasses();
+      const theme = getThemeClasses(CONFIG.themeColor);
       const drinkPayoffText =
         X === 1 ? `+${CONFIG.currency}${CONFIG.aCost}` :
         X === 0 ? `-${CONFIG.currency}${CONFIG.aCost}` :
@@ -576,7 +578,7 @@
 
     function InlinePriceElicitationButtons({ price, onChoice, isFirstRound, selectedChoice, disabled }) {
       const isMig = CONFIG.supergame === 'migraines';
-      const theme = getThemeClasses();
+      const theme = getThemeClasses(CONFIG.themeColor);
       const drinkInactive = disabled && selectedChoice !== 1;
       const skipInactive = disabled && selectedChoice !== 0;
       // Migraines: drink PAYS the displayed price (+) ; Dieter: drink COSTS the price (-)
@@ -738,7 +740,7 @@
     // =============== X-STATS PANEL ===============
     function XStatsPanel({ stats, currentX, currentA }) {
       const isMig = CONFIG.supergame === 'migraines';
-      const theme = getThemeClasses();
+      const theme = getThemeClasses(CONFIG.themeColor);
       const isAYOrder = CONFIG.order === 'AY';
 
       if (isMig) {
@@ -815,7 +817,7 @@
     // Migraines: Morning craving icon + label (buttons live inside XYConnection)
     function DrinkDecisionPanel({ onChoice, disabled, stats, isFirstRound, selectedChoice, X }) {
       const isMig = CONFIG.supergame === 'migraines';
-      const theme = getThemeClasses();
+      const theme = getThemeClasses(CONFIG.themeColor);
 
       if (isMig) {
         return (
@@ -895,7 +897,7 @@
     // Migraines: Morning craving icon + label
     function PriceElicitationDecisionPanel({ price, onChoice, stats, isFirstRound, selectedChoice, X }) {
       const isMig = CONFIG.supergame === 'migraines';
-      const theme = getThemeClasses();
+      const theme = getThemeClasses(CONFIG.themeColor);
 
       if (isMig) {
         return (
@@ -1103,7 +1105,7 @@
     // =============== COMPACT HISTORY ===============
     function CompactHistory({ history }) {
       const isMig = CONFIG.supergame === 'migraines';
-      const theme = getThemeClasses();
+      const theme = getThemeClasses(CONFIG.themeColor);
       const isAYOrder = CONFIG.order === 'AY';
       const allRounds = history.slice().reverse();
 
@@ -1151,7 +1153,7 @@
     // =============== PRICE ELICITATION INTRO ===============
     function PriceElicitationIntro({ onContinue }) {
       const isMig = CONFIG.supergame === 'migraines';
-      const theme = getThemeClasses();
+      const theme = getThemeClasses(CONFIG.themeColor);
       const [showButton, setShowButton] = useState(false);
 
       useEffect(() => {
@@ -1216,7 +1218,7 @@
       const isMig = CONFIG.supergame === 'migraines';
       const [isLoading, setIsLoading] = useState(true);
       const orderedPrices = getOrderedPrices();
-      const theme = getThemeClasses();
+      const theme = getThemeClasses(CONFIG.themeColor);
 
       const sortedChoices = orderedPrices.map(p => choices.find(c => c.price === p)).filter(c => c !== undefined);
       const isInconsistent = hasInconsistentChoices(sortedChoices);
@@ -1329,7 +1331,7 @@
     // =============== PRICE ELICITATION PANEL (per-choice page) ===============
     function PriceElicitationPanel({ price, roundNumber, totalRounds, onChoice, stats, history, waitingForSpace, pendingChoice, currentX, decisionEnabled }) {
       const isMig = CONFIG.supergame === 'migraines';
-      const theme = getThemeClasses();
+      const theme = getThemeClasses(CONFIG.themeColor);
 
       // Pill text
       let pillText;
@@ -1881,7 +1883,7 @@
       }
 
       // ---- Main game render ----
-      const theme = getThemeClasses();
+      const theme = getThemeClasses(CONFIG.themeColor);
 
       // Pill text varies by supergame and phase
       const renderPillText = () => {
