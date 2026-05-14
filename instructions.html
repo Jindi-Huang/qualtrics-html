@@ -53,6 +53,9 @@
           if (qConfig.playerName0_3) CONFIG.playerName0_3 = qConfig.playerName0_3;
           if (qConfig.playerName1_3) CONFIG.playerName1_3 = qConfig.playerName1_3;
           if (qConfig.color_3) CONFIG.color_3 = qConfig.color_3;
+          // Migraines example labels — "might make you more {playerName2Neg_n}"
+          if (qConfig.playerName2Neg_1) CONFIG.playerName2Neg_1 = qConfig.playerName2Neg_1;
+          if (qConfig.playerName2Neg_2) CONFIG.playerName2Neg_2 = qConfig.playerName2Neg_2;
           console.log('Applied config:', CONFIG);
         }
 
@@ -117,7 +120,10 @@
       color_2: 'blue',
       playerName0_3: 'Melythor-norm',
       playerName1_3: 'Melythor',
-      color_3: 'teal'
+      color_3: 'teal',
+      // Migraines per-drink "negative effect" labels (rendered as "might make you more X")
+      playerName2Neg_1: 'tired',
+      playerName2Neg_2: 'foggy'
     };
 
     // Allow URL override for standalone testing: ?supergame=migraines or ?supergame=dieter
@@ -132,8 +138,8 @@
     function getExamples() {
       if (CONFIG.supergame === 'migraines') {
         return [
-          { drink: CONFIG.playerName0_1, chemical: CONFIG.playerName1_1, color: CONFIG.color_1, effect: 'might make you more tired' },
-          { drink: CONFIG.playerName0_2, chemical: CONFIG.playerName1_2, color: CONFIG.color_2, effect: 'might make you more foggy' }
+          { drink: CONFIG.playerName0_1, chemical: CONFIG.playerName1_1, color: CONFIG.color_1, effect: `might make you more ${CONFIG.playerName2Neg_1}` },
+          { drink: CONFIG.playerName0_2, chemical: CONFIG.playerName1_2, color: CONFIG.color_2, effect: `might make you more ${CONFIG.playerName2Neg_2}` }
         ];
       }
       return [
@@ -504,14 +510,20 @@
             completed: true,
             attentionCheck,
             comprehension,
-            wrongCountDieterQ1: newWrongQ1,
-            wrongCountDieterQ2: newWrongQ2,
-            allAnswersDieterQ1: newAllQ1,
-            allAnswersDieterQ2: newAllQ2,
+            wrongCountDieterQ1:    isMig ? null : newWrongQ1,
+            wrongCountDieterQ2:    isMig ? null : newWrongQ2,
+            wrongCountMigrainesQ1: isMig ? newWrongQ1 : null,
+            wrongCountMigrainesQ2: isMig ? newWrongQ2 : null,
+            allAnswersDieterQ1:    isMig ? null : newAllQ1,
+            allAnswersDieterQ2:    isMig ? null : newAllQ2,
+            allAnswersMigrainesQ1: isMig ? newAllQ1 : null,
+            allAnswersMigrainesQ2: isMig ? newAllQ2 : null,
             pageTimes: pageTimesRef.current,
             comprehTimes: comprehTimesRef.current,
-            gameVersionsDescriptionOrderDieter1,
-            gameVersionsDescriptionOrderDieter2
+            gameVersionsDescriptionOrderDieter1:    isMig ? null : gameVersionsDescriptionOrderDieter1,
+            gameVersionsDescriptionOrderDieter2:    isMig ? null : gameVersionsDescriptionOrderDieter2,
+            gameVersionsDescriptionOrderMigraines1: isMig ? gameVersionsDescriptionOrderDieter1 : null,
+            gameVersionsDescriptionOrderMigraines2: isMig ? gameVersionsDescriptionOrderDieter2 : null
           });
         }
       };
@@ -585,7 +597,7 @@
           <div className="bg-gray-50 rounded-xl p-4">
             <p className="text-gray-700 mb-4">
               {isMig ? (
-                <>Each <span onClick={() => setAttentionCheck(1)} className={`cursor-pointer ${attentionCheck === 1 ? 'text-green-600' : ''}`}>Monday</span> morning, you may feel a craving for the new drink or not. You then decide whether or not to drink it. What you care about is whether you will feel good or bad later in the day.</>
+                <>Each <span onClick={() => setAttentionCheck(1)} className={`cursor-pointer ${attentionCheck === 1 ? 'text-green-600' : ''}`}>Monday</span> morning, you may or may not feel a craving for the new drink. Whether you feel a craving determines the cost or payment associated with consuming the drink. You then decide whether or not to drink it. What you care about is whether you will feel good or bad later in the day.</>
               ) : (
                 <>Each <span onClick={() => setAttentionCheck(1)} className={`cursor-pointer ${attentionCheck === 1 ? 'text-green-600' : ''}`}>Monday</span> morning, when you get up, you decide whether to consume the drink. Shortly after, your BioClip tells you whether the blood chemical it targets is at a normal level. What you care about is whether you will feel good or bad later in the day.</>
               )}
@@ -965,7 +977,10 @@
                         sendDataToQualtrics('INSTRUCTIONS_COMPLETE', {
                           completed: true, attentionCheck: 0, comprehension: {},
                           pageTimes: pageTimesRef.current, comprehTimes: comprehTimesRef.current,
-                          gameVersionsDescriptionOrderDieter1, gameVersionsDescriptionOrderDieter2
+                          gameVersionsDescriptionOrderDieter1:    isMig ? null : gameVersionsDescriptionOrderDieter1,
+                          gameVersionsDescriptionOrderDieter2:    isMig ? null : gameVersionsDescriptionOrderDieter2,
+                          gameVersionsDescriptionOrderMigraines1: isMig ? gameVersionsDescriptionOrderDieter1 : null,
+                          gameVersionsDescriptionOrderMigraines2: isMig ? gameVersionsDescriptionOrderDieter2 : null
                         });
                         return;
                       }
