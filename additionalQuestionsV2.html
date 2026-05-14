@@ -465,18 +465,21 @@
             ${secondBox}
           </div>`,
         text: `Which one is the case for your <strong>${CONFIG.playerName1} level</strong> and <strong>how you feel</strong> in this study?`,
-        options: [
-          { value: 'cause_90_100', label: `My ${CONFIG.playerName1} level could almost certainly cause me feeling ${CONFIG.playerName2Pos} (90-100% chance of possibility ${causeLabel})` },
-          { value: 'cause_80_90', label: `My ${CONFIG.playerName1} level could very likely cause me feeling ${CONFIG.playerName2Pos} (80-90% chance of possibility ${causeLabel})` },
-          { value: 'cause_70_80', label: `My ${CONFIG.playerName1} level could likely cause me feeling ${CONFIG.playerName2Pos} (70-80% chance of possibility ${causeLabel})` },
-          { value: 'cause_60_70', label: `My ${CONFIG.playerName1} level could somewhat likely cause me feeling ${CONFIG.playerName2Pos} (60-70% chance of possibility ${causeLabel})` },
-          { value: 'cause_50_60', label: `Unsure. Slightly more likely that my ${CONFIG.playerName1} level could cause me feeling ${CONFIG.playerName2Pos} than <u>not</u> (50-60% chance of possibility ${causeLabel})` },
-          { value: 'notcause_50_60', label: `Unsure. Slightly more likely that my ${CONFIG.playerName1} level could <u>not</u> cause me feeling ${CONFIG.playerName2Pos} than it could (50-60% chance of possibility ${responseLabel})` },
-          { value: 'notcause_60_70', label: `My ${CONFIG.playerName1} level somewhat likely could <u>not</u> cause me feeling ${CONFIG.playerName2Pos} (60-70% chance of possibility ${responseLabel})` },
-          { value: 'notcause_70_80', label: `My ${CONFIG.playerName1} level likely could <u>not</u> cause me feeling ${CONFIG.playerName2Pos} (70-80% chance of possibility ${responseLabel})` },
-          { value: 'notcause_80_90', label: `My ${CONFIG.playerName1} level very likely could <u>not</u> cause me feeling ${CONFIG.playerName2Pos} (80-90% chance of possibility ${responseLabel})` },
-          { value: 'notcause_90_100', label: `My ${CONFIG.playerName1} level almost certainly could <u>not</u> cause me feeling ${CONFIG.playerName2Pos} (90-100% chance of possibility ${responseLabel})` }
-        ]
+        options: (() => {
+          const subject = isMig ? 'Consuming the drink' : `My ${CONFIG.playerName1} level`;
+          return [
+            { value: 'cause_90_100',   label: `${subject} could almost certainly cause me feeling ${CONFIG.playerName2Pos} (90-100% chance of possibility ${causeLabel})` },
+            { value: 'cause_80_90',    label: `${subject} could very likely cause me feeling ${CONFIG.playerName2Pos} (80-90% chance of possibility ${causeLabel})` },
+            { value: 'cause_70_80',    label: `${subject} could likely cause me feeling ${CONFIG.playerName2Pos} (70-80% chance of possibility ${causeLabel})` },
+            { value: 'cause_60_70',    label: `${subject} could somewhat likely cause me feeling ${CONFIG.playerName2Pos} (60-70% chance of possibility ${causeLabel})` },
+            { value: 'cause_50_60',    label: `Unsure. Slightly more likely that ${isMig ? 'consuming the drink' : `my ${CONFIG.playerName1} level`} could cause me feeling ${CONFIG.playerName2Pos} than <u>not</u> (50-60% chance of possibility ${causeLabel})` },
+            { value: 'notcause_50_60', label: `Unsure. Slightly more likely that ${isMig ? 'consuming the drink' : `my ${CONFIG.playerName1} level`} could <u>not</u> cause me feeling ${CONFIG.playerName2Pos} than it could (50-60% chance of possibility ${responseLabel})` },
+            { value: 'notcause_60_70', label: `${subject} somewhat likely could <u>not</u> cause me feeling ${CONFIG.playerName2Pos} (60-70% chance of possibility ${responseLabel})` },
+            { value: 'notcause_70_80', label: `${subject} likely could <u>not</u> cause me feeling ${CONFIG.playerName2Pos} (70-80% chance of possibility ${responseLabel})` },
+            { value: 'notcause_80_90', label: `${subject} very likely could <u>not</u> cause me feeling ${CONFIG.playerName2Pos} (80-90% chance of possibility ${responseLabel})` },
+            { value: 'notcause_90_100',label: `${subject} almost certainly could <u>not</u> cause me feeling ${CONFIG.playerName2Pos} (90-100% chance of possibility ${responseLabel})` }
+          ];
+        })()
       };
 
       return (
@@ -553,7 +556,7 @@
                 )}
 
                 <button
-                  onClick={() => handleNextPage(isMig ? ['q4'] : ['q4', 'q5'], isAYOrder ? 4 : 3)}
+                  onClick={() => handleNextPage(isMig ? ['q4'] : ['q4', 'q5'], 4)}
                   className={`w-full py-3 px-6 ${getThemeClassesLocal().buttonBg} ${getThemeClassesLocal().buttonHover} text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg`}
                 >
                   Next

@@ -47,12 +47,15 @@
           if (qConfig.playerName0_1) CONFIG.playerName0_1 = qConfig.playerName0_1;
           if (qConfig.playerName1_1) CONFIG.playerName1_1 = qConfig.playerName1_1;
           if (qConfig.color_1) CONFIG.color_1 = qConfig.color_1;
+          if (qConfig.playerIcon0_1) CONFIG.playerIcon0_1 = qConfig.playerIcon0_1;
           if (qConfig.playerName0_2) CONFIG.playerName0_2 = qConfig.playerName0_2;
           if (qConfig.playerName1_2) CONFIG.playerName1_2 = qConfig.playerName1_2;
           if (qConfig.color_2) CONFIG.color_2 = qConfig.color_2;
+          if (qConfig.playerIcon0_2) CONFIG.playerIcon0_2 = qConfig.playerIcon0_2;
           if (qConfig.playerName0_3) CONFIG.playerName0_3 = qConfig.playerName0_3;
           if (qConfig.playerName1_3) CONFIG.playerName1_3 = qConfig.playerName1_3;
           if (qConfig.color_3) CONFIG.color_3 = qConfig.color_3;
+          if (qConfig.playerIcon0_3) CONFIG.playerIcon0_3 = qConfig.playerIcon0_3;
           // Migraines example labels — "might make you more {playerName2Neg_n}"
           if (qConfig.playerName2Neg_1) CONFIG.playerName2Neg_1 = qConfig.playerName2Neg_1;
           if (qConfig.playerName2Neg_2) CONFIG.playerName2Neg_2 = qConfig.playerName2Neg_2;
@@ -115,12 +118,15 @@
       playerName0_1: 'Qivex-norm',
       playerName1_1: 'Qivex',
       color_1: 'purple',
+      playerIcon0_1: '🥤',
       playerName0_2: 'Zerqalase-norm',
       playerName1_2: 'Zerqalase',
       color_2: 'blue',
+      playerIcon0_2: '🍵',
       playerName0_3: 'Melythor-norm',
       playerName1_3: 'Melythor',
       color_3: 'teal',
+      playerIcon0_3: '🍶',
       // Migraines per-drink "negative effect" labels (rendered as "might make you more X")
       playerName2Neg_1: 'tired',
       playerName2Neg_2: 'foggy'
@@ -138,14 +144,14 @@
     function getExamples() {
       if (CONFIG.supergame === 'migraines') {
         return [
-          { drink: CONFIG.playerName0_1, chemical: CONFIG.playerName1_1, color: CONFIG.color_1, effect: `might make you more ${CONFIG.playerName2Neg_1}` },
-          { drink: CONFIG.playerName0_2, chemical: CONFIG.playerName1_2, color: CONFIG.color_2, effect: `might make you more ${CONFIG.playerName2Neg_2}` }
+          { drink: CONFIG.playerName0_1, chemical: CONFIG.playerName1_1, color: CONFIG.color_1, icon: CONFIG.playerIcon0_1, effect: `might make you more ${CONFIG.playerName2Neg_1}` },
+          { drink: CONFIG.playerName0_2, chemical: CONFIG.playerName1_2, color: CONFIG.color_2, icon: CONFIG.playerIcon0_2, effect: `might make you more ${CONFIG.playerName2Neg_2}` }
         ];
       }
       return [
-        { drink: CONFIG.playerName0_1, chemical: CONFIG.playerName1_1, color: CONFIG.color_1 },
-        { drink: CONFIG.playerName0_2, chemical: CONFIG.playerName1_2, color: CONFIG.color_2 },
-        { drink: CONFIG.playerName0_3, chemical: CONFIG.playerName1_3, color: CONFIG.color_3 }
+        { drink: CONFIG.playerName0_1, chemical: CONFIG.playerName1_1, color: CONFIG.color_1, icon: CONFIG.playerIcon0_1 },
+        { drink: CONFIG.playerName0_2, chemical: CONFIG.playerName1_2, color: CONFIG.color_2, icon: CONFIG.playerIcon0_2 },
+        { drink: CONFIG.playerName0_3, chemical: CONFIG.playerName1_3, color: CONFIG.color_3, icon: CONFIG.playerIcon0_3 }
       ];
     }
   </script>
@@ -154,8 +160,8 @@
     const { useState, useEffect, useMemo } = React;
 
     // =============== ICONS ===============
-    function DrinkIcon({ className, drinkName, style }) {
-      const icon = CONFIG.playerIcon0;
+    function DrinkIcon({ className, drinkName, style, icon }) {
+      icon = icon || CONFIG.playerIcon0;
       if (icon === '🍵') {
         return (
           <svg className={className} style={style} viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
@@ -551,8 +557,8 @@
           <div className="bg-gray-50 rounded-xl p-4 space-y-4">
             <p className="text-gray-700">In this survey, imagine the following:</p>
             {isMig ? (
-              <p className="text-gray-700">
-                There are <strong className="text-gray-900">new drinks</strong> that may or may not have a negative effect on you.
+              <p className="text-gray-700 font-bold text-gray-900">
+                There are new drinks that may or may not have a negative effect on you.
               </p>
             ) : (
               <>
@@ -568,7 +574,7 @@
             <div className={`grid grid-cols-1 ${isMig ? 'md:grid-cols-2' : 'md:grid-cols-3'} gap-3 mt-4`}>
               {getExamples().map((ex, i) => (
                 <div key={i} className="bg-white rounded-lg p-4 flex items-center gap-3 border border-gray-200 shadow-sm">
-                  <DrinkIcon className="w-6 h-6 flex-shrink-0" drinkName={ex.drink} style={{ color: getThemeIconColor(ex.color) }} />
+                  <DrinkIcon className="w-6 h-6 flex-shrink-0" drinkName={ex.drink} icon={ex.icon} style={{ color: getThemeIconColor(ex.color) }} />
                   <div>
                     <div className="text-gray-900 font-medium">{ex.drink}</div>
                     <div className="text-gray-500 text-sm">{isMig ? ex.effect : `affects ${ex.chemical}`}</div>
@@ -597,7 +603,7 @@
           <div className="bg-gray-50 rounded-xl p-4">
             <p className="text-gray-700 mb-4">
               {isMig ? (
-                <>Each <span onClick={() => setAttentionCheck(1)} className={`cursor-pointer ${attentionCheck === 1 ? 'text-green-600' : ''}`}>Monday</span> morning, you may or may not feel a craving for the new drink. Whether you feel a craving determines the cost or payment associated with consuming the drink. You then decide whether or not to drink it. What you care about is whether you will feel good or bad later in the day.</>
+                <>Each <span onClick={() => setAttentionCheck(1)} className={`cursor-pointer ${attentionCheck === 1 ? 'text-green-600' : ''}`}>Monday</span> morning, <strong>you may or may not feel a craving for the new drink</strong>. Whether you feel a craving determines the cost or payment associated with consuming the drink. You then decide whether or not to drink it. What you care about is whether you will feel good or bad later in the day.</>
               ) : (
                 <>Each <span onClick={() => setAttentionCheck(1)} className={`cursor-pointer ${attentionCheck === 1 ? 'text-green-600' : ''}`}>Monday</span> morning, when you get up, you decide whether to consume the drink. Shortly after, your BioClip tells you whether the blood chemical it targets is at a normal level. What you care about is whether you will feel good or bad later in the day.</>
               )}
