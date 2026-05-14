@@ -140,7 +140,7 @@
     // supergame: 'dieter' replicates dietersDilemmaBeliefV2.html behavior
     //            'migraines' replicates confoundedChoiceBeliefV2.html behavior
     const CONFIG = {
-      supergame: 'dieter',         // 'dieter' or 'migraines'
+      supergame: 'migraines',      // 'dieter' or 'migraines'
       playerName0: 'Zerqalase-norm',
       playerName1: 'Zerqalase',
       playerName2Pos: 'energetic',
@@ -582,6 +582,10 @@
             yState = 'cause'; xState = 'question';
             if (exoButton === 0) aState = 'fixed-off';
             else if (exoButton === 1) aState = 'fixed-on';
+          } else if (causalElicit === 'XA') {
+            xState = 'cause'; aState = 'question';
+            if (exoButton === 0) yState = 'fixed-off';
+            else if (exoButton === 1) yState = 'fixed-on';
           }
           return { aState, xState, yState };
         }
@@ -614,6 +618,13 @@
           xState = 'question';
           if (exoButton === 0) aState = 'fixed-off';
           else if (exoButton === 1) aState = 'fixed-on';
+        } else if (causalElicit === 'XA') {
+          if (stage === 1) xState = 'off';
+          else if (stage === 2) xState = 'on';
+          else xState = 'cause';
+          aState = 'question';
+          if (exoButton === 0) yState = 'fixed-off';
+          else if (exoButton === 1) yState = 'fixed-on';
         }
         return { aState, xState, yState };
       };
@@ -636,8 +647,8 @@
 
         const drinkSelected = isOn;
         const skipSelected = isOff;
-        const drinkActive = isOn || isCause || isNeutral;
-        const skipActive = isOff || isCause || isNeutral;
+        const drinkActive = isOn || isCause || isNeutral || isQuestion;
+        const skipActive = isOff || isCause || isNeutral || isQuestion;
 
         const drinkHighlight = (highlightButton === 'drink' || highlightButton === 'both') ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-white' : '';
         const skipHighlight = (highlightButton === 'skip' || highlightButton === 'both') ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-white' : '';
@@ -999,6 +1010,25 @@
             pie2Question: `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}. Immediately after, you are required to take ${playerName2PosExo} which makes you feel <strong>${playerName2Pos}</strong>.<br>What is the chance that your <strong>${playerName1} level is normal</strong>?`,
             verbalQuestion: `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}.<br>How does feeling <strong>${playerName2Pos}</strong> (rather than being ${playerName2Neg}) change the chance that you are <strong>craving</strong>?`,
             pie1Color: themeHex, pie2Color: themeHex
+          },
+          XA: {
+            walkthroughStep0: exoButton === null
+              ? null
+              : `In this scenario, you are required to take ${exoButton === 1 ? playerName2PosExo : playerName2NegExo} which makes you feel <strong>${exoButton === 1 ? playerName2Pos : playerName2Neg}</strong>...`,
+            walkthroughStep1: `Report how <strong>craving</strong>...`,
+            walkthroughStep2: `...affects <strong>your choice to drink ${playerName0}</strong>.`,
+            walkthroughHighlight: { step0: 'Y', step1: 'X', step2: ['X', 'A'] },
+            causePanel: 'X', outcomePanel: 'A',
+            pie1Question: exoButton === null
+              ? `What is the chance that you <strong>drink ${playerName0}</strong> if you are <strong>not craving</strong>?`
+              : `Suppose you are required to take ${exoButton === 1 ? playerName2PosExo : playerName2NegExo} which makes you feel <strong>${exoButton === 1 ? playerName2Pos : playerName2Neg}</strong>.<br>What is the chance that you <strong>drink ${playerName0}</strong> if you are <strong>not craving</strong>?`,
+            pie2Question: exoButton === null
+              ? `What is the chance that you <strong>drink ${playerName0}</strong> if you are <strong>craving</strong>?`
+              : `Suppose you are required to take ${exoButton === 1 ? playerName2PosExo : playerName2NegExo} which makes you feel <strong>${exoButton === 1 ? playerName2Pos : playerName2Neg}</strong>.<br>What is the chance that you <strong>drink ${playerName0}</strong> if you are <strong>craving</strong>?`,
+            verbalQuestion: exoButton === null
+              ? `How does <strong>craving</strong> (rather than not craving) change the chance that you <strong>drink ${playerName0}</strong>?`
+              : `Suppose you are required to take ${exoButton === 1 ? playerName2PosExo : playerName2NegExo} which makes you feel <strong>${exoButton === 1 ? playerName2Pos : playerName2Neg}</strong>.<br>How does <strong>craving</strong> (rather than not craving) change the chance that you <strong>drink ${playerName0}</strong>?`,
+            pie1Color: themeHex, pie2Color: themeHex
           }
         };
       }
@@ -1114,7 +1144,7 @@
 
       useEffect(() => {
         if (stage === 0 && walkthroughStep === 0) {
-          if ((causalElicit === 'AX' || causalElicit === 'AY') && exoButton === null) {
+          if ((causalElicit === 'AX' || causalElicit === 'AY' || causalElicit === 'XA') && exoButton === null) {
             setWalkthroughStep(1);
           }
         }
