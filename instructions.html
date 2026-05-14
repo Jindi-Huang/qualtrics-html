@@ -394,9 +394,9 @@
 
       // Item maps + correctness sets
       const q1ItemsMap = isMig ? {
-        noCravingCost:  { id: 'noCravingCost',  text: `If I don't have a craving, drinking the beverage will cost ${CONFIG.currency}${CONFIG.aCostMigraines0.toFixed(2)}.` },
+        noCravingCost:  { id: 'noCravingCost',  text: `If I don't have a craving, consuming the drink will cost ${CONFIG.currency}${CONFIG.aCostMigraines0.toFixed(2)}.` },
         sumAll:         { id: 'sumAll',         text: `My overall payment will be the sum of all the payments I collect over all rounds I play.` },
-        feelGoodBonus:  { id: 'feelGoodBonus',  text: `If I feel good at the end of the day, I'll receive an additional ${CONFIG.currency}${CONFIG.yBonus.toFixed(2)} bonus.` },
+        feelGoodBonus:  { id: 'feelGoodBonus',  text: `If I feel good at the end of the day, and my decision for that day is selected to determine my bonus payment, I'll receive an additional ${CONFIG.currency}${CONFIG.yBonus.toFixed(2)} bonus.` },
         cravingReceive: { id: 'cravingReceive', text: `If I have a craving, I'll receive ${CONFIG.currency}${Math.abs(CONFIG.aCostMigraines1).toFixed(2)} for consuming the drink.` },
         oneRound:       { id: 'oneRound',       text: `My overall payment will be determined by one round randomly selected from throughout the study.` }
       } : {
@@ -410,9 +410,9 @@
       const q1Items = q1Order.map(id => q1ItemsMap[id]);
 
       const q2ItemsMap = isMig ? {
-        twoVersions:         { id: 'twoVersions',         text: `There are two possibilities: either the drink affects how I feel, or it doesn't but something else affects both my craving and how I feel.` },
-        drinkNotNecessarily: { id: 'drinkNotNecessarily', text: `If I drink the beverage and later feel good, this does `, underline: 'not necessarily', after: ` mean that the drink caused me to feel good.` },
-        drinkNecessarily:    { id: 'drinkNecessarily',    text: `If I drink the beverage and later feel good, this necessarily means that the drink caused me to feel good.` }
+        twoVersions:         { id: 'twoVersions',         text: `There are two possibilities: either the drink affects how I feel, or it doesn't but something else affects both my craving and how I feel. Different drinks may work in different ways.` },
+        drinkNotNecessarily: { id: 'drinkNotNecessarily', text: `If I consume the drink and later feel good, this does `, underline: 'not necessarily', after: ` mean that the drink caused me to feel good.` },
+        drinkNecessarily:    { id: 'drinkNecessarily',    text: `If I consume the drink and later feel good, this necessarily means that the drink caused me to feel good.` }
       } : {
         normalCausesGood:    { id: 'normalCausesGood',    text: `If my BioClip shows a normal chemical level and I later feel good, this necessarily means that the normal chemical level caused me to feel good.` },
         normalNotCausesGood: { id: 'normalNotCausesGood', text: `If my BioClip shows a normal chemical level and I later feel good, this does `, underline: 'not necessarily', after: ` mean that the normal chemical level caused me to feel good; the chemical level might have been a response to my feeling good.` },
