@@ -866,17 +866,15 @@
 
       // Comprehension page (no page badge)
       const renderItem = (item, qNum) => (
-        <label key={item.id} className="flex items-start gap-3 cursor-pointer py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors">
+        <label key={item.id} className="flex items-start gap-3 cursor-pointer group">
           <input
             type="checkbox"
             checked={!!comprehension[item.id]}
-            onChange={(e) => setComprehension({ ...comprehension, [item.id]: e.target.checked })}
-            className="w-4 h-4 mt-0.5 flex-shrink-0 cursor-pointer"
+            onChange={() => setComprehension(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+            className="mt-1 w-5 h-5 rounded border-gray-300 bg-white text-blue-600 cursor-pointer flex-shrink-0"
           />
-          <span className="text-gray-700">
-            {item.text}
-            {item.underline && <span className="underline">{item.underline}</span>}
-            {item.after}
+          <span className="text-gray-600 group-hover:text-gray-900 transition-colors">
+            {item.underline ? (<>{item.text}<span className="underline">{item.underline}</span>{item.after}</>) : item.text}
           </span>
         </label>
       );
@@ -889,8 +887,8 @@
             </p>
             <div className="space-y-3">
               {q1Items.map(item => renderItem(item, 1))}
-              {q1Error && <p className="text-red-600 text-sm">{q1Error}</p>}
             </div>
+            {q1Error && <p className="text-red-600 mt-3 font-medium">{q1Error}</p>}
           </div>
 
           <div className="bg-gray-50 rounded-xl p-4 mt-6">
@@ -899,8 +897,8 @@
             </p>
             <div className="space-y-3">
               {q2Items.map(item => renderItem(item, 2))}
-              {q2Error && <p className="text-red-600 text-sm">{q2Error}</p>}
             </div>
+            {q2Error && <p className="text-red-600 mt-3 font-medium">{q2Error}</p>}
           </div>
         </section>
       );
