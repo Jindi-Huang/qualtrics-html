@@ -58,6 +58,8 @@
           if (qConfig.gameCounter !== undefined) CONFIG.gameCounter = qConfig.gameCounter;
           if (qConfig.gameVersionsDescriptionOrderDieter1) CONFIG.gameVersionsDescriptionOrderDieter1 = qConfig.gameVersionsDescriptionOrderDieter1;
           if (qConfig.gameVersionsDescriptionOrderDieter2) CONFIG.gameVersionsDescriptionOrderDieter2 = qConfig.gameVersionsDescriptionOrderDieter2;
+          if (qConfig.gameVersionsDescriptionOrderMigraines1) CONFIG.gameVersionsDescriptionOrderMigraines1 = qConfig.gameVersionsDescriptionOrderMigraines1;
+          if (qConfig.gameVersionsDescriptionOrderMigraines2) CONFIG.gameVersionsDescriptionOrderMigraines2 = qConfig.gameVersionsDescriptionOrderMigraines2;
           if (qConfig.order) CONFIG.order = qConfig.order;
           if (qConfig.themeColor) CONFIG.themeColor = qConfig.themeColor;
           if (qConfig.supergame) CONFIG.supergame = qConfig.supergame;
@@ -120,9 +122,11 @@
       gameCounter: 1,
       gameVersionsDescriptionOrderDieter1: 'A',
       gameVersionsDescriptionOrderDieter2: 'B',
+      gameVersionsDescriptionOrderMigraines1: 'A',
+      gameVersionsDescriptionOrderMigraines2: 'B',
       order: 'AXY',  // 'AXY' shows all questions, 'AY' hides X-related questions
       themeColor: 'purple',  // Theme color: 'blue', 'purple', 'teal', 'yellow'
-      supergame: 'migraines', // 'dieter' (current behavior) or 'migraines'
+      supergame: 'dieter', // 'dieter' (current behavior) or 'migraines'
       aCost: 0.05,           // Per-round drinking cost (used in migraines Q1 framing)
       currency: '$'          // Currency symbol
     };
@@ -430,10 +434,13 @@
       };
 
       // Q6 (AXY only): cause-vs-response judgment about X → Y
-      // Determine possibility labels based on gameVersionsDescriptionOrderDieter1
+      // Determine possibility labels based on game-version order
       // If 1: cause = "Possibility 1", response = "Possibility 2"
       // If 2: cause = "Possibility 2", response = "Possibility 1"
-      const causeLabel = CONFIG.gameVersionsDescriptionOrderDieter1 == 2 ? 2 : 1;
+      const orderFirst = isMig
+        ? CONFIG.gameVersionsDescriptionOrderMigraines1
+        : CONFIG.gameVersionsDescriptionOrderDieter1;
+      const causeLabel = orderFirst == 2 ? 2 : 1;
       const responseLabel = causeLabel === 1 ? 2 : 1;
 
       const causePossibility = `
@@ -451,7 +458,7 @@
 
       const q6 = {
         key: 'q6',
-        introText: `<p style="margin-bottom: 12px;">As we explained, there are two possibilities on the blood chemical in this study. The chemical level is either a cause of how you feel, or a response to how you feel.</p>
+        introText: `<p style="margin-bottom: 12px;">${isMig ? 'As we explained, there are two possibilities on the drink in this study.' : 'As we explained, there are two possibilities on the blood chemical in this study. The chemical level is either a cause of how you feel, or a response to how you feel.'}</p>
           <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 8px;">
             ${firstBox}
             ${secondBox}
@@ -483,7 +490,9 @@
                 <p className="text-base text-gray-800 mb-8">
                   {isAYOrder
                     ? `Now, please answer some questions about ${CONFIG.playerName0} and how you feel. You made decisions about ${CONFIG.playerName0} for ${CONFIG.nRounds} weeks; please only consider the second half of that period (weeks ${Math.floor(CONFIG.nRounds / 2)} to ${CONFIG.nRounds}) when answering these questions.`
-                    : `Now, please answer some questions about drinking ${CONFIG.playerName0}, your ${CONFIG.playerName1} level and how you feel. You made decisions about ${CONFIG.playerName0} for ${CONFIG.nRounds} weeks; please only consider the second half of that period (weeks ${Math.floor(CONFIG.nRounds / 2)} to ${CONFIG.nRounds}) when answering these questions.`
+                    : isMig
+                      ? `Now, please answer some questions about your craving, drinking ${CONFIG.playerName0}, and how you feel. You made decisions about ${CONFIG.playerName0} for ${CONFIG.nRounds} weeks; please only consider the second half of that period (weeks ${Math.floor(CONFIG.nRounds / 2)} to ${CONFIG.nRounds}) when answering these questions.`
+                      : `Now, please answer some questions about drinking ${CONFIG.playerName0}, your ${CONFIG.playerName1} level and how you feel. You made decisions about ${CONFIG.playerName0} for ${CONFIG.nRounds} weeks; please only consider the second half of that period (weeks ${Math.floor(CONFIG.nRounds / 2)} to ${CONFIG.nRounds}) when answering these questions.`
                   }
                 </p>
 
