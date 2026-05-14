@@ -1048,7 +1048,10 @@
         window.addEventListener('message', handleMessage);
 
         const mainCausals = isMig
-          ? [{ causalElicit: "XY", exoButton: null, id: "XY" }]
+          ? [
+              { causalElicit: "AY", exoButton: 0, id: "AY0" },
+              { causalElicit: "AY", exoButton: 1, id: "AY1" }
+            ]
           : (order === 'AY' ? [{ causalElicit: "AY", exoButton: null, id: "AY" }] : [{ causalElicit: "XY", exoButton: null, id: "XY" }]);
 
         const sendInit = () => {
@@ -1082,7 +1085,10 @@
           onLoad={() => {
             if (iframeRef.current && iframeRef.current.contentWindow) {
               const mainCausals = isMig
-                ? [{ causalElicit: "XY", exoButton: null, id: "XY" }]
+                ? [
+                    { causalElicit: "AY", exoButton: 0, id: "AY0" },
+                    { causalElicit: "AY", exoButton: 1, id: "AY1" }
+                  ]
                 : (order === 'AY' ? [{ causalElicit: "AY", exoButton: null, id: "AY" }] : [{ causalElicit: "XY", exoButton: null, id: "XY" }]);
               iframeRef.current.contentWindow.postMessage({
                 type: 'INIT',
@@ -1112,7 +1118,7 @@
       return (
         <div className={`${theme.panelBg} rounded-xl p-4 border ${theme.panelBorder} shadow-sm`}>
           <h4 className="text-gray-900 text-lg font-bold mb-3 text-center">All Weeks</h4>
-          <div className="space-y-1 max-h-64 overflow-y-auto">
+          <div className="space-y-1 max-h-36 overflow-y-auto">
             {allRounds.map(([A, X, Y], idx) => {
               const roundNumber = history.length - idx;
               if (isMig) {
@@ -1145,6 +1151,9 @@
                 </div>
               );
             })}
+            {history.length === 0 && (
+              <p className="text-gray-400 text-center py-4">No days yet</p>
+            )}
           </div>
         </div>
       );
