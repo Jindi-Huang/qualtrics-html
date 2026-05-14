@@ -84,12 +84,15 @@
 
           if (qConfig.mainCausals) {
             CONFIG.mainCausals = qConfig.mainCausals;
-          } else if (qConfig.mainCausal1) {
-            const allMetaData = [];
-            for (let i = 1; qConfig['mainCausal' + i]; i++) {
-              allMetaData.push(qConfig['mainCausal' + i]);
+          } else {
+            const prefix = qConfig.supergame === 'migraines' ? 'mainCausalMigraines' : 'mainCausal';
+            if (qConfig[prefix + '1']) {
+              const allMetaData = [];
+              for (let i = 1; qConfig[prefix + i]; i++) {
+                allMetaData.push(qConfig[prefix + i]);
+              }
+              if (allMetaData.length > 0) CONFIG.mainCausals = allMetaData;
             }
-            if (allMetaData.length > 0) CONFIG.mainCausals = allMetaData;
           }
 
           applySupergameDefaults();

@@ -584,7 +584,9 @@
       const drinkInactive = disabled && selectedChoice !== 1;
       const skipInactive = disabled && selectedChoice !== 0;
       // Migraines: drink PAYS the displayed price (+) ; Dieter: drink COSTS the price (-)
-      const priceLabel = price === 0 ? 'Free' : `${isMig ? '+' : '-'}${CONFIG.currency}${price.toFixed(2)}`;
+      const priceLabel = price === 0
+        ? (isMig ? `${CONFIG.currency}0.00` : 'Free')
+        : `${isMig ? '+' : '-'}${CONFIG.currency}${price.toFixed(2)}`;
       return (
         <div className="flex flex-col items-center">
           <div className="h-44 flex items-end justify-center gap-3">
@@ -1183,7 +1185,7 @@
 
       // First-bullet phrasing
       const introSentence = isMig
-        ? (<>In the next few pages, you will make <strong>{CONFIG.priceElicitationPrices.length} high-stakes choices</strong> about whether to drink {CONFIG.playerName0} <b>when you are craving for it</b>.</>)
+        ? (<>In the next few pages, you will make <strong>{CONFIG.priceElicitationPrices.length} high-stakes choices</strong> about whether to drink {CONFIG.playerName0} <b>when you are craving it</b>.</>)
         : (<>In the next few pages, you will make <strong>{CONFIG.priceElicitationPrices.length} high-stakes choices</strong> about whether to drink {CONFIG.playerName0}.</>);
 
       // Range-of-payment bullet
@@ -1273,7 +1275,9 @@
               <div className="mb-6 border-2 border-gray-200 rounded-xl p-6 inline-block">
                 <p className="text-gray-700 text-lg">{headline}</p>
                 <div className="text-4xl font-bold text-amber-600 mt-3">
-                  {nextPrice === 0 ? 'Free' : `${CONFIG.currency}${nextPrice.toFixed(2)}`}
+                  {nextPrice === 0
+                    ? (isMig ? `${CONFIG.currency}0.00` : 'Free')
+                    : `${CONFIG.currency}${nextPrice.toFixed(2)}`}
                 </div>
                 <p className="text-gray-700 text-lg mt-4">
                   Bonus for feeling {CONFIG.playerName2Pos}: <span className="text-3xl font-bold text-green-600">{CONFIG.currency}{CONFIG.priceElicitationBonus}</span>
@@ -1310,7 +1314,7 @@
                             : 'bg-white border border-gray-100 text-gray-300'
                       }`}
                     >
-                      <div>{price === 0 ? 'Free' : `${CONFIG.currency}${price}`}</div>
+                      <div>{price === 0 ? (isMig ? `${CONFIG.currency}0.00` : 'Free') : `${CONFIG.currency}${price}`}</div>
                       <div className="text-xs">
                         {choiceData ? (choiceData.choice === 1 ? 'Drink' : 'Skip') : '—'}
                       </div>
