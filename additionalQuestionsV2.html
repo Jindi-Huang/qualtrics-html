@@ -126,7 +126,7 @@
       gameVersionsDescriptionOrderMigraines2: 'B',
       order: 'AXY',  // 'AXY' shows all questions, 'AY' hides X-related questions
       themeColor: 'purple',  // Theme color: 'blue', 'purple', 'teal', 'yellow'
-      supergame: 'dieter', // 'dieter' (current behavior) or 'migraines'
+      supergame: 'migraines', // 'dieter' (current behavior) or 'migraines'
       aCost: 0.05,           // Per-round drinking cost (used in migraines Q1 framing)
       currency: '$'          // Currency symbol
     };
@@ -342,8 +342,8 @@
 
       const handleSubmit = () => {
         const missing = [];
-        if (!answers.q7.trim()) missing.push(isAYOrder ? 'Q5' : 'Q6');
-        if (!answers.q8.trim()) missing.push(isAYOrder ? 'Q6' : 'Q7');
+        if (!answers.q7.trim()) missing.push(isAYOrder ? 'Q5' : isMig ? 'Q5' : 'Q6');
+        if (!answers.q8.trim()) missing.push(isAYOrder ? 'Q6' : isMig ? 'Q6' : 'Q7');
         if (missing.length > 0) {
           setError(`Please answer all questions. Missing: ${missing.join(', ')}`);
           return;
@@ -519,7 +519,7 @@
                   <button
                     onClick={() => handleNextPage(
                       isMig ? ['q1', 'q2', 'q3', 'q4'] : isAYOrder ? ['q1', 'q3'] : ['q1', 'q2', 'q3'],
-                      isMig ? 3 : 2
+                      isMig ? 4 : 2
                     )}
                     className={`w-full py-3 px-6 ${getThemeClassesLocal().buttonBg} ${getThemeClassesLocal().buttonHover} text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg`}
                   >
@@ -593,7 +593,7 @@
               <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
                 <div className="mb-8">
                   <p className="text-base text-gray-800 mb-4">
-                    Q{isAYOrder ? 5 : 7}. In your own words, please describe how you usually chose between "drink {CONFIG.playerName0}" <DrinkIcon className={`inline-block w-4 h-4 align-middle mx-1 ${getThemeClassesLocal().iconColor}`} drinkName={CONFIG.playerName0} /> and "Skip" <SkipIcon className="inline-block w-4 h-4 align-middle mx-1 text-gray-900" />. How did your decision making evolve over time?
+                    Q{isAYOrder ? 5 : isMig ? 5 : 6}. In your own words, please describe how you usually chose between "drink {CONFIG.playerName0}" <DrinkIcon className={`inline-block w-4 h-4 align-middle mx-1 ${getThemeClassesLocal().iconColor}`} drinkName={CONFIG.playerName0} /> and "Skip" <SkipIcon className="inline-block w-4 h-4 align-middle mx-1 text-gray-900" />. How did your decision making evolve over time?
                   </p>
                   <textarea
                     value={answers.q7}
@@ -608,8 +608,8 @@
                     {isAYOrder
                       ? `Q6. In your own words, describe how your choice to drink ${CONFIG.playerName0} influence how you feel.`
                       : isMig
-                        ? `Q8. In your own words, describe how your craving, your choice to drink ${CONFIG.playerName0}, and how you feel influence each other, and in what ways.`
-                        : `Q8. In your own words, describe how your choice to drink ${CONFIG.playerName0}, your ${CONFIG.playerName1} level, and how you feel influence each other, and in what ways.`
+                        ? `Q6. In your own words, describe how your craving, your choice to drink ${CONFIG.playerName0}, and how you feel influence each other, and in what ways.`
+                        : `Q7. In your own words, describe how your choice to drink ${CONFIG.playerName0}, your ${CONFIG.playerName1} level, and how you feel influence each other, and in what ways.`
                     }
                   </p>
                   <textarea
