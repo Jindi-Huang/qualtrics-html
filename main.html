@@ -533,7 +533,7 @@
       const drinkPayoffText =
         X === 1 ? `+${CONFIG.currency}${CONFIG.aCost}` :
         X === 0 ? `-${CONFIG.currency}${CONFIG.aCost}` :
-        ' ';
+        `±${CONFIG.currency}${CONFIG.aCost}`;
       return (
         <div className="flex flex-col items-center">
           <div className="h-44 flex items-end justify-center gap-3">
