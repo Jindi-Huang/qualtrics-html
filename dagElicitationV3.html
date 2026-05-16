@@ -257,6 +257,8 @@
       const [showNextButton, setShowNextButton] = useState(false);
       const alertCountRef = useRef(0);
       const pageEnteredRef = useRef(Date.now());
+      const edgesRef = useRef([]);
+      useEffect(() => { edgesRef.current = edges; }, [edges]);
 
       // 5-second delay for showing the continue button in confidence elicitation
       useEffect(() => {
@@ -384,11 +386,11 @@
         dagTimesRef.current.initialDAGTime = (now - pageEnteredRef.current) / 1000;
         pageEnteredRef.current = now;
 
-        setInitialEdges([...edges]);
+        setInitialEdges([...edgesRef.current]);
 
         // If noConfirmation is set, skip confirmation and go directly to confidence
         if (CONFIG.noConfirmation === 1) {
-          setFinalEdges([...edges]);
+          setFinalEdges([...edgesRef.current]);
           recordConfirmationEnd();
           setShowConfidence(true);
         } else {
@@ -415,7 +417,7 @@
         if (confirmIndex < nodePairs.length - 1) {
           setConfirmIndex(prev => prev + 1);
         } else {
-          setFinalEdges([...edges]);
+          setFinalEdges([...edgesRef.current]);
           recordConfirmationEnd();
           setShowConfidence(true);
         }
@@ -430,17 +432,20 @@
         if (selectedOption === null) return;
 
         const pair = currentPair;
-        let newEdges = edges.filter(e =>
+        const filtered = edgesRef.current.filter(e =>
           !((e.from === pair.nodeA && e.to === pair.nodeB) ||
             (e.from === pair.nodeB && e.to === pair.nodeA))
         );
+        const additions = [];
         if (selectedOption === 'AtoB' || selectedOption === 'both') {
-          newEdges = [...newEdges, { from: pair.nodeA, to: pair.nodeB }];
+          additions.push({ from: pair.nodeA, to: pair.nodeB });
         }
         if (selectedOption === 'BtoA' || selectedOption === 'both') {
-          newEdges = [...newEdges, { from: pair.nodeB, to: pair.nodeA }];
+          additions.push({ from: pair.nodeB, to: pair.nodeA });
         }
+        const newEdges = [...filtered, ...additions];
 
+        edgesRef.current = newEdges;
         setEdges(newEdges);
         setShowChangeOptions(false);
         setSelectedOption(null);
@@ -467,7 +472,7 @@
       const handleConfidenceSubmit = () => {
         if (confidence === null) return;
         dagTimesRef.current.confidenceTime = (Date.now() - pageEnteredRef.current) / 1000;
-        onComplete(initialEdges, finalEdges || edges, confidence, alertCountRef.current, dagTimesRef.current);
+        onComplete(initialEdges, finalEdges || edgesRef.current, confidence, alertCountRef.current, dagTimesRef.current);
       };
 
       // Draw curved arrow path
