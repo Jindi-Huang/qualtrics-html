@@ -291,7 +291,7 @@
 
       const xLabel = isMigraines ? 'whether you are craving' : `your ${playerName1} level`;
       const nodeNames = {
-        'A': `your choice to Drink ${playerName0}`,
+        'A': `Your choice to Drink ${playerName0}`,
         'X': isMigraines ? 'Whether you crave' : `${playerName1} Level`,
         'Y': 'How You Feel'
       };
@@ -425,29 +425,27 @@
         if (selectedOption === null) return;
 
         const pair = currentPair;
-        setEdges(prev => prev.filter(e =>
+        let newEdges = edges.filter(e =>
           !((e.from === pair.nodeA && e.to === pair.nodeB) ||
             (e.from === pair.nodeB && e.to === pair.nodeA))
-        ));
+        );
+        if (selectedOption === 'AtoB' || selectedOption === 'both') {
+          newEdges = [...newEdges, { from: pair.nodeA, to: pair.nodeB }];
+        }
+        if (selectedOption === 'BtoA' || selectedOption === 'both') {
+          newEdges = [...newEdges, { from: pair.nodeB, to: pair.nodeA }];
+        }
 
-        setTimeout(() => {
-          if (selectedOption === 'AtoB' || selectedOption === 'both') {
-            setEdges(prev => [...prev, { from: pair.nodeA, to: pair.nodeB }]);
-          }
-          if (selectedOption === 'BtoA' || selectedOption === 'both') {
-            setEdges(prev => [...prev, { from: pair.nodeB, to: pair.nodeA }]);
-          }
-
-          setShowChangeOptions(false);
-          setSelectedOption(null);
-          if (confirmIndex < nodePairs.length - 1) {
-            setConfirmIndex(prev => prev + 1);
-          } else {
-            setFinalEdges([...edges]);
-            recordConfirmationEnd();
-            setShowConfidence(true);
-          }
-        }, 50);
+        setEdges(newEdges);
+        setShowChangeOptions(false);
+        setSelectedOption(null);
+        if (confirmIndex < nodePairs.length - 1) {
+          setConfirmIndex(prev => prev + 1);
+        } else {
+          setFinalEdges(newEdges);
+          recordConfirmationEnd();
+          setShowConfidence(true);
+        }
       };
 
       const handleCancelChange = () => {

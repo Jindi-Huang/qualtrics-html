@@ -605,12 +605,10 @@
       const theme = getThemeClasses(CONFIG.themeColor);
       const drinkInactive = disabled && selectedChoice !== 1;
       const skipInactive = disabled && selectedChoice !== 0;
-      // Migraines: button shows the BASELINE payment (constant per X-state). Total payment is always +price.
-      // Payment change = total - baseline.
+      // Migraines: drink payment is always positive. Button shows baseline; total = price.
       const prices = CONFIG.priceElicitationPrices;
       const baseline = isMig ? prices[Math.floor(prices.length / 2)] : 0;
-      const sign = isMig ? (currentX === 1 ? 1 : -1) : 1;
-      const baselinePayment = sign * baseline;
+      const baselinePayment = baseline;
       const additional = price - baselinePayment;
       const totalPayment = price;
       const formatSignedCurrency = (v) => v === 0
@@ -1357,9 +1355,8 @@
 
             {showRest && !isFinalReview && (
               isMig ? (() => {
-                // Button shows baseline payment (constant per X-state). Total payment is always +price.
-                const sign = nextX === 1 ? 1 : -1;
-                const buttonAmount = sign * baseline;
+                // Drink payment is always positive in migraines. Button shows baseline; total = price.
+                const buttonAmount = baseline;
                 const paymentChange = nextPrice - buttonAmount;
                 const totalPayment = nextPrice;
                 return (
@@ -1969,7 +1966,7 @@
 
         // High-stakes payment
         const paymentHighStake = isMig
-          ? highStakeOutcomes.map(c => 30 + (c.choice === 1 ? (c.X === 1 ? c.price : -c.price) : 0) + (c.Y === 1 ? CONFIG.priceElicitationBonus : 0))
+          ? highStakeOutcomes.map(c => 30 + (c.choice === 1 ? c.price : 0) + (c.Y === 1 ? CONFIG.priceElicitationBonus : 0))
           : highStakeOutcomes.map(c => 30 + (c.choice === 1 ? -c.price : 0) + (c.Y === 1 ? CONFIG.priceElicitationBonus : 0));
 
         sendDataToQualtrics('FINAL_DATA', {
