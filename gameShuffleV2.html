@@ -418,10 +418,10 @@
         if (CONFIG.supergame === 'migraines') {
           bonusHTML +=
             `<li>If you have a craving, you get ${CONFIG.currency}${Number(CONFIG.aCost).toFixed(2)} for consuming the drink.</li>` +
-            `<li>If you don't have a craving, you pay ${CONFIG.currency}${Number(CONFIG.aCost).toFixed(2)} for consuming the drink (deducted from your baseline bonus).</li>`;
+            `<li>If you don't have a craving, you pay ${CONFIG.currency}${Number(CONFIG.aCost).toFixed(2)} for consuming the drink.</li>`;
         } else {
           bonusHTML +=
-            `<li>If you consume the drink, you pay ${CONFIG.currency}${Number(CONFIG.aCost).toFixed(2)} for it (deducted from your baseline bonus).</li>`;
+            `<li>If you consume the drink, you pay ${CONFIG.currency}${Number(CONFIG.aCost).toFixed(2)} for it.</li>`;
           if (CONFIG.order === 'AY') {
             bonusHTML += `<li>The trial subscription to the BioClip extension has expired. You no longer see the blood chemical levels.</li>`;
           }
