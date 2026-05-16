@@ -81,6 +81,7 @@
           if (qConfig.order) CONFIG.order = qConfig.order;
           if (qConfig.themeColor) CONFIG.themeColor = qConfig.themeColor;
           if (qConfig.skipIntro !== undefined) CONFIG.skipIntro = qConfig.skipIntro;
+          if (qConfig.forceSkipPieCharts !== undefined) CONFIG.forceSkipPieCharts = qConfig.forceSkipPieCharts;
 
           if (qConfig.mainCausals) {
             CONFIG.mainCausals = qConfig.mainCausals;
@@ -160,6 +161,7 @@
       order: 'AXY',
       themeColor: 'purple',
       skipIntro: false,
+      forceSkipPieCharts: false,  // when true (set by parent), always skip pie-chart elicitation
       mainCausals: null            // null → use supergame default
     };
 
@@ -684,7 +686,7 @@
               {/* Drink button */}
               <div className={`relative w-28 h-24 px-2 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 border-2 ${
                 drinkSelected
-                  ? `${colorClass(drinkColor, 600)} ${borderClass(drinkColor, 600)} shadow-md ring-4 ${ringClass(drinkColor, 300)}`
+                  ? `${colorClass(drinkColor, 600)} ${borderClass(drinkColor, 600)} shadow-md`
                   : drinkActive
                     ? `${colorClass(drinkColor, 500)} ${borderClass(drinkColor, 500)} shadow-md`
                     : 'bg-gray-100 border-gray-200'
@@ -696,7 +698,7 @@
               {/* Skip button */}
               <div className={`relative w-28 h-24 px-2 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 border-2 ${
                 skipSelected
-                  ? `${colorClass(skipColor, 600)} ${borderClass(skipColor, 600)} shadow-md ring-4 ${ringClass(skipColor, 300)}`
+                  ? `${colorClass(skipColor, 600)} ${borderClass(skipColor, 600)} shadow-md`
                   : skipActive
                     ? `${colorClass(skipColor, 500)} ${borderClass(skipColor, 500)} shadow-md`
                     : 'bg-gray-100 border-gray-200'
@@ -793,7 +795,7 @@
               <MorningIcon className="w-24 h-24 text-gray-700" drinkName={playerName0} X={X} />
             </div>
             <div className={`${isQuestion ? 'text-2xl leading-none' : 'text-sm'} font-bold text-gray-900 mt-1 h-6 flex items-center justify-center`}>
-              {isQuestion ? '?' : X === 1 ? 'Craving' : X === 0 ? 'NOT Craving' : ' '}
+              {isQuestion ? '?' : X === 1 ? 'Craving' : X === 0 ? 'NO craving' : ' '}
             </div>
           </div>
         );
@@ -856,17 +858,24 @@
           const widthPct = Math.abs(toPct - fromPct);
           const headOnRight = toPct > fromPct;
           const path = headOnRight
-            ? 'M 0 46 L 0 6 L 100 6 L 100 42'
-            : 'M 100 46 L 100 6 L 0 6 L 0 42';
+            ? 'M 0 46 L 0 6 L 100 6 L 100 36'
+            : 'M 100 46 L 100 6 L 0 6 L 0 36';
+          // Fixed-pixel arrowhead sized in CSS units so it stays consistent across devices,
+          // independent of the non-uniformly stretched SVG below it.
+          const headW = 20, headH = 16;
+          const arrowheadStyle = {
+            top: `${(36 / 48) * 100}%`,
+            [headOnRight ? 'right' : 'left']: `-${headW / 2}px`,
+            pointerEvents: 'none',
+          };
           return (
             <div className="absolute top-0 h-12 flex items-start" style={{ left: `${leftPct}%`, width: `${widthPct}%` }}>
               <svg className="w-full h-full overflow-visible" viewBox="0 0 100 48" preserveAspectRatio="none">
-                <defs>
-                  <marker id={`arrowhead-${idSuffix}`} markerWidth="10" markerHeight="8" refX="5" refY="4" orient="auto">
-                    <polygon points="0 0, 10 4, 0 8" fill="#f59e0b" />
-                  </marker>
-                </defs>
-                <path d={path} stroke="#f59e0b" strokeWidth="4" fill="none" strokeLinejoin="round" markerEnd={`url(#arrowhead-${idSuffix})`} vectorEffect="non-scaling-stroke" />
+                <path d={path} stroke="#f59e0b" strokeWidth="4" fill="none" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+              </svg>
+              {/* Fixed-pixel-size arrowhead overlay positioned at the path endpoint */}
+              <svg width={headW} height={headH} viewBox={`0 0 ${headW} ${headH}`} className="absolute overflow-visible" style={arrowheadStyle}>
+                <polygon points={`0,0 ${headW},0 ${headW / 2},${headH}`} fill="#f59e0b" />
               </svg>
               <span className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 text-amber-500 text-5xl bg-gray-50 px-2">?</span>
             </div>
@@ -966,50 +975,50 @@
           AY: {
             walkthroughStep0: exoButton === null
               ? null
-              : `In this scenario, you are required to take ${exoButton === 1 ? 'CraveOn' : 'CraveOff'} which makes you <strong>${exoButton === 1 ? 'craving' : 'not craving'}</strong>, so ${exoButton === 1 ? `you get ${currency}${aCost}` : `it costs you ${currency}${aCost}`} if you drink ${playerName0}...`,
+              : `In this scenario, you are required to take ${exoButton === 1 ? 'CraveOn' : 'CraveOff'} which makes you <strong>${exoButton === 1 ? 'crave' : 'not crave'}</strong>, so ${exoButton === 1 ? `you get ${currency}${aCost}` : `it costs you ${currency}${aCost}`} if you drink ${playerName0}...`,
             walkthroughStep1: `Report how <strong>your choice to drink ${playerName0}</strong>...`,
             walkthroughStep2: `...affects <strong>how you feel</strong>.`,
             walkthroughHighlight: { step0: 'X', step1: 'A', step2: ['A', 'Y'] },
             causePanel: 'A', outcomePanel: 'Y',
             pie1Question: exoButton === null
               ? `What is the chance that you feel <strong>${playerName2Pos}</strong> if you must <strong>not</strong> drink ${playerName0}?`
-              : `Suppose you are required to take ${exoButton === 1 ? 'CraveOn' : 'CraveOff'} which makes you <strong>${exoButton === 1 ? 'craving' : 'not craving'}</strong>, so ${exoButton === 1 ? `you get ${currency}${aCost}` : `it costs you ${currency}${aCost}`} if you drink ${playerName0}.<br>What is the chance that you feel <strong>${playerName2Pos}</strong> if you must <strong>not</strong> drink ${playerName0}?`,
+              : `Suppose you are required to take ${exoButton === 1 ? 'CraveOn' : 'CraveOff'} which makes you <strong>${exoButton === 1 ? 'crave' : 'not crave'}</strong>, so ${exoButton === 1 ? `you get ${currency}${aCost}` : `it costs you ${currency}${aCost}`} if you drink ${playerName0}.<br>What is the chance that you feel <strong>${playerName2Pos}</strong> if you must <strong>not</strong> drink ${playerName0}?`,
             pie2Question: exoButton === null
               ? `What is the chance that you feel <strong>${playerName2Pos}</strong> if you must <strong>drink</strong> ${playerName0}?`
-              : `Suppose you are required to take ${exoButton === 1 ? 'CraveOn' : 'CraveOff'} which makes you <strong>${exoButton === 1 ? 'craving' : 'not craving'}</strong>, so ${exoButton === 1 ? `you get ${currency}${aCost}` : `it costs you ${currency}${aCost}`} if you drink ${playerName0}.<br>What is the chance that you feel <strong>${playerName2Pos}</strong> if you must <strong>drink</strong> ${playerName0}?`,
+              : `Suppose you are required to take ${exoButton === 1 ? 'CraveOn' : 'CraveOff'} which makes you <strong>${exoButton === 1 ? 'crave' : 'not crave'}</strong>, so ${exoButton === 1 ? `you get ${currency}${aCost}` : `it costs you ${currency}${aCost}`} if you drink ${playerName0}.<br>What is the chance that you feel <strong>${playerName2Pos}</strong> if you must <strong>drink</strong> ${playerName0}?`,
             verbalQuestion: exoButton === null
               ? `How does <strong>drinking ${playerName0}</strong> change the chance that you feel <strong>${playerName2Pos}</strong>?`
-              : `Suppose you are required to take ${exoButton === 1 ? 'CraveOn' : 'CraveOff'} which makes you <strong>${exoButton === 1 ? 'craving' : 'not craving'}</strong>, so ${exoButton === 1 ? `you get ${currency}${aCost}` : `it costs you ${currency}${aCost}`} if you drink ${playerName0}.<br>How does <strong>your choice to drink ${playerName0}</strong> change the chance that you feel <strong>${playerName2Pos}</strong>?`,
+              : `Suppose you are required to take ${exoButton === 1 ? 'CraveOn' : 'CraveOff'} which makes you <strong>${exoButton === 1 ? 'crave' : 'not crave'}</strong>, so ${exoButton === 1 ? `you get ${currency}${aCost}` : `it costs you ${currency}${aCost}`} if you drink ${playerName0}.<br>How does <strong>your choice to drink ${playerName0}</strong> change the chance that you feel <strong>${playerName2Pos}</strong>?`,
             pie1Color: themeHex, pie2Color: themeHex
           },
           XY: {
             walkthroughStep0: exoButton === null
-              ? null
+              ? `In this scenario, you make choices about whether to consume the drink as before...`
               : `In this scenario, you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0} ...`,
-            walkthroughStep1: `Report how <strong>craving</strong>...`,
+            walkthroughStep1: `Report how <strong>craving or not craving</strong> (due to taking CraveOn rather than CraveOff)...`,
             walkthroughStep2: `...affects <strong>how you feel</strong>.`,
             walkthroughHighlight: { step0: 'A', step1: 'X', step2: ['X', 'Y'] },
             causePanel: 'X', outcomePanel: 'Y',
             pie1Question: exoButton === null
               ? `What is the chance that you feel <strong>${playerName2Pos}</strong> if you are <strong>not craving</strong>?`
-              : `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}. Immediately after, you are required to take CraveOff which makes you <strong>not craving</strong>, so it costs you ${currency}${aCost} if you drink ${playerName0}.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
+              : `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}. Immediately after, you are required to take CraveOff which makes you <strong>not crave</strong>, so it costs you ${currency}${aCost} if you drink ${playerName0}.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
             pie2Question: exoButton === null
               ? `What is the chance that you feel <strong>${playerName2Pos}</strong> if you are <strong>craving</strong>?`
-              : `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}. Immediately after, you are required to take CraveOn which makes you <strong>craving</strong>, so you get ${currency}${aCost} if you drink ${playerName0}.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
+              : `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}. Immediately after, you are required to take CraveOn which makes you <strong>crave</strong>, so you get ${currency}${aCost} if you drink ${playerName0}.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
             verbalQuestion: exoButton === null
-              ? `How does <strong>craving</strong> (rather than not craving) change the chance that you feel <strong>${playerName2Pos}</strong>?`
-              : `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}.<br>How does <strong>craving</strong> (rather than not craving) change the chance that you feel <strong>${playerName2Pos}</strong>?`,
+              ? `Suppose that you make choices about whether to consume the drink as before.<br>How does being <strong>craving</strong> instead of <strong>not craving</strong> (due to taking CraveOn rather than CraveOff) change the chance that you feel <strong>${playerName2Pos}</strong>?`
+              : `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}.<br>How does being <strong>craving</strong> instead of <strong>not craving</strong> (due to taking CraveOn rather than CraveOff) change the chance that you feel <strong>${playerName2Pos}</strong>?`,
             pie1Color: themeHex, pie2Color: themeHex
           },
           YX: {
             walkthroughStep0: `In this scenario, you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0} ...`,
-            walkthroughStep1: `Report how <strong>how you feel</strong>...`,
+            walkthroughStep1: `Report how <strong>the way you feel</strong> (due to taking ${playerName2PosExo} rather than ${playerName2NegExo})...`,
             walkthroughStep2: `...affects your <strong>craving for ${playerName0}</strong>.`,
             walkthroughHighlight: { step0: 'A', step1: 'Y', step2: ['Y', 'X'] },
             causePanel: 'Y', outcomePanel: 'X',
             pie1Question: `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}. Immediately after, you are required to take ${playerName2NegExo} which makes you feel <strong>${playerName2Neg}</strong>.<br>What is the chance that your <strong>${playerName1} level is normal</strong>?`,
             pie2Question: `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}. Immediately after, you are required to take ${playerName2PosExo} which makes you feel <strong>${playerName2Pos}</strong>.<br>What is the chance that your <strong>${playerName1} level is normal</strong>?`,
-            verbalQuestion: `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}.<br>How does feeling <strong>${playerName2Pos}</strong> (rather than being ${playerName2Neg}) change the chance that you are <strong>craving</strong>?`,
+            verbalQuestion: `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}.<br>How does being <strong>${playerName2Pos}</strong> instead of <strong>${playerName2Neg}</strong> (due to taking ${playerName2PosExo} rather than ${playerName2NegExo}) change the chance that you are <strong>craving</strong>?`,
             pie1Color: themeHex, pie2Color: themeHex
           },
           XA: {
@@ -1078,9 +1087,9 @@
         },
         XY: {
           walkthroughStep0: exoButton === null
-            ? null
+            ? `In this scenario, you make choices about whether to consume the drink as before...`
             : `In this scenario, you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0} ...`,
-          walkthroughStep1: `Report how <strong>your ${playerName1} level</strong>...`,
+          walkthroughStep1: `Report how <strong>normal or abnormal ${playerName1} level</strong> (due to taking ${playerName1}-normal-injection rather than ${playerName1}-abnormal-injection)...`,
           walkthroughStep2: `...affects <strong>how you feel</strong>.`,
           walkthroughHighlight: { step0: 'A', step1: 'X', step2: ['X', 'Y'] },
           causePanel: 'X', outcomePanel: 'Y',
@@ -1091,19 +1100,19 @@
             ? `What is the chance that you feel <strong>${playerName2Pos}</strong> if your <strong>${playerName1} level is normal</strong>?`
             : `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}. Immediately after, you are required to take ${playerName1}-normal-injection which sets your ${playerName1} level to <strong>normal</strong>.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
           verbalQuestion: exoButton === null
-            ? `How does having a <strong>normal ${playerName1}</strong> (rather than abnormal) level change the chance that you feel <strong>${playerName2Pos}</strong>?`
-            : `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}.<br>How does having a <strong>normal ${playerName1}</strong> (rather than abnormal) level change the chance that you feel <strong>${playerName2Pos}</strong>?`,
+            ? `Suppose that you make choices about whether to consume the drink as before.<br>How does having <strong>normal</strong> instead of <strong>abnormal ${playerName1} level</strong> (due to taking ${playerName1}-normal-injection rather than ${playerName1}-abnormal-injection) change the chance that you feel <strong>${playerName2Pos}</strong>?`
+            : `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}.<br>How does having <strong>normal</strong> instead of <strong>abnormal ${playerName1} level</strong> (due to taking ${playerName1}-normal-injection rather than ${playerName1}-abnormal-injection) change the chance that you feel <strong>${playerName2Pos}</strong>?`,
           pie1Color: themeHex, pie2Color: themeHex
         },
         YX: {
           walkthroughStep0: `In this scenario, you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0} ...`,
-          walkthroughStep1: `Report how <strong>how you feel</strong>...`,
+          walkthroughStep1: `Report how <strong>the way you feel</strong> (due to taking ${playerName2PosExo} rather than ${playerName2NegExo})...`,
           walkthroughStep2: `...affects your <strong>${playerName1} level</strong>.`,
           walkthroughHighlight: { step0: 'A', step1: 'Y', step2: ['Y', 'X'] },
           causePanel: 'Y', outcomePanel: 'X',
           pie1Question: `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}. Immediately after, you are required to take ${playerName2NegExo} which makes you feel <strong>${playerName2Neg}</strong>.<br>What is the chance that your <strong>${playerName1} level is normal</strong>?`,
           pie2Question: `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}. Immediately after, you are required to take ${playerName2PosExo} which makes you feel <strong>${playerName2Pos}</strong>.<br>What is the chance that your <strong>${playerName1} level is normal</strong>?`,
-          verbalQuestion: `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}.<br>How does feeling <strong>${playerName2Pos}</strong> (rather than being ${playerName2Neg}) change the chance that your <strong>${playerName1} level is normal</strong>?`,
+          verbalQuestion: `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}.<br>How does being <strong>${playerName2Pos}</strong> instead of <strong>${playerName2Neg}</strong> (due to taking ${playerName2PosExo} rather than ${playerName2NegExo}) change the chance that your <strong>${playerName1} level is normal</strong>?`,
           pie1Color: themeHex, pie2Color: themeHex
         }
       };
@@ -1116,10 +1125,12 @@
       increasingOrder, skipIntro, onComplete
     }) {
       const isMig = CONFIG.supergame === 'migraines';
-      // skipPieCharts logic differs by supergame
-      const skipPieCharts = isMig
-        ? !(scenario.causalElicit === 'AY' && scenario.exoButton !== null)
-        : !(CONFIG.order === 'AY' || (scenario.causalElicit === 'AY' && scenario.exoButton === null));
+      // skipPieCharts logic differs by supergame; CONFIG.forceSkipPieCharts forces skip for all scenarios
+      const skipPieCharts = CONFIG.forceSkipPieCharts
+        ? true
+        : (isMig
+          ? !(scenario.causalElicit === 'AY' && scenario.exoButton !== null)
+          : !(CONFIG.order === 'AY' || (scenario.causalElicit === 'AY' && scenario.exoButton === null)));
 
       const [stage, setStage] = useState(0);
       const [walkthroughStep, setWalkthroughStep] = useState(0);
@@ -1260,9 +1271,8 @@
                       {showPaymentDetails && (
                         <div className="bg-gray-50 rounded-lg p-4 mt-3 text-sm text-gray-700">
                           <p className="font-bold mb-2">How is my payment determined if this part counts?</p>
-                          <p className="mb-2">You will select a line from a list describing how much one factor affects another.</p>
                           <p>
-                            You will earn <strong>{CONFIG.currency}{Number(CONFIG.beliefPaymentMax).toFixed(0)}</strong> if you choose the segment or line that matches what actually happened. For each segment or line by which your estimate deviates from the correct answer, your bonus shrinks by <strong>{CONFIG.currency}{Number(CONFIG.beliefPaymentIncentive).toFixed(2)}</strong>.
+                            You will earn up to <strong>{CONFIG.currency}{Number(CONFIG.beliefPaymentMax).toFixed(0)}</strong>. Your bonus shrinks by <strong>{CONFIG.currency}{Number(CONFIG.beliefPaymentIncentive).toFixed(2)}</strong> for each step away from the correct answer: on the wheel, for each <strong>segment</strong>; in the list of options, for each <strong>option</strong>.
                           </p>
                         </div>
                       )}
@@ -1406,12 +1416,12 @@
       // Step 1 (X-intervention intro) differs by supergame
       const step1Block = isMig ? (
         <div className="text-gray-700 space-y-4 mb-6 fade-in">
-          <p>Some scenarios ask what will happen if whether you are craving or not are set by one of two medicines:</p>
+          <p>Some scenarios ask what will happen if your cravings are switched on or off by one of these two medicines:</p>
           <ul className="list-disc list-inside space-y-2 ml-4 mb-4">
-            <li><strong>CraveOn</strong> makes you craving <strong>for sure</strong>.</li>
-            <li><strong>CraveOff</strong> makes you not craving <strong>for sure</strong>.</li>
+            <li><strong>CraveOn</strong> makes you crave <strong>for sure</strong>.</li>
+            <li><strong>CraveOff</strong> makes you not crave <strong>for sure</strong>.</li>
           </ul>
-          <p>These medicines have <i>no direct effects</i> on how you feel. However, <i>if</i> how you feel is a response of your body to whether you are craving or not, you may feel different if you take CraveOn or CraveOff.</p>
+          <p>These medicines have <i>no direct effects</i> on how you feel. However, <i>if</i> how you feel is a response of your body to your cravings, you may feel different if you take CraveOn or CraveOff.</p>
         </div>
       ) : (
         <div className="text-gray-700 space-y-4 mb-6 fade-in">
@@ -1424,22 +1434,22 @@
         </div>
       );
 
-      // Step 2 (Y-intervention intro) differs slightly
+      // Step 2 (Y-intervention intro) differs slightly by supergame
       const step2Block = isMig ? (
         <div className="text-gray-700 space-y-4 mb-6 fade-in">
-          <p>Other scenarios ask what will happen if how you feel is set fixed by one of two other medications:</p>
+          <p>Other scenarios ask what will happen if how you feel is fixed by one of two other medications:</p>
           <ul className="list-disc list-inside space-y-2 ml-4 mb-4">
-            <li><strong>{CONFIG.playerName2PosExo}</strong> makes you <strong>{CONFIG.playerName2Pos}</strong> for sure.</li>
-            <li><strong>{CONFIG.playerName2NegExo}</strong> makes you <strong>{CONFIG.playerName2Neg}</strong> for sure.</li>
+            <li><strong>{CONFIG.playerName2PosExo}</strong> makes you {CONFIG.playerName2Pos} for sure.</li>
+            <li><strong>{CONFIG.playerName2NegExo}</strong> makes you {CONFIG.playerName2Neg} for sure.</li>
           </ul>
           <p>These medications do not directly affect whether you experience cravings. However, <i>if</i> craving is a response of your body to feeling {CONFIG.playerName2Neg} or {CONFIG.playerName2Pos}, taking {CONFIG.playerName2PosExo} or {CONFIG.playerName2NegExo} may affect whether you experience cravings.</p>
         </div>
       ) : (
         <div className="text-gray-700 space-y-4 mb-6 fade-in">
-          <p>Other scenarios ask what will happen if how you feel is set fixed by one of two other medications:</p>
+          <p>Other scenarios ask what will happen if how you feel is fixed by one of two other medications:</p>
           <ul className="list-disc list-inside space-y-2 ml-4 mb-4">
-            <li><strong>{CONFIG.playerName2PosExo}</strong> makes you <strong>{CONFIG.playerName2Pos}</strong> for sure.</li>
-            <li><strong>{CONFIG.playerName2NegExo}</strong> makes you <strong>{CONFIG.playerName2Neg}</strong> for sure.</li>
+            <li><strong>{CONFIG.playerName2PosExo}</strong> makes you {CONFIG.playerName2Pos} for sure.</li>
+            <li><strong>{CONFIG.playerName2NegExo}</strong> makes you {CONFIG.playerName2Neg} for sure.</li>
           </ul>
           <p>These medications have <i>no direct effects</i> on your {CONFIG.playerName1} levels. However, <i>if</i> {CONFIG.playerName1} is a response of your body to feeling {CONFIG.playerName2Neg} or {CONFIG.playerName2Pos}, you may see your {CONFIG.playerName1} level change if you consume {CONFIG.playerName2PosExo} or {CONFIG.playerName2NegExo}.</p>
         </div>
@@ -1497,9 +1507,8 @@
                   {showDetails && (
                     <div className="bg-gray-50 rounded-lg p-6 mb-6 text-sm text-gray-700">
                       <p className="font-bold mb-3">How is my payment determined if this part counts?</p>
-                      <p className="mb-3">You will select a line from a list describing how much one factor affects another.</p>
                       <p>
-                        You will earn <strong>{CONFIG.currency}{CONFIG.beliefPaymentMax}</strong> if you choose the segment or line that matches what actually happened. For each segment or line by which your estimate deviates from the correct answer, your bonus shrinks by <strong>{CONFIG.currency}{CONFIG.beliefPaymentIncentive}</strong>.
+                        You will earn up to <strong>{CONFIG.currency}{CONFIG.beliefPaymentMax}</strong>. Your bonus shrinks by <strong>{CONFIG.currency}{CONFIG.beliefPaymentIncentive}</strong> for each step away from the correct answer: on the wheel, for each <strong>segment</strong>; in the list of options, for each <strong>option</strong>.
                       </p>
                     </div>
                   )}

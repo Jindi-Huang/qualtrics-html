@@ -389,7 +389,7 @@
       const [q1Order] = useState(() => shuffleArray(q1OrderInitial));
 
       const q2OrderInitial = isMig
-        ? ['twoVersions', 'drinkNotNecessarily', 'drinkNecessarily']
+        ? ['twoVersions', 'drinkSometimes', 'drinkNotNecessarily', 'drinkNecessarily']
         : ['normalCausesGood', 'normalNotCausesGood', 'twoVersions'];
       const [q2Order] = useState(() => shuffleArray(q2OrderInitial));
 
@@ -416,7 +416,8 @@
       const q1Items = q1Order.map(id => q1ItemsMap[id]);
 
       const q2ItemsMap = isMig ? {
-        twoVersions:         { id: 'twoVersions',         text: `There are two possibilities: either the drink affects how I feel, or it doesn't but something else affects both my craving and how I feel. Different drinks may work in different ways.` },
+        twoVersions:         { id: 'twoVersions',         text: `Any of the drinks in this study may or may not affect me.` },
+        drinkSometimes:      { id: 'drinkSometimes',      text: `If a drink affects me, I will feel its effects sometimes, but not 100% of the time.` },
         drinkNotNecessarily: { id: 'drinkNotNecessarily', text: `If I consume the drink and later feel good, this does `, underline: 'not necessarily', after: ` mean that the drink caused me to feel good.` },
         drinkNecessarily:    { id: 'drinkNecessarily',    text: `If I consume the drink and later feel good, this necessarily means that the drink caused me to feel good.` }
       } : {
@@ -433,10 +434,10 @@
         ? ['noCravingCost', 'sumAll', 'feelGoodBonus', 'cravingReceive', 'oneRound']
         : ['drinkNoPay', 'drinkCost', 'feelGoodBonus', 'oneRound', 'sumAll', 'bioClipPay'];
       const q2Correct = isMig
-        ? new Set(['twoVersions', 'drinkNotNecessarily'])
+        ? new Set(['twoVersions', 'drinkSometimes', 'drinkNotNecessarily'])
         : new Set(['normalNotCausesGood', 'twoVersions']);
       const q2All = isMig
-        ? ['twoVersions', 'drinkNotNecessarily', 'drinkNecessarily']
+        ? ['twoVersions', 'drinkSometimes', 'drinkNotNecessarily', 'drinkNecessarily']
         : ['normalCausesGood', 'normalNotCausesGood', 'twoVersions'];
 
       const checkAnswer = (items, correctSet) => {
@@ -558,7 +559,7 @@
             <p className="text-gray-700">In this survey, imagine the following:</p>
             {isMig ? (
               <p className="text-gray-700">
-                <strong className="text-gray-900">There are new drinks that may or may not have a negative effect on you.</strong> For instance:
+                <b>There are new drinks that may or may not have a negative effect on you.</b> For instance:
               </p>
             ) : (
               <>
@@ -585,8 +586,8 @@
 
             <p className="text-gray-700 mt-4">
               {isMig
-                ? <>You will see two different drinks in this survey. <strong>Different drinks may work in different ways.</strong> For each drink, you will make decisions across {CONFIG.nRounds} rounds. Think of each round as one day in a week.</>
-                : <>You will see three different drinks and three blood chemicals in this survey. <strong>Different drinks and chemicals may work in different ways.</strong> For each drink, you will make decisions across {CONFIG.nRounds} rounds. Think of each round as one day in a week.</>
+                ? <>You will see two different drinks in this survey. <b>Different drinks may work in different ways.</b> For each drink, you will make decisions across {CONFIG.nRounds} rounds. Think of each round as one day in a week.</>
+                : <>You will see three different drinks and three blood chemicals in this survey. <b>Different drinks and chemicals may work in different ways.</b> For each drink, you will make decisions across {CONFIG.nRounds} rounds. Think of each round as one day in a week.</>
               }
             </p>
           </div>
@@ -603,7 +604,7 @@
           <div className="bg-gray-50 rounded-xl p-4">
             <p className="text-gray-700 mb-4">
               {isMig ? (
-                <>Each <span onClick={() => setAttentionCheck(1)} className={`cursor-pointer ${attentionCheck === 1 ? 'text-green-600' : ''}`}>Monday</span> morning, <strong>you may or may not feel a craving for the new drink</strong>. Whether you feel a craving determines the cost or payment associated with consuming the drink. You then decide whether or not to drink it. What you care about is whether you will feel good or bad later in the day.</>
+                <>Each <span onClick={() => setAttentionCheck(1)} className={`cursor-pointer ${attentionCheck === 1 ? 'text-green-600' : ''}`}>Monday</span> morning, <strong>you may or may not feel a craving for the new drink</strong>. Whether you feel a craving determines the cost or payment associated with consuming the drink. You then decide whether or not to drink it. Your main concern is whether you will feel good or bad later in the day. Whether you can give in to the craving also matters.</>
               ) : (
                 <>Each <span onClick={() => setAttentionCheck(1)} className={`cursor-pointer ${attentionCheck === 1 ? 'text-green-600' : ''}`}>Monday</span> morning, when you get up, you decide whether to consume the drink. Shortly after, your BioClip tells you whether the blood chemical it targets is at a normal level. What you care about is whether you will feel good or bad later in the day.</>
               )}
@@ -735,12 +736,12 @@
                   {isMig ? (
                     <>
                       <h3 className="text-blue-600 font-bold mb-2">Possibility {idx + 1}: The drink <span className="underline">affects</span> how you will feel later that day.</h3>
-                      <p className="text-gray-600">Hence, consuming the drink <strong className="text-gray-900">decreases the chance that you will feel good</strong> later that day.</p>
+                      <p className="text-gray-600">Consuming the drink <b>decreases the chance that you will feel good</b> later that day.</p>
                     </>
                   ) : (
                     <>
                       <h3 className="text-blue-600 font-bold mb-2">Possibility {idx + 1}: The chemical level <span className="underline">is a cause</span> of how you feel.</h3>
-                      <p className="text-gray-600">Hence, normalizing your chemical level (by consuming the drink) <strong className="text-gray-900">raises the chance that you will feel good</strong> later that day.</p>
+                      <p className="text-gray-600">Hence, normalizing your chemical level (by consuming the drink) <b>raises the chance that you will feel good</b> later that day.</p>
                     </>
                   )}
                 </div>
@@ -749,12 +750,12 @@
                   {isMig ? (
                     <>
                       <h3 className="text-blue-600 font-bold mb-2">Possibility {idx + 1}: The drink <span className="underline">does not</span> affect how you will feel later that day.</h3>
-                      <p className="text-gray-600">In this case, something else, for instance whether you slept well last night, affects both your craving and whether you feel good later that day.</p>
+                      <p className="text-gray-600">Consuming the drink and how you feel later that day may go together for other reasons.</p>
                     </>
                   ) : (
                     <>
                       <h3 className="text-blue-600 font-bold mb-2">Possibility {idx + 1}: The chemical level <span className="underline">is a response to</span> how you feel, but <span className="underline">not a cause</span>.</h3>
-                      <p className="text-gray-600">In this case, consuming the drink will still make a normal chemical level more likely, but this <strong className="text-gray-900">will not affect how you feel</strong>.</p>
+                      <p className="text-gray-600">In this case, consuming the drink will still make a normal chemical level more likely, but this <b>will not affect how you feel</b>.</p>
                     </>
                   )}
                 </div>
@@ -762,7 +763,7 @@
             ))}
             <p className="text-gray-700 mt-4">
               {isMig
-                ? 'Some drinks in this survey might affect how you will feel later that day, others might not. For instance, Drink A might affect how you feel whereas drink B might not.'
+                ? 'Both, neither, or only one of the drinks in this study might affect how you feel later in the day.'
                 : <>Some blood chemicals in this survey might be a cause of how you feel, others might be a response to it. For instance, the blood chemical A might be a cause of how you feel whereas the blood chemical B might be a response to it, but not a cause.</>
               }
             </p>
@@ -825,8 +826,8 @@
                   <div>
                     <div className="text-gray-900 font-medium">Drink Cost/Payment</div>
                     <ul className="list-disc list-inside space-y-1 text-gray-500">
-                      <li>If you have a craving, you <span className="text-green-600 font-bold">get {CONFIG.currency}{Math.abs(CONFIG.aCostMigraines1).toFixed(2)}</span> for consuming the drink (added to your baseline bonus).</li>
-                      <li>If you don't have a craving, you <span className="text-red-600 font-bold">pay {CONFIG.currency}{CONFIG.aCostMigraines0.toFixed(2)}</span> for consuming the drink (deducted from your baseline bonus).</li>
+                      <li>If you have a craving, you <b>get {CONFIG.currency}{Math.abs(CONFIG.aCostMigraines1).toFixed(2)}</b> for consuming the drink (added to your baseline bonus).</li>
+                      <li>If you don't have a craving, you <b>pay {CONFIG.currency}{CONFIG.aCostMigraines0.toFixed(2)}</b> for consuming the drink (deducted from your baseline bonus).</li>
                       <li>If you don't consume the drink, no money will be added or deducted.</li>
                     </ul>
                   </div>
@@ -845,7 +846,7 @@
                 <HappyFaceIcon className="w-6 h-6 text-green-600 flex-shrink-0" />
                 <div>
                   <div className="text-gray-900 font-medium">Feeling Good Bonus</div>
-                  <div className="text-gray-500">If you feel good at the end of the day, you receive an additional {CONFIG.currency}{CONFIG.yBonus.toFixed(2)} bonus, if you feel bad, you don't.</div>
+                  <div className="text-gray-500">If you feel good at the end of the day, you receive an additional <b>{CONFIG.currency}{CONFIG.yBonus.toFixed(2)} bonus</b>, if you feel bad, you don't.</div>
                 </div>
               </div>
 
@@ -861,10 +862,10 @@
             </div>
 
             <p className="text-gray-600 mt-4">
-              <strong className="text-gray-900">For each of the {isMig ? 'two' : 'three'} drinks in this survey{isMig ? '' : ' and the blood chemical they target'}, you will make decisions in {CONFIG.nRounds} rounds.</strong> This may sound like a lot, but because each round only takes a few seconds, this is quite manageable.
+              <b>For each of the {isMig ? 'two' : 'three'} drinks in this survey{isMig ? '' : ' and the blood chemical they target'}, you will make decisions in {CONFIG.nRounds} rounds.</b> This may sound like a lot, but because each round only takes a few seconds, this is quite manageable.
             </p>
             <p className="text-gray-600 mt-2">
-              You will make some additional decisions related to each drink. <strong className="text-gray-900">Your bonus payment will be determined by a single decision from the entire survey,</strong> randomly selected at the end.
+              You will make some additional decisions related to each drink. <b>Your bonus payment will be determined by a single decision from the entire survey,</b> randomly selected at the end.
             </p>
           </div>
         </section>

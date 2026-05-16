@@ -89,7 +89,9 @@
           if (qConfig.pX_Y !== undefined) CONFIG.pX_Y = qConfig.pX_Y;
           if (qConfig.order) CONFIG.order = qConfig.order;
           if (qConfig.increasingPrice !== undefined) CONFIG.increasingPrice = parseInt(qConfig.increasingPrice);
+          if (qConfig.cravingFirstHS !== undefined) CONFIG.cravingFirstHS = parseInt(qConfig.cravingFirstHS);
           if (qConfig.themeColor) CONFIG.themeColor = qConfig.themeColor;
+          if (qConfig.aOnLeftDAG !== undefined) CONFIG.aOnLeftDAG = parseInt(qConfig.aOnLeftDAG);
 
           applySupergameDefaults();
           console.log('Applied config:', CONFIG);
@@ -196,9 +198,10 @@
       order: null,                // null → supergame default (dieter:'AY', migraines:'AXY')
 
       // Price elicitation
-      priceElicitationPrices: [0, 2.5, 5, 7.5, 9.5, 12, 14.5],
-      priceElicitationBonus: 50,
+      priceElicitationPrices: [0, 7.5, 15, 22.5, 30],
+      priceElicitationBonus: 100,
       increasingPrice: 0,         // 1 = low to high, 0 = high to low
+      cravingFirstHS: 1,          // 1 = craving case first, 0 = no-craving case first (per price level)
 
       // Player names (defaults overridden by supergame)
       playerName0: null,          // null → supergame default
@@ -208,13 +211,14 @@
       playerName2Neg: 'tired',
       playerIcon0: '🥤',
       currentSymbol: null,
-      themeColor: 'purple'
+      themeColor: 'purple',
+      aOnLeftDAG: 1           // 1 → A on left in DAG; 0 → A on right
     };
 
     function applySupergameDefaults() {
       const isMig = CONFIG.supergame === 'migraines';
       if (CONFIG.yBonus === null || CONFIG.yBonus === undefined) CONFIG.yBonus = isMig ? 10.00 : 2.00;
-      if (CONFIG.totalRounds === null || CONFIG.totalRounds === undefined) CONFIG.totalRounds = 10;
+      if (CONFIG.totalRounds === null || CONFIG.totalRounds === undefined) CONFIG.totalRounds = 1;
       if (CONFIG.playerName0 === null || CONFIG.playerName0 === undefined) CONFIG.playerName0 = isMig ? 'Driftwell' : 'Zerqalase-norm';
       if (CONFIG.playerName1 === null || CONFIG.playerName1 === undefined) CONFIG.playerName1 = isMig ? 'Driftwell' : 'Zerqalase';
       if (CONFIG.order === null || CONFIG.order === undefined) CONFIG.order = isMig ? 'AXY' : 'AY';
@@ -233,6 +237,23 @@
     function getOrderedPrices() {
       const prices = [...CONFIG.priceElicitationPrices];
       return CONFIG.increasingPrice === 1 ? prices : prices.reverse();
+    }
+
+    // Migraines high-stakes: for each price, present BOTH craving (X=1) and no-craving (X=0).
+    // CONFIG.cravingFirstHS = 1 → craving case first within each price level; 0 → no-craving first.
+    function getOrderedHSRounds() {
+      const prices = getOrderedPrices();
+      const Xfirst = CONFIG.cravingFirstHS === 1 ? 1 : 0;
+      const Xsecond = 1 - Xfirst;
+      const rounds = [];
+      for (const p of prices) {
+        rounds.push({ price: p, X: Xfirst });
+        rounds.push({ price: p, X: Xsecond });
+      }
+      return rounds;
+    }
+    function getHSTotalRounds() {
+      return CONFIG.priceElicitationPrices.length * 2;
     }
 
     // Inconsistent-choice detector — direction flips with supergame.
@@ -579,15 +600,25 @@
       );
     }
 
-    function InlinePriceElicitationButtons({ price, onChoice, isFirstRound, selectedChoice, disabled }) {
+    function InlinePriceElicitationButtons({ price, onChoice, isFirstRound, selectedChoice, disabled, currentX }) {
       const isMig = CONFIG.supergame === 'migraines';
       const theme = getThemeClasses(CONFIG.themeColor);
       const drinkInactive = disabled && selectedChoice !== 1;
       const skipInactive = disabled && selectedChoice !== 0;
-      // Migraines: drink PAYS the displayed price (+) ; Dieter: drink COSTS the price (-)
-      const priceLabel = price === 0
-        ? (isMig ? `${CONFIG.currency}0.00` : 'Free')
-        : `${isMig ? '+' : '-'}${CONFIG.currency}${price.toFixed(2)}`;
+      // Migraines: button shows the BASELINE payment (constant per X-state). Total payment is always +price.
+      // Payment change = total - baseline.
+      const prices = CONFIG.priceElicitationPrices;
+      const baseline = isMig ? prices[Math.floor(prices.length / 2)] : 0;
+      const sign = isMig ? (currentX === 1 ? 1 : -1) : 1;
+      const baselinePayment = sign * baseline;
+      const additional = price - baselinePayment;
+      const totalPayment = price;
+      const formatSignedCurrency = (v) => v === 0
+        ? `${CONFIG.currency}0`
+        : `${v > 0 ? '+' : '-'}${CONFIG.currency}${Math.abs(v)}`;
+      const priceLabel = isMig
+        ? formatSignedCurrency(baselinePayment)
+        : (price === 0 ? 'Free' : `-${CONFIG.currency}${price}`);
       return (
         <div className="flex flex-col items-center">
           <div className="h-44 flex items-end justify-center gap-3">
@@ -608,7 +639,7 @@
             >
               <DrinkIcon className={`w-10 h-10 ${drinkInactive || selectedChoice === 0 ? 'text-gray-400' : theme.iconColor}`} drinkName={CONFIG.playerName0} />
               <div className="text-center">
-                <div className={`text-sm inline-block rounded px-2 py-0.5 font-bold ${drinkInactive ? 'bg-gray-200 text-gray-400' : 'bg-amber-400 text-amber-900'}`}>{priceLabel}</div>
+                <div className={`text-sm font-bold ${drinkInactive ? 'text-gray-400' : 'text-white'}`}>{priceLabel}</div>
                 <div className={`text-[10px] mt-1 ${drinkInactive || selectedChoice === 0 ? 'text-gray-400' : 'text-white'}`}>Drink {CONFIG.playerName0}</div>
               </div>
             </button>
@@ -634,6 +665,18 @@
               </div>
             </button>
           </div>
+          {isMig && (currentX === 0 || currentX === 1) && (
+            <div className="mt-3 space-y-1 text-lg text-gray-600 text-left">
+              <div className="flex items-center gap-2 whitespace-nowrap">
+                <span>Additional payment for consuming the drink:</span>
+                <span className="font-bold">{formatSignedCurrency(additional)}</span>
+              </div>
+              <div className="flex items-center gap-2 whitespace-nowrap">
+                <span>Total payment for consuming the drink:</span>
+                <span className="inline-block rounded px-2 py-0.5 font-bold bg-amber-400 text-amber-900">{formatSignedCurrency(totalPayment)}</span>
+              </div>
+            </div>
+          )}
           <div className="text-lg font-bold text-gray-900 mt-4">Your Decision</div>
           <div className="h-12" />
         </div>
@@ -679,7 +722,7 @@
     }
 
     // =============== XY CONNECTION (left panel + rate box + mood) ===============
-    function XYConnection({ X, Y, A, stats, hideRateBox, showBonus, actionSlot }) {
+    function XYConnection({ X, Y, A, stats, hideRateBox, showBonus, actionSlot, alignStart }) {
       const isMig = CONFIG.supergame === 'migraines';
       const isAYOrder = CONFIG.order === 'AY';
 
@@ -706,12 +749,12 @@
       }
 
       return (
-        <div className={`relative flex items-center justify-center pt-8 pb-2 ${isMig ? 'gap-12' : 'gap-8'}`}>
+        <div className={`relative flex ${alignStart ? 'items-start' : 'items-center'} justify-center pt-8 pb-2 ${isMig ? 'gap-12' : 'gap-8'}`}>
           {/* Left panel: dieter shows BioClip; migraines shows action slot (or BioClip if not provided) */}
           {isMig ? (actionSlot || <BioClipLarge status={null} />) : <BioClipLarge status={isAYOrder ? null : X} />}
 
-          <div className="flex flex-col items-center relative">
-            <svg width="180" height="80" className="absolute top-1/2 -translate-y-1/2">
+          <div className={`flex flex-col items-center relative ${alignStart ? 'h-44 justify-end' : ''}`}>
+            <svg width="180" height="80" className="absolute" style={alignStart ? { bottom: '10px' } : { top: '50%', transform: 'translateY(-50%)' }}>
               <line x1="0" y1="40" x2="180" y2="40" stroke="#d1d5db" strokeWidth="4" strokeDasharray="8,4" />
               {colorOn.showConnection && (
                 <>
@@ -839,7 +882,7 @@
             <h4 className="text-gray-900 text-lg font-bold mb-3 text-center">Morning</h4>
             <MorningIcon className="w-24 h-24 text-gray-700" drinkName={CONFIG.playerName0} X={X} />
             <div className="mt-2 text-lg font-bold text-gray-900">
-              {X === 1 ? 'Craving' : X === 0 ? 'NOT Craving' : ' '}
+              {X === 1 ? 'Craving' : X === 0 ? 'NO craving' : ' '}
             </div>
           </div>
         );
@@ -919,7 +962,7 @@
             <h4 className="text-gray-900 text-lg font-bold mb-3 text-center">Morning</h4>
             <MorningIcon className="w-24 h-24 text-gray-700" drinkName={CONFIG.playerName0} X={X} />
             <div className="mt-2 text-lg font-bold text-gray-900">
-              {X === 1 ? 'Craving' : X === 0 ? 'NOT Craving' : ' '}
+              {X === 1 ? 'Craving' : X === 0 ? 'NO craving' : ' '}
             </div>
           </div>
         );
@@ -943,7 +986,7 @@
               <DrinkIcon className={`w-10 h-10 ${selectedChoice === 0 ? 'text-gray-400' : theme.iconColor}`} drinkName={CONFIG.playerName0} />
               <div className="text-center">
                 <div className="text-base inline-block rounded px-2 py-0.5 font-bold bg-amber-400 text-amber-900">
-                  {price === 0 ? 'Free' : `-${CONFIG.currency}${price.toFixed(2)}`}
+                  {price === 0 ? 'Free' : `-${CONFIG.currency}${price}`}
                 </div>
                 <div className={`text-[10px] mt-1 ${selectedChoice === 0 ? 'text-gray-400' : 'text-white'}`}>Drink {CONFIG.playerName0}</div>
               </div>
@@ -1007,6 +1050,7 @@
               type: 'INIT',
               gameConfig: {
                 playerName0, playerName1, playerIcon0, nRounds, themeColor,
+                aOnLeftDAG: CONFIG.aOnLeftDAG,
                 ...(isMig ? { supergame: 'migraines' } : {})
               }
             }, '*');
@@ -1031,6 +1075,7 @@
                 type: 'INIT',
                 gameConfig: {
                   playerName0, playerName1, playerIcon0, themeColor,
+                  aOnLeftDAG: CONFIG.aOnLeftDAG,
                   ...(isMig ? { supergame: 'migraines' } : {})
                 }
               }, '*');
@@ -1076,6 +1121,7 @@
                 playerName0, playerName1, playerName2Pos, playerName2Neg,
                 aCost, currency, themeColor,
                 skipIntro: true,
+                forceSkipPieCharts: true,
                 mainCausals,
                 beliefPaymentMax: 10,
                 beliefPaymentIncentive: 0.5,
@@ -1110,6 +1156,7 @@
                   playerName0, playerName1, playerName2Pos, playerName2Neg,
                   aCost, currency, themeColor,
                   skipIntro: true,
+                  forceSkipPieCharts: true,
                   mainCausals,
                   beliefPaymentMax: 10,
                   beliefPaymentIncentive: 0.5,
@@ -1139,7 +1186,7 @@
                 return (
                   <div key={roundNumber} className="flex items-center gap-2 text-sm py-1 px-2 bg-gray-50 rounded border border-gray-100">
                     <span className="text-gray-400 w-6">#{roundNumber}</span>
-                    <span className="w-24 font-medium text-gray-900">{X === 1 ? 'Craving' : 'NOT Craving'}</span>
+                    <span className="w-24 font-medium text-gray-900">{X === 1 ? 'Craving' : 'NO craving'}</span>
                     <span className={`mx-auto flex items-center justify-center ${A === 1 ? theme.iconColor : 'text-gray-400'}`}>
                       {A === 1 ? <DrinkIcon className="w-4 h-4" drinkName={CONFIG.playerName0} /> : <SkipIcon className="w-4 h-4" />}
                     </span>
@@ -1186,12 +1233,12 @@
 
       // First-bullet phrasing
       const introSentence = isMig
-        ? (<>In the next few pages, you will make <strong>{CONFIG.priceElicitationPrices.length} high-stakes choices</strong> about whether to drink {CONFIG.playerName0} <b>when you are craving it</b>.</>)
+        ? (<>In the next few pages, you will make <strong>{CONFIG.priceElicitationPrices.length * 2} high-stakes choices</strong> about whether to drink {CONFIG.playerName0}.</>)
         : (<>In the next few pages, you will make <strong>{CONFIG.priceElicitationPrices.length} high-stakes choices</strong> about whether to drink {CONFIG.playerName0}.</>);
 
       // Range-of-payment bullet
       const rangeBullet = isMig
-        ? `The payment you receive for drinking will range from ${CONFIG.currency}0 to ${CONFIG.currency}${CONFIG.priceElicitationPrices[CONFIG.priceElicitationPrices.length - 1]} across these choices`
+        ? `Consuming the drink yields an additional payment that ranges from ${CONFIG.currency}0 to ${CONFIG.currency}${CONFIG.priceElicitationPrices[CONFIG.priceElicitationPrices.length - 1]}.`
         : `The price of the drink will vary from ${CONFIG.currency}0 to ${CONFIG.currency}${CONFIG.priceElicitationPrices[CONFIG.priceElicitationPrices.length - 1]} across these choices`;
 
       // "What doesn't change" first bullet
@@ -1211,9 +1258,11 @@
                 <li>
                   <strong>The stakes are higher:</strong>
                   <ul className="ml-6 mt-1 space-y-1 list-disc">
-                    <li>The bonus for feeling {CONFIG.playerName2Pos} is now <strong>{CONFIG.currency}{CONFIG.priceElicitationBonus}</strong></li>
+                    <li>You will be given <strong>{CONFIG.currency}30</strong> as endowment.</li>
+                    <li>The bonus for feeling {CONFIG.playerName2Pos} increases from {CONFIG.currency}{CONFIG.yBonus} to <strong>{CONFIG.currency}{CONFIG.priceElicitationBonus}</strong>.</li>
+                    <li>If you have a craving, you get <strong>{CONFIG.currency}{CONFIG.priceElicitationPrices[Math.floor(CONFIG.priceElicitationPrices.length / 2)]}</strong> instead of {CONFIG.currency}{CONFIG.aCost} for consuming the drink.</li>
+                    <li>If you don't have a craving, you pay <strong>{CONFIG.currency}{CONFIG.priceElicitationPrices[Math.floor(CONFIG.priceElicitationPrices.length / 2)]}</strong> instead of {CONFIG.currency}{CONFIG.aCost} for consuming the drink.</li>
                     <li>{rangeBullet}</li>
-                    <li>You will be given <strong>{CONFIG.currency}15</strong> as endowment</li>
                   </ul>
                 </li>
                 <li className="mt-3">
@@ -1237,19 +1286,33 @@
     }
 
     // =============== PRICE DIVIDER PAGE ===============
-    function PriceDividerPage({ nextPrice, nextRound, totalRounds, onContinue, choices, onGoBack, isFinalReview }) {
+    function PriceDividerPage({ nextPrice, nextX, nextRound, totalRounds, onContinue, choices, onGoBack, isFinalReview }) {
       const isMig = CONFIG.supergame === 'migraines';
       const [isLoading, setIsLoading] = useState(true);
+      const [showRest, setShowRest] = useState(false);
       const orderedPrices = getOrderedPrices();
       const theme = getThemeClasses(CONFIG.themeColor);
 
-      const sortedChoices = orderedPrices.map(p => choices.find(c => c.price === p)).filter(c => c !== undefined);
-      const isInconsistent = hasInconsistentChoices(sortedChoices);
+      // For migraines, check inconsistency separately for craving (X=1) and no-craving (X=0).
+      let isInconsistent;
+      if (isMig) {
+        const sortedCraving = orderedPrices.map(p => choices.find(c => c.price === p && c.X === 1)).filter(c => c !== undefined);
+        const sortedNoCraving = orderedPrices.map(p => choices.find(c => c.price === p && c.X === 0)).filter(c => c !== undefined);
+        isInconsistent = hasInconsistentChoices(sortedCraving) || hasInconsistentChoices(sortedNoCraving);
+      } else {
+        const sortedChoices = orderedPrices.map(p => choices.find(c => c.price === p)).filter(c => c !== undefined);
+        isInconsistent = hasInconsistentChoices(sortedChoices);
+      }
 
       useEffect(() => {
         setIsLoading(true);
-        const t = setTimeout(() => setIsLoading(false), 1000);
-        return () => clearTimeout(t);
+        setShowRest(false);
+        const t1 = setTimeout(() => setIsLoading(false), 1000);
+        // For migraines (non-review), show title only for ~1.5s, then reveal rest.
+        // Other cases reveal the rest immediately after the spinner.
+        const restDelay = (isMig && !isFinalReview) ? 2500 : 1000;
+        const t2 = setTimeout(() => setShowRest(true), restDelay);
+        return () => { clearTimeout(t1); clearTimeout(t2); };
       }, [nextRound, isFinalReview]);
 
       if (isLoading) {
@@ -1264,26 +1327,78 @@
       }
 
       const headline = isMig ? `Drinking ${CONFIG.playerName0} now pays you:` : `The price of ${CONFIG.playerName0} is now:`;
+      // Migraines preview values
+      const prices = CONFIG.priceElicitationPrices;
+      const baseline = prices[Math.floor(prices.length / 2)];
+      const additional = nextPrice - baseline;
+      const formatSignedCurrency = (v) => v === 0
+        ? `${CONFIG.currency}0`
+        : `${v > 0 ? '+' : '-'}${CONFIG.currency}${Math.abs(v)}`;
 
       return (
         <div className="min-h-screen bg-white px-4 pt-8">
           <div className="max-w-6xl mx-auto text-center">
             {!isFinalReview && (
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">Next Choice</h1>
+              isMig ? (
+                <div className="flex flex-col items-center mb-4">
+                  <MorningIcon className="w-20 h-20 text-gray-700" drinkName={CONFIG.playerName0} X={nextX} />
+                  <h1 className="text-3xl font-bold text-gray-900 mt-2">
+                    {nextX === 1 ? (
+                      <>In the Next Choice, You Have a <span className="bg-yellow-200 px-2 py-0.5 rounded">Craving</span></>
+                    ) : (
+                      <>In the Next Choice, You Have <span className="bg-yellow-200 px-2 py-0.5 rounded">No Craving</span></>
+                    )}
+                  </h1>
+                </div>
+              ) : (
+                <h1 className="text-3xl font-bold text-gray-900 mb-4">Next Choice</h1>
+              )
             )}
 
-            {!isFinalReview && (
-              <div className="mb-6 border-2 border-gray-200 rounded-xl p-6 inline-block">
-                <p className="text-gray-700 text-lg">{headline}</p>
-                <div className="text-4xl font-bold text-amber-600 mt-3">
-                  {nextPrice === 0
-                    ? (isMig ? `${CONFIG.currency}0.00` : 'Free')
-                    : `${CONFIG.currency}${nextPrice.toFixed(2)}`}
+            {showRest && !isFinalReview && (
+              isMig ? (() => {
+                // Button shows baseline payment (constant per X-state). Total payment is always +price.
+                const sign = nextX === 1 ? 1 : -1;
+                const buttonAmount = sign * baseline;
+                const paymentChange = nextPrice - buttonAmount;
+                const totalPayment = nextPrice;
+                return (
+                  <div className="flex flex-col items-center mb-6">
+                    {/* Drink button preview */}
+                    <div className="w-36 h-24 px-2 py-2 rounded-xl font-bold flex flex-col items-center justify-center gap-1 border-2 bg-red-500 border-red-500 shadow-md">
+                      <DrinkIcon className={`w-10 h-10 ${theme.iconColor}`} drinkName={CONFIG.playerName0} />
+                      <div className="text-center">
+                        <div className="text-sm font-bold text-white">{formatSignedCurrency(buttonAmount)}</div>
+                        <div className="text-[10px] mt-1 text-white">Drink {CONFIG.playerName0}</div>
+                      </div>
+                    </div>
+                    {/* Additional and Total payment lines, aligned left under button */}
+                    <div className="mt-3 space-y-1 text-lg text-gray-600 text-left">
+                      <div className="flex items-center gap-2 whitespace-nowrap">
+                        <span>Additional payment for consuming the drink:</span>
+                        <span className="font-bold">{formatSignedCurrency(paymentChange)}</span>
+                      </div>
+                      <div className="flex items-center gap-2 whitespace-nowrap">
+                        <span>Total payment for consuming the drink:</span>
+                        <span className="inline-block rounded px-2 py-0.5 font-bold bg-amber-400 text-amber-900">{formatSignedCurrency(totalPayment)}</span>
+                      </div>
+                    </div>
+                    <p className="text-gray-700 text-lg mt-4">
+                      Bonus for feeling {CONFIG.playerName2Pos}: <span className="text-3xl font-bold text-green-600">{CONFIG.currency}{CONFIG.priceElicitationBonus}</span>
+                    </p>
+                  </div>
+                );
+              })() : (
+                <div className="mb-6 border-2 border-gray-200 rounded-xl p-6 inline-block">
+                  <p className="text-gray-700 text-lg">{headline}</p>
+                  <div className="text-4xl font-bold text-amber-600 mt-3">
+                    {nextPrice === 0 ? 'Free' : `${CONFIG.currency}${nextPrice}`}
+                  </div>
+                  <p className="text-gray-700 text-lg mt-4">
+                    Bonus for feeling {CONFIG.playerName2Pos}: <span className="text-3xl font-bold text-green-600">{CONFIG.currency}{CONFIG.priceElicitationBonus}</span>
+                  </p>
                 </div>
-                <p className="text-gray-700 text-lg mt-4">
-                  Bonus for feeling {CONFIG.playerName2Pos}: <span className="text-3xl font-bold text-green-600">{CONFIG.currency}{CONFIG.priceElicitationBonus}</span>
-                </p>
-              </div>
+              )
             )}
 
             {isFinalReview && (
@@ -1292,37 +1407,77 @@
               </p>
             )}
 
+            {showRest && (<>
             {/* Choices so far — chip grid */}
             <div className="mb-6">
               <p className="text-gray-500 text-sm mb-2">Your choices:</p>
-              <div className="flex flex-wrap justify-center gap-1.5">
-                {orderedPrices.map((price, idx) => {
-                  const choiceData = choices.find(c => c.price === price);
-                  const isNextChoice = !isFinalReview && idx === nextRound - 1;
-                  const isPastChoice = choiceData !== undefined;
-                  return (
-                    <button
-                      key={price}
-                      onClick={() => isPastChoice && onGoBack && onGoBack(idx + 1)}
-                      disabled={!isPastChoice}
-                      className={`px-2 py-1 rounded text-xs font-medium transition-all ${
-                        isNextChoice
-                          ? 'bg-amber-50 border border-amber-300 text-amber-600'
-                          : choiceData
-                            ? choiceData.choice === 1
-                              ? 'bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-100 cursor-pointer'
-                              : 'bg-gray-100 border border-gray-200 text-gray-500 hover:bg-gray-200 cursor-pointer'
-                            : 'bg-white border border-gray-100 text-gray-300'
-                      }`}
-                    >
-                      <div>{price === 0 ? (isMig ? `${CONFIG.currency}0.00` : 'Free') : `${CONFIG.currency}${price}`}</div>
-                      <div className="text-xs">
-                        {choiceData ? (choiceData.choice === 1 ? 'Drink' : 'Skip') : '—'}
+              {isMig ? (
+                <>
+                  {[1, 0].map((rowX) => (
+                    <div key={rowX} className="flex items-center justify-center gap-2 mb-1.5">
+                      <span className="text-gray-600 text-xs w-24 text-right">{rowX === 1 ? 'Craving:' : 'No craving:'}</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {orderedPrices.map((price) => {
+                          const choiceData = choices.find(c => c.price === price && c.X === rowX);
+                          const hsIdx = getOrderedHSRounds().findIndex(r => r.price === price && r.X === rowX);
+                          const isNextChoice = !isFinalReview && hsIdx === nextRound - 1;
+                          const isPastChoice = choiceData !== undefined;
+                          return (
+                            <button
+                              key={`${price}-${rowX}`}
+                              onClick={() => isPastChoice && onGoBack && onGoBack(hsIdx + 1)}
+                              disabled={!isPastChoice}
+                              className={`px-2 py-1 rounded text-xs font-medium transition-all ${
+                                isNextChoice
+                                  ? 'bg-amber-50 border border-amber-300 text-amber-600'
+                                  : choiceData
+                                    ? choiceData.choice === 1
+                                      ? 'bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-100 cursor-pointer'
+                                      : 'bg-gray-100 border border-gray-200 text-gray-500 hover:bg-gray-200 cursor-pointer'
+                                    : 'bg-white border border-gray-100 text-gray-300'
+                              }`}
+                            >
+                              <div>Total: {CONFIG.currency}{price}</div>
+                              <div className="text-xs">
+                                {choiceData ? (choiceData.choice === 1 ? 'Drink' : 'Skip') : '—'}
+                              </div>
+                            </button>
+                          );
+                        })}
                       </div>
-                    </button>
-                  );
-                })}
-              </div>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <div className="flex flex-wrap justify-center gap-1.5">
+                  {orderedPrices.map((price, idx) => {
+                    const choiceData = choices.find(c => c.price === price);
+                    const isNextChoice = !isFinalReview && idx === nextRound - 1;
+                    const isPastChoice = choiceData !== undefined;
+                    return (
+                      <button
+                        key={price}
+                        onClick={() => isPastChoice && onGoBack && onGoBack(idx + 1)}
+                        disabled={!isPastChoice}
+                        className={`px-2 py-1 rounded text-xs font-medium transition-all ${
+                          isNextChoice
+                            ? 'bg-amber-50 border border-amber-300 text-amber-600'
+                            : choiceData
+                              ? choiceData.choice === 1
+                                ? 'bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-100 cursor-pointer'
+                                : 'bg-gray-100 border border-gray-200 text-gray-500 hover:bg-gray-200 cursor-pointer'
+                              : 'bg-white border border-gray-100 text-gray-300'
+                        }`}
+                      >
+                        <div>{price === 0 ? 'Free' : `${CONFIG.currency}${price}`}</div>
+                        <div className="text-xs">
+                          {choiceData ? (choiceData.choice === 1 ? 'Drink' : 'Skip') : '—'}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
               {choices.length > 0 && (
                 <p className="text-gray-400 text-xs mt-2">Click on any choice to change it</p>
               )}
@@ -1348,6 +1503,7 @@
             >
               {isFinalReview ? 'Submit' : 'Continue'}
             </button>
+            </>)}
           </div>
         </div>
       );
@@ -1360,11 +1516,9 @@
 
       // Pill text
       let pillText;
-      if (waitingForSpace) {
-        pillText = 'Press "Space" to continue';
-      } else if (isMig) {
+      if (isMig) {
         if (currentX === null) pillText = 'Morning...';
-        else if (!decisionEnabled) pillText = `Morning: ${currentX === 1 ? 'Craving' : 'NOT Craving'}`;
+        else if (!decisionEnabled) pillText = `Morning: ${currentX === 1 ? 'Craving' : 'NO craving'}`;
         else pillText = `High-Stakes Choice: Would you drink ${CONFIG.playerName0} for this payment?`;
       } else {
         pillText = `High-Stakes Choice: Would you drink ${CONFIG.playerName0} at this price?`;
@@ -1375,7 +1529,7 @@
           <div className="max-w-6xl mx-auto">
             <div className={`${theme.panelBg} rounded-2xl p-6 mb-4 border ${theme.panelBorder} shadow-sm relative overflow-hidden`}>
               <div className="text-center mb-4 h-14 flex items-center justify-center">
-                <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium bg-amber-50 text-amber-700 border border-amber-200 ${waitingForSpace ? 'attention-shine-pill' : ''} ${isMig && roundNumber === 1 && !waitingForSpace && decisionEnabled ? 'first-round-shine-pill' : ''}`}>
+                <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium bg-amber-50 text-amber-700 border border-amber-200 ${isMig && roundNumber === 1 && !waitingForSpace && decisionEnabled ? 'first-round-shine-pill' : ''}`}>
                   {pillText}
                 </span>
               </div>
@@ -1402,6 +1556,7 @@
                 stats={stats}
                 hideRateBox={false}
                 showBonus={CONFIG.priceElicitationBonus}
+                alignStart={isMig}
                 actionSlot={isMig ? (
                   <InlinePriceElicitationButtons
                     price={price}
@@ -1409,6 +1564,7 @@
                     isFirstRound={roundNumber === 1 && decisionEnabled && !waitingForSpace}
                     selectedChoice={pendingChoice}
                     disabled={!decisionEnabled || waitingForSpace}
+                    currentX={currentX}
                   />
                 ) : null}
               />
@@ -1510,50 +1666,9 @@
         return () => clearTimeout(timeout);
       }, []);
 
-      // Space-bar listener (shared between price-elicitation confirmation and main outcome→next-round)
+      // Space-bar listener for main outcome→next-round (price elicitation auto-advances now)
       useEffect(() => {
         const handleKeyDown = (e) => {
-          // Price elicitation: confirm pending choice
-          if (e.code === 'Space' && priceElicitationWaitingForSpace && pendingPriceChoice) {
-            e.preventDefault();
-
-            const { price, choice } = pendingPriceChoice;
-            const currentPrice = getOrderedPrices()[priceElicitationRound - 1];
-            const existingIndex = priceElicitationChoices.findIndex(c => c.price === currentPrice);
-            let newChoices;
-            const isEditing = existingIndex >= 0;
-
-            // In migraines, store the sampled X/Y alongside the choice so the payoff uses what was shown
-            const sampledX = isMig ? (pendingResult ? pendingResult.X : currentX) : undefined;
-            const sampledY = isMig ? (pendingResult ? pendingResult.Y : currentY) : undefined;
-            const entry = isMig
-              ? { price: currentPrice, choice, X: sampledX, Y: sampledY }
-              : { price: currentPrice, choice };
-
-            if (isEditing) {
-              newChoices = [...priceElicitationChoices];
-              newChoices[existingIndex] = entry;
-            } else {
-              newChoices = [...priceElicitationChoices, entry];
-            }
-
-            setPriceElicitationChoices(newChoices);
-            setPriceElicitationWaitingForSpace(false);
-            setPendingPriceChoice(null);
-
-            if (isEditing && priceElicitationReturnRound !== null) {
-              setPriceElicitationRound(priceElicitationReturnRound);
-              setPriceElicitationReturnRound(null);
-              setShowPriceDivider(true);
-            } else if (newChoices.length >= CONFIG.priceElicitationPrices.length) {
-              setShowPriceDivider(true);
-              setPriceElicitationRound(CONFIG.priceElicitationPrices.length);
-            } else {
-              setShowPriceDivider(true);
-            }
-            return;
-          }
-
           // Main round: outcome → next round
           if (e.code === 'Space' && waitingForSpace === 'nextRound') {
             e.preventDefault();
@@ -1600,7 +1715,7 @@
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-      }, [waitingForSpace, pendingResult, currentRound, priceElicitationWaitingForSpace, pendingPriceChoice, priceElicitationRound, priceElicitationChoices, priceElicitationReturnRound, isMig, currentX, currentY]);
+      }, [waitingForSpace, pendingResult, currentRound]);
 
       const stats = calculateStats(history);
 
@@ -1690,7 +1805,7 @@
         sampledForPriceRoundRef.current = null;
       }, [phase, priceElicitationRound, showPriceDivider, isMig]);
 
-      // ---- migraines-only: sample for each high-stakes round (X forced to 1 = "always craving") ----
+      // ---- migraines-only: sample for each high-stakes round (X forced by getOrderedHSRounds) ----
       useEffect(() => {
         if (!isMig) return;
         if (!ready) return;
@@ -1701,7 +1816,8 @@
         if (sampledForPriceRoundRef.current === priceElicitationRound) return;
         sampledForPriceRoundRef.current = priceElicitationRound;
         const result = simulateRound(0);
-        const X = 1;
+        const hsRound = getOrderedHSRounds()[priceElicitationRound - 1];
+        const X = hsRound ? hsRound.X : 1;
         setPendingResult({ A: null, X, Y: result.Y });
         const timer = setTimeout(() => setCurrentX(X), 1200);
         return () => clearTimeout(timer);
@@ -1724,11 +1840,55 @@
         setPhase('priceElicitation');
       }, []);
 
+      const commitPriceChoice = useCallback((choice) => {
+        const hsRound = isMig ? getOrderedHSRounds()[priceElicitationRound - 1] : null;
+        const currentPrice = isMig ? hsRound.price : getOrderedPrices()[priceElicitationRound - 1];
+        const currentRoundX = isMig ? hsRound.X : null;
+        const existingIndex = isMig
+          ? priceElicitationChoices.findIndex(c => c.price === currentPrice && c.X === currentRoundX)
+          : priceElicitationChoices.findIndex(c => c.price === currentPrice);
+        const isEditing = existingIndex >= 0;
+
+        const sampledX = isMig ? (pendingResult ? pendingResult.X : currentX) : undefined;
+        const sampledY = isMig ? (pendingResult ? pendingResult.Y : currentY) : undefined;
+        const entry = isMig
+          ? { price: currentPrice, choice, X: sampledX, Y: sampledY }
+          : { price: currentPrice, choice };
+
+        let newChoices;
+        if (isEditing) {
+          newChoices = [...priceElicitationChoices];
+          newChoices[existingIndex] = entry;
+        } else {
+          newChoices = [...priceElicitationChoices, entry];
+        }
+
+        setPriceElicitationChoices(newChoices);
+        setPriceElicitationWaitingForSpace(false);
+        setPendingPriceChoice(null);
+
+        const totalHSRounds = isMig ? getHSTotalRounds() : CONFIG.priceElicitationPrices.length;
+        if (isEditing && priceElicitationReturnRound !== null) {
+          setPriceElicitationRound(priceElicitationReturnRound);
+          setPriceElicitationReturnRound(null);
+          setShowPriceDivider(true);
+        } else if (newChoices.length >= totalHSRounds) {
+          setShowPriceDivider(true);
+          setPriceElicitationRound(totalHSRounds);
+        } else {
+          setShowPriceDivider(true);
+        }
+      }, [isMig, priceElicitationRound, priceElicitationChoices, pendingResult, currentX, currentY, priceElicitationReturnRound]);
+
       const handlePriceElicitationChoice = useCallback((choice) => {
-        const currentPrice = getOrderedPrices()[priceElicitationRound - 1];
+        const currentPrice = isMig
+          ? getOrderedHSRounds()[priceElicitationRound - 1].price
+          : getOrderedPrices()[priceElicitationRound - 1];
         setPendingPriceChoice({ price: currentPrice, choice });
         setPriceElicitationWaitingForSpace(true);
-      }, [priceElicitationRound]);
+        // Auto-forward to summary page after brief visual feedback
+        setTimeout(() => commitPriceChoice(choice), 500);
+      }, [priceElicitationRound, isMig, commitPriceChoice]);
 
       const handleGoBackToChoice = useCallback((roundNumber) => {
         setPriceElicitationReturnRound(priceElicitationRound);
@@ -1790,7 +1950,7 @@
       }
 
       // ---- Final data submission ----
-      if (phase === 'complete' && history.length === CONFIG.totalRounds && priceElicitationChoices.length === CONFIG.priceElicitationPrices.length && !dataSentRef.current) {
+      if (phase === 'complete' && history.length === CONFIG.totalRounds && priceElicitationChoices.length === (isMig ? getHSTotalRounds() : CONFIG.priceElicitationPrices.length) && !dataSentRef.current) {
         dataSentRef.current = true;
 
         // High-stakes outcomes: migraines reuses sampled X/Y from each round; dieter simulates fresh
@@ -1809,8 +1969,8 @@
 
         // High-stakes payment
         const paymentHighStake = isMig
-          ? highStakeOutcomes.map(c => 15 + (c.choice === 1 ? (c.X === 1 ? c.price : -c.price) : 0) + (c.Y === 1 ? CONFIG.priceElicitationBonus : 0))
-          : highStakeOutcomes.map(c => 15 + (c.choice === 1 ? -c.price : 0) + (c.Y === 1 ? CONFIG.priceElicitationBonus : 0));
+          ? highStakeOutcomes.map(c => 30 + (c.choice === 1 ? (c.X === 1 ? c.price : -c.price) : 0) + (c.Y === 1 ? CONFIG.priceElicitationBonus : 0))
+          : highStakeOutcomes.map(c => 30 + (c.choice === 1 ? -c.price : 0) + (c.Y === 1 ? CONFIG.priceElicitationBonus : 0));
 
         sendDataToQualtrics('FINAL_DATA', {
           history,
@@ -1871,14 +2031,18 @@
         return <PriceElicitationIntro onContinue={handlePriceIntroContinue} />;
       }
       if (phase === 'priceElicitation' && showPriceDivider) {
-        const isFinalReview = priceElicitationChoices.length >= CONFIG.priceElicitationPrices.length;
+        const hsTotal = isMig ? getHSTotalRounds() : CONFIG.priceElicitationPrices.length;
+        const isFinalReview = priceElicitationChoices.length >= hsTotal;
         const nextRound = priceElicitationRound === 0 ? 1 : priceElicitationRound + 1;
-        const nextPrice = isFinalReview ? null : getOrderedPrices()[nextRound - 1];
+        const nextHSRound = isMig ? getOrderedHSRounds()[nextRound - 1] : null;
+        const nextPrice = isFinalReview ? null : (isMig ? nextHSRound.price : getOrderedPrices()[nextRound - 1]);
+        const nextX = isMig && nextHSRound ? nextHSRound.X : null;
         return (
           <PriceDividerPage
             nextPrice={nextPrice}
+            nextX={nextX}
             nextRound={nextRound}
-            totalRounds={CONFIG.priceElicitationPrices.length}
+            totalRounds={hsTotal}
             onContinue={isFinalReview ? () => setPhase('complete') : handlePriceDividerContinue}
             choices={priceElicitationChoices}
             onGoBack={handleGoBackToChoice}
@@ -1887,12 +2051,15 @@
         );
       }
       if (phase === 'priceElicitation') {
-        const currentPrice = getOrderedPrices()[priceElicitationRound - 1];
+        const hsTotal = isMig ? getHSTotalRounds() : CONFIG.priceElicitationPrices.length;
+        const currentPrice = isMig
+          ? getOrderedHSRounds()[priceElicitationRound - 1].price
+          : getOrderedPrices()[priceElicitationRound - 1];
         return (
           <PriceElicitationPanel
             price={currentPrice}
             roundNumber={priceElicitationRound}
-            totalRounds={CONFIG.priceElicitationPrices.length}
+            totalRounds={hsTotal}
             onChoice={handlePriceElicitationChoice}
             stats={stats}
             history={history}
@@ -1914,7 +2081,7 @@
       const renderPillText = () => {
         if (isMig) {
           if (phase === 'decision' && currentX === null) return 'Morning...';
-          if (phase === 'decision' && currentX !== null && !decisionEnabled) return `Morning: ${currentX === 1 ? 'Craving' : 'NOT Craving'}`;
+          if (phase === 'decision' && currentX !== null && !decisionEnabled) return `Morning: ${currentX === 1 ? 'Craving' : 'NO craving'}`;
           if (phase === 'decision' && currentX !== null && decisionEnabled) return `Your Decision: Will you drink ${CONFIG.playerName0}?`;
         } else {
           if (phase === 'decision') return `Morning: Will you drink ${CONFIG.playerName0}?`;

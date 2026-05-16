@@ -62,7 +62,8 @@
       noConfirmation: null,  // If 1, skip confirmation step and go directly to confidence
       nRounds: 30,
       themeColor: 'purple',  // Theme color: 'blue', 'purple', 'teal', 'yellow'
-      supergame: 'migraines' // 'migraines' (default, bubble icon + "Craving or Not") or 'dieter' (BioClip + "{playerName1} Level")
+      supergame: 'migraines', // 'migraines' (default, bubble icon + "Craving or Not") or 'dieter' (BioClip + "{playerName1} Level")
+      aOnLeftDAG: 1 // 1 → A on left (x=200), 0 → A on right (x=500)
     };
 
     // Note: getThemeIconColor() is loaded from shared-icons.js
@@ -108,6 +109,7 @@
           if (qConfig.nRounds !== undefined) CONFIG.nRounds = parseInt(qConfig.nRounds) || CONFIG.nRounds;
           if (qConfig.themeColor) CONFIG.themeColor = qConfig.themeColor;
           if (qConfig.supergame) CONFIG.supergame = qConfig.supergame;
+          if (qConfig.aOnLeftDAG !== undefined) CONFIG.aOnLeftDAG = parseInt(qConfig.aOnLeftDAG);
         }
 
         if (!isInitialized) {
@@ -270,9 +272,13 @@
 
       // Node definitions
       const isMigraines = CONFIG.supergame === 'migraines';
+      // Horizontal positions of A and X come from CONFIG.aOnLeftDAG (Qualtrics-supplied).
+      const aOnLeft = CONFIG.aOnLeftDAG === 1 || CONFIG.aOnLeftDAG === '1';
+      const aX = aOnLeft ? 200 : 500;
+      const xX = aOnLeft ? 500 : 200;
       const nodes = [
-        { id: 'A', label: `Drink ${playerName0}`, x: 200, y: 100, iconType: 'drink', drinkName: playerName0 },
-        { id: 'X', label: isMigraines ? 'Craving or Not' : `${playerName1} Level`, x: 500, y: 100, iconType: isMigraines ? 'morning' : 'bioclip' },
+        { id: 'A', label: `Drink ${playerName0}`, x: aX, y: 100, iconType: 'drink', drinkName: playerName0 },
+        { id: 'X', label: isMigraines ? 'Whether you crave' : `${playerName1} Level`, x: xX, y: 100, iconType: isMigraines ? 'morning' : 'bioclip' },
         { id: 'Y', label: 'How You Feel', x: 350, y: 300, iconType: 'face' }
       ];
 
@@ -285,8 +291,8 @@
 
       const xLabel = isMigraines ? 'whether you are craving' : `your ${playerName1} level`;
       const nodeNames = {
-        'A': `Drink ${playerName0}`,
-        'X': isMigraines ? 'Craving or Not' : `${playerName1} Level`,
+        'A': `your choice to Drink ${playerName0}`,
+        'X': isMigraines ? 'Whether you crave' : `${playerName1} Level`,
         'Y': 'How You Feel'
       };
 
