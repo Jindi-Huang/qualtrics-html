@@ -291,9 +291,14 @@
 
       const xLabel = isMigraines ? 'whether you are craving' : `your ${playerName1} level`;
       const nodeNames = {
-        'A': `Your choice to Drink ${playerName0}`,
-        'X': isMigraines ? 'Whether you crave' : `${playerName1} Level`,
-        'Y': 'How You Feel'
+        'A': `Your choice to drink ${playerName0}`,
+        'X': isMigraines ? 'Whether you crave' : `${playerName1} level`,
+        'Y': 'How you feel'
+      };
+      const nodeNamesLower = {
+        'A': `your choice to drink ${playerName0}`,
+        'X': isMigraines ? 'whether you crave' : `${playerName1} level`,
+        'Y': 'how you feel'
       };
 
       const getNode = (id) => nodes.find(n => n.id === id);
@@ -959,10 +964,10 @@
                       <>
                         <div className="text-gray-800 mb-4">
                           You indicated:{' '}
-                          {currentPairState === 'none' && <><strong>{nodeNames[currentPair.nodeA]} and {nodeNames[currentPair.nodeB]} cannot directly influence each other</strong> (no arrows).</>}
-                          {currentPairState === 'AtoB' && <><strong>{nodeNames[currentPair.nodeA]} can directly influence {nodeNames[currentPair.nodeB]}</strong> (arrow: {nodeNames[currentPair.nodeA]} → {nodeNames[currentPair.nodeB]}).</>}
-                          {currentPairState === 'BtoA' && <><strong>{nodeNames[currentPair.nodeB]} can directly influence {nodeNames[currentPair.nodeA]}</strong> (arrow: {nodeNames[currentPair.nodeB]} → {nodeNames[currentPair.nodeA]}).</>}
-                          {currentPairState === 'both' && <><strong>{nodeNames[currentPair.nodeA]} and {nodeNames[currentPair.nodeB]} can directly influence each other</strong> (arrows in both directions).</>}
+                          {currentPairState === 'none' && <><strong>{nodeNames[currentPair.nodeA]} and {nodeNamesLower[currentPair.nodeB]} cannot directly influence each other</strong> (no arrows).</>}
+                          {currentPairState === 'AtoB' && <><strong>{nodeNames[currentPair.nodeA]} can directly influence {nodeNamesLower[currentPair.nodeB]}</strong> (arrow: {nodeNamesLower[currentPair.nodeA]} → {nodeNamesLower[currentPair.nodeB]}).</>}
+                          {currentPairState === 'BtoA' && <><strong>{nodeNames[currentPair.nodeB]} can directly influence {nodeNamesLower[currentPair.nodeA]}</strong> (arrow: {nodeNamesLower[currentPair.nodeB]} → {nodeNamesLower[currentPair.nodeA]}).</>}
+                          {currentPairState === 'both' && <><strong>{nodeNames[currentPair.nodeA]} and {nodeNamesLower[currentPair.nodeB]} can directly influence each other</strong> (arrows in both directions).</>}
                         </div>
 
                         <div className="flex gap-2">
@@ -1002,10 +1007,10 @@
                                 className="mr-2"
                               />
                               <span className="text-sm">
-                                {opt === 'none' && <><strong>{nodeNames[currentPair.nodeA]} and {nodeNames[currentPair.nodeB]} cannot directly influence each other</strong> (no arrows)</>}
-                                {opt === 'AtoB' && <><strong>{nodeNames[currentPair.nodeA]} can directly influence {nodeNames[currentPair.nodeB]}</strong> (arrow: {nodeNames[currentPair.nodeA]} → {nodeNames[currentPair.nodeB]})</>}
-                                {opt === 'BtoA' && <><strong>{nodeNames[currentPair.nodeB]} can directly influence {nodeNames[currentPair.nodeA]}</strong> (arrow: {nodeNames[currentPair.nodeB]} → {nodeNames[currentPair.nodeA]})</>}
-                                {opt === 'both' && <><strong>{nodeNames[currentPair.nodeA]} and {nodeNames[currentPair.nodeB]} can directly influence each other</strong> (arrows in both directions)</>}
+                                {opt === 'none' && <><strong>{nodeNames[currentPair.nodeA]} and {nodeNamesLower[currentPair.nodeB]} cannot directly influence each other</strong> (no arrows)</>}
+                                {opt === 'AtoB' && <><strong>{nodeNames[currentPair.nodeA]} can directly influence {nodeNamesLower[currentPair.nodeB]}</strong> (arrow: {nodeNamesLower[currentPair.nodeA]} → {nodeNamesLower[currentPair.nodeB]})</>}
+                                {opt === 'BtoA' && <><strong>{nodeNames[currentPair.nodeB]} can directly influence {nodeNamesLower[currentPair.nodeA]}</strong> (arrow: {nodeNamesLower[currentPair.nodeB]} → {nodeNamesLower[currentPair.nodeA]})</>}
+                                {opt === 'both' && <><strong>{nodeNames[currentPair.nodeA]} and {nodeNamesLower[currentPair.nodeB]} can directly influence each other</strong> (arrows in both directions)</>}
                               </span>
                             </label>
                           ))}

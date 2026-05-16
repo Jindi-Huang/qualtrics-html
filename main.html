@@ -605,17 +605,20 @@
       const theme = getThemeClasses(CONFIG.themeColor);
       const drinkInactive = disabled && selectedChoice !== 1;
       const skipInactive = disabled && selectedChoice !== 0;
-      // Migraines: drink payment is always positive. Button shows baseline; total = price.
+      // Migraines: button label flips by craving state (+$15 / -$15). Actual payment is always +price.
+      // additional = total - button so the displayed math adds up; total is the same across both rows.
       const prices = CONFIG.priceElicitationPrices;
       const baseline = isMig ? prices[Math.floor(prices.length / 2)] : 0;
-      const baselinePayment = baseline;
+      const sign = isMig ? (currentX === 1 ? 1 : -1) : 1;
+      const baselinePayment = sign * baseline;
       const additional = price - baselinePayment;
       const totalPayment = price;
       const formatSignedCurrency = (v) => v === 0
         ? `${CONFIG.currency}0`
         : `${v > 0 ? '+' : '-'}${CONFIG.currency}${Math.abs(v)}`;
+      const xKnown = currentX === 0 || currentX === 1;
       const priceLabel = isMig
-        ? formatSignedCurrency(baselinePayment)
+        ? (xKnown ? formatSignedCurrency(baselinePayment) : '')
         : (price === 0 ? 'Free' : `-${CONFIG.currency}${price}`);
       return (
         <div className="flex flex-col items-center">
@@ -1355,8 +1358,10 @@
 
             {showRest && !isFinalReview && (
               isMig ? (() => {
-                // Drink payment is always positive in migraines. Button shows baseline; total = price.
-                const buttonAmount = baseline;
+                // Button label flips by craving state; actual payment is always +price.
+                // paymentChange = total - button so the displayed math adds up; total is same across rows.
+                const sign = nextX === 1 ? 1 : -1;
+                const buttonAmount = sign * baseline;
                 const paymentChange = nextPrice - buttonAmount;
                 const totalPayment = nextPrice;
                 return (
@@ -1820,14 +1825,13 @@
         return () => clearTimeout(timer);
       }, [ready, phase, showPriceDivider, currentX, priceElicitationRound, isMig]);
 
-      // ---- migraines-only: enable high-stakes buttons shortly after craving is revealed ----
+      // ---- migraines-only: enable high-stakes buttons as soon as craving is revealed ----
       useEffect(() => {
         if (!isMig) return;
         if (phase !== 'priceElicitation') return;
         if (currentX === null) return;
         if (decisionEnabled) return;
-        const timer = setTimeout(() => setDecisionEnabled(true), 600);
-        return () => clearTimeout(timer);
+        setDecisionEnabled(true);
       }, [phase, currentX, decisionEnabled, isMig]);
 
       // Price elicitation handlers
