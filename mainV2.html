@@ -1,0 +1,2316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beverage Experiment</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="shared-icons.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; background: #ffffff; }
+
+    @keyframes first-round-shine-pill {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); }
+      50%      { box-shadow: 0 0 24px 6px rgba(251, 191, 36, 0.55); }
+    }
+    .first-round-shine-pill { animation: first-round-shine-pill 1.6s ease-in-out infinite; }
+
+    @keyframes first-round-shine-panel {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); }
+      50%      { box-shadow: 0 0 28px 8px rgba(251, 191, 36, 0.55); }
+    }
+    .first-round-shine-panel { animation: first-round-shine-panel 1.6s ease-in-out infinite; }
+
+    @keyframes attention-shine-pill {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+      50%      { box-shadow: 0 0 22px 6px rgba(245, 158, 11, 0.55); }
+    }
+    .attention-shine-pill { animation: attention-shine-pill 1.4s ease-in-out infinite; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script>
+    // =============== QUALTRICS COMMUNICATION ===============
+    let participantId = null;
+    let gameId = null;
+    let configReceived = false;
+
+    window.addEventListener('message', function(event) {
+      if (event.data.type === 'INIT') {
+        console.log('Received INIT from Qualtrics:', event.data);
+        configReceived = true;
+        participantId = event.data.participantId;
+        gameId = event.data.gameId;
+
+        if (event.data.gameConfig) {
+          const qConfig = event.data.gameConfig;
+
+          // Read supergame first so supergame-dependent defaults reset
+          if (qConfig.supergame) {
+            CONFIG.supergame = qConfig.supergame;
+            // Wipe fields we'll re-derive from supergame defaults
+            if (qConfig.yBonus === undefined) CONFIG.yBonus = null;
+            if (qConfig.nRounds === undefined) CONFIG.totalRounds = null;
+            if (qConfig.playerName0 === undefined) CONFIG.playerName0 = null;
+            if (qConfig.playerName1 === undefined) CONFIG.playerName1 = null;
+            if (qConfig.order === undefined) CONFIG.order = null;
+          }
+
+          if (qConfig.playerName0) CONFIG.playerName0 = qConfig.playerName0;
+          if (qConfig.playerName1) CONFIG.playerName1 = qConfig.playerName1;
+          if (qConfig.playerName2Pos) CONFIG.playerName2Pos = qConfig.playerName2Pos;
+          if (qConfig.playerName2Neg) CONFIG.playerName2Neg = qConfig.playerName2Neg;
+          if (qConfig.playerIcon0) CONFIG.playerIcon0 = qConfig.playerIcon0;
+          if (qConfig.currentSymbol) CONFIG.currentSymbol = qConfig.currentSymbol;
+          if (qConfig.yBonus !== undefined) CONFIG.yBonus = qConfig.yBonus;
+          if (qConfig.aCost !== undefined) CONFIG.aCost = qConfig.aCost;
+          if (qConfig.nRounds !== undefined) CONFIG.totalRounds = parseInt(qConfig.nRounds) || CONFIG.totalRounds;
+          if (qConfig.currency) CONFIG.currency = qConfig.currency;
+          if (qConfig.id !== undefined) CONFIG.id = qConfig.id;
+          // Dieter DGP params (collider / causal chain)
+          if (qConfig.causal !== undefined) CONFIG.causal = qConfig.causal;
+          if (qConfig.beta00 !== undefined) CONFIG.beta00 = qConfig.beta00;
+          if (qConfig.beta01 !== undefined) CONFIG.beta01 = qConfig.beta01;
+          if (qConfig.beta10 !== undefined) CONFIG.beta10 = qConfig.beta10;
+          if (qConfig.beta11 !== undefined) CONFIG.beta11 = qConfig.beta11;
+          if (qConfig.sigma0 !== undefined) CONFIG.sigma0 = qConfig.sigma0;
+          if (qConfig.sigma1 !== undefined) CONFIG.sigma1 = qConfig.sigma1;
+          if (qConfig.rho0 !== undefined) CONFIG.rho0 = qConfig.rho0;
+          if (qConfig.rho1 !== undefined) CONFIG.rho1 = qConfig.rho1;
+          // Migraines DGP params
+          if (qConfig.pY !== undefined) CONFIG.pY = qConfig.pY;
+          if (qConfig.pX_y !== undefined) CONFIG.pX_y = qConfig.pX_y;
+          if (qConfig.pX_Y !== undefined) CONFIG.pX_Y = qConfig.pX_Y;
+          if (qConfig.order) CONFIG.order = qConfig.order;
+          if (qConfig.increasingPrice !== undefined) CONFIG.increasingPrice = parseInt(qConfig.increasingPrice);
+          if (qConfig.cravingFirstHS !== undefined) CONFIG.cravingFirstHS = parseInt(qConfig.cravingFirstHS);
+          if (qConfig.themeColor) CONFIG.themeColor = qConfig.themeColor;
+          if (qConfig.aOnLeftDAG !== undefined) CONFIG.aOnLeftDAG = parseInt(qConfig.aOnLeftDAG);
+
+          applySupergameDefaults();
+          console.log('Applied config:', CONFIG);
+        }
+
+        markInitialized();
+        sendDataToQualtrics('GAME_START', { started: true });
+      }
+    });
+
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: 'IFRAME_READY' }, '*');
+    }
+
+    function sendDataToQualtrics(dataType, data) {
+      if (window.parent !== window) {
+        window.parent.postMessage({
+          type: 'GAME_DATA',
+          gameId: gameId,
+          dataType: dataType,
+          data: data,
+          participantId: participantId,
+          configReceived: configReceived,
+          timestamp: new Date().toISOString()
+        }, '*');
+      }
+      console.log('Sent to Qualtrics:', dataType, data);
+    }
+
+    let isInitialized = false;
+    let initCallbacks = [];
+    function onInitialized(callback) {
+      if (isInitialized) callback();
+      else initCallbacks.push(callback);
+    }
+    function markInitialized() {
+      isInitialized = true;
+      initCallbacks.forEach(cb => cb());
+      initCallbacks = [];
+    }
+
+    // =============== TRACKING ===============
+    const tracking = {
+      pageLoadTime: Date.now(),
+      visibilityChanges: 0,
+      blurEvents: 0,
+      focusEvents: 0,
+      copyEvents: 0,
+      pasteEvents: 0,
+      contextMenuEvents: 0,
+      keyboardShortcuts: 0,
+      tabSwitches: 0,
+      lastVisibilityState: document.visibilityState
+    };
+
+    document.addEventListener('visibilitychange', () => {
+      tracking.visibilityChanges++;
+      if (document.visibilityState !== tracking.lastVisibilityState) {
+        if (document.visibilityState === 'hidden') tracking.tabSwitches++;
+        tracking.lastVisibilityState = document.visibilityState;
+      }
+    });
+    window.addEventListener('blur', () => tracking.blurEvents++);
+    window.addEventListener('focus', () => tracking.focusEvents++);
+    document.addEventListener('copy', () => tracking.copyEvents++);
+    document.addEventListener('paste', () => tracking.pasteEvents++);
+    document.addEventListener('contextmenu', () => tracking.contextMenuEvents++);
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) tracking.keyboardShortcuts++;
+    });
+
+    function getTrackingData() {
+      return {
+        ...tracking,
+        totalDurationSec: (Date.now() - tracking.pageLoadTime) / 1000
+      };
+    }
+
+    // =============== CONFIG ===============
+    // supergame: 'dieter' → mirrors dietersDilemmaV2.html
+    //            'migraines' → mirrors confoundedChoiceV2.html
+    const CONFIG = {
+      supergame: 'dieter',        // 'dieter' or 'migraines'
+
+      // Game economics
+      yBonus: null,               // null → supergame default (dieter:2, migraines:10)
+      aCost: 1.50,
+      totalRounds: null,          // null → default 10 for both supergames
+      currency: '$',
+      id: 1,
+
+      // Dieter DGP (collider or causal chain)
+      causal: 0,                  // 0 = collider, 1 = causal chain
+      pY: 0.50,
+      beta00: 0.05, beta01: 0.80, beta10: 0.80, beta11: 0.95,
+      sigma0: 0.20, sigma1: 0.80,
+      rho0: 0.20,  rho1: 0.80,
+
+      // Migraines DGP (Y indep., X is a signal of Y, A does not enter)
+      pX_y: 0.60,   // P(X=1 | Y=0)
+      pX_Y: 0.10,   // P(X=1 | Y=1)
+
+      // Display switch (dieter): 'AXY' shows X, 'AY' hides X
+      order: null,                // null → supergame default (dieter:'AY', migraines:'AXY')
+
+      // Price elicitation
+      priceElicitationPrices: [0, 7.5, 15, 22.5, 30],
+      priceElicitationBonus: 100,
+      increasingPrice: 0,         // 1 = low to high, 0 = high to low
+      cravingFirstHS: 1,          // 1 = craving case first, 0 = no-craving case first (per price level)
+
+      // Player names (defaults overridden by supergame)
+      playerName0: null,          // null → supergame default
+      playerName1: null,          // null → supergame default
+      playerName2: 'Feeling',
+      playerName2Pos: 'energetic',
+      playerName2Neg: 'tired',
+      playerIcon0: '🥤',
+      currentSymbol: null,
+      themeColor: 'purple',
+      aOnLeftDAG: 1           // 1 → A on left in DAG; 0 → A on right
+    };
+
+    function applySupergameDefaults() {
+      const isMig = CONFIG.supergame === 'migraines';
+      if (CONFIG.yBonus === null || CONFIG.yBonus === undefined) CONFIG.yBonus = isMig ? 10.00 : 10.00;
+      if (CONFIG.totalRounds === null || CONFIG.totalRounds === undefined) CONFIG.totalRounds = 2;
+      if (CONFIG.playerName0 === null || CONFIG.playerName0 === undefined) CONFIG.playerName0 = isMig ? 'Driftwell' : 'Zerqalase-norm';
+      if (CONFIG.playerName1 === null || CONFIG.playerName1 === undefined) CONFIG.playerName1 = isMig ? 'Driftwell' : 'Zerqalase';
+      if (CONFIG.order === null || CONFIG.order === undefined) CONFIG.order = isMig ? 'AXY' : 'AYX';
+    }
+
+    // Allow standalone testing: ?supergame=migraines or ?supergame=dieter
+    try {
+      const urlSupergame = new URLSearchParams(window.location.search).get('supergame');
+      if (urlSupergame === 'migraines' || urlSupergame === 'dieter') CONFIG.supergame = urlSupergame;
+    } catch (e) {}
+
+    applySupergameDefaults();
+
+    // =============== HELPERS ===============
+    // Order of high-stakes prices to present (low-to-high or high-to-low)
+    function getOrderedPrices() {
+      const prices = [...CONFIG.priceElicitationPrices];
+      return CONFIG.increasingPrice === 1 ? prices : prices.reverse();
+    }
+
+    // Migraines high-stakes: for each price, present BOTH craving (X=1) and no-craving (X=0).
+    // CONFIG.cravingFirstHS = 1 → craving case first within each price level; 0 → no-craving first.
+    function getOrderedHSRounds() {
+      const prices = getOrderedPrices();
+      const Xfirst = CONFIG.cravingFirstHS === 1 ? 1 : 0;
+      const Xsecond = 1 - Xfirst;
+      const rounds = [];
+      for (const p of prices) {
+        rounds.push({ price: p, X: Xfirst });
+        rounds.push({ price: p, X: Xsecond });
+      }
+      return rounds;
+    }
+    function getHSTotalRounds() {
+      return CONFIG.priceElicitationPrices.length * 2;
+    }
+
+    // Inconsistent-choice detector — direction flips with supergame.
+    // Dieter (drink = pay): rational pattern is "drink only when price low"
+    //   Decreasing display: inconsistent on Drink→Skip
+    //   Increasing display: inconsistent on Skip→Drink
+    // Migraines (drink = earn): rational pattern is "drink only when payment high"
+    //   Decreasing display: inconsistent on Skip→Drink
+    //   Increasing display: inconsistent on Drink→Skip
+    function hasInconsistentChoices(sortedChoices) {
+      if (sortedChoices.length < 2) return false;
+      const isMig = CONFIG.supergame === 'migraines';
+      const isDecreasing = CONFIG.increasingPrice === 0;
+
+      for (let i = 1; i < sortedChoices.length; i++) {
+        const prevChoice = sortedChoices[i - 1].choice;
+        const currChoice = sortedChoices[i].choice;
+
+        if (isMig) {
+          if (isDecreasing) { if (prevChoice === 0 && currChoice === 1) return true; }
+          else              { if (prevChoice === 1 && currChoice === 0) return true; }
+        } else {
+          if (isDecreasing) { if (prevChoice === 1 && currChoice === 0) return true; }
+          else              { if (prevChoice === 0 && currChoice === 1) return true; }
+        }
+      }
+
+      // Also flag multiple switches (back and forth)
+      let switches = 0;
+      for (let i = 1; i < sortedChoices.length; i++) {
+        if (sortedChoices[i].choice !== sortedChoices[i - 1].choice) switches++;
+      }
+      return switches > 1;
+    }
+
+    // Simulate one round based on DGP. A only matters in dieter+causal=0 (collider) and dieter+causal=1 (chain).
+    // In migraines, A does not enter the DGP.
+    function simulateRound(A) {
+      if (CONFIG.supergame === 'migraines') {
+        const Y = Math.random() < CONFIG.pY ? 1 : 0;
+        const pX = Y === 1 ? CONFIG.pX_Y : CONFIG.pX_y;
+        const X = Math.random() < pX ? 1 : 0;
+        return { A, X, Y };
+      }
+      // Dieter
+      let X, Y;
+      if (CONFIG.causal === 0) {
+        const pX = [CONFIG.beta00, CONFIG.beta01, CONFIG.beta10, CONFIG.beta11];
+        Y = Math.random() < CONFIG.pY ? 1 : 0;
+        X = Math.random() < pX[A * 2 + Y] ? 1 : 0;
+      } else {
+        const pX = [CONFIG.sigma0, CONFIG.sigma1];
+        const pY = [CONFIG.rho0, CONFIG.rho1];
+        X = Math.random() < pX[A] ? 1 : 0;
+        Y = Math.random() < pY[X] ? 1 : 0;
+      }
+      // In dieter+AY order, X is not displayed; record as 0
+      if (CONFIG.order === 'AY') X = 0;
+      return { A, X, Y };
+    }
+
+    function calculateStats(history) {
+      const stats = {
+        A1: { total: 0, X1: 0, Y1: 0 },
+        A0: { total: 0, X1: 0, Y1: 0 },
+        X1: { total: 0, Y1: 0 },
+        X0: { total: 0, Y1: 0 }
+      };
+      history.forEach(round => {
+        const [A, X, Y] = round;
+        if (A === 1) {
+          stats.A1.total++;
+          if (X === 1) stats.A1.X1++;
+          if (Y === 1) stats.A1.Y1++;
+        } else {
+          stats.A0.total++;
+          if (X === 1) stats.A0.X1++;
+          if (Y === 1) stats.A0.Y1++;
+        }
+        if (X === 1) {
+          stats.X1.total++;
+          if (Y === 1) stats.X1.Y1++;
+        } else {
+          stats.X0.total++;
+          if (Y === 1) stats.X0.Y1++;
+        }
+      });
+      return stats;
+    }
+  </script>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback } = React;
+
+    // =============== ICONS ===============
+    function DrinkIcon({ className, drinkName, style }) {
+      const icon = CONFIG.playerIcon0;
+      // Glass / tall flute
+      if (icon === '🍵') {
+        return (
+          <svg className={className} style={style} viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+            <path d="M443.882,5.28C440.842,1.92,436.554,0,432.01,0h-352c-4.512,0-8.832,1.92-11.872,5.28c-3.008,3.328-4.512,7.808-4.064,12.32l48,480c0.832,8.192,7.712,14.4,15.936,14.4h256c8.224,0,15.104-6.208,15.904-14.4l48-480C448.394,13.088,446.922,8.608,443.882,5.28z M401.29,162.496c-40.672,13.152-93.6,19.232-135.136-14.848c-52.064-42.72-115.872-35.36-159.136-22.496L97.706,32h316.608L401.29,162.496z"/>
+          </svg>
+        );
+      }
+      // Bottle / flask
+      if (icon === '🍶') {
+        return (
+          <svg className={className} style={style} viewBox="25 0 50 100" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+            <path d="m68.3983231 39.4338799v51.373867c0 3.6944504-2.9977417 6.6922531-6.6921844 6.6922531h-23.4122773c-3.6944466 0-6.6921864-2.9978027-6.6921864-6.6922531v-51.373867c0-3.2933311 1.0977535-6.4916306 3.1244678-9.0988846l5.3199768-6.8294144c1.2877464-1.6572304 1.9844475-3.6839428 1.9844475-5.773922v-2.7444191h15.9388657v2.7444191c0 2.0899792.696701 4.1166916 1.9844475 5.773922l5.3199768 6.8294144c2.0267105 2.607254 3.124466 5.8055534 3.124466 9.0988846z"/>
+            <path d="m58.727375 11.8242331h-17.45475c-.7878952 0-1.426609-.6387148-1.426609-1.426609v-6.471015c-.0000001-.7878943.6387138-1.4266091 1.426609-1.4266091h17.45475c.7878952 0 1.426609.6387148 1.426609 1.4266093v6.471015c.0000001.787894-.6387138 1.4266088-1.426609 1.4266088z"/>
+          </svg>
+        );
+      }
+      // Default: cup-with-straw (🥤)
+      return (
+        <svg className={className} style={style} viewBox="80 0 305 462.848" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+          <polygon points="246.784,94.208 246.784,53.248 344.064,29.184 336.384,0 216.064,29.184 216.064,94.208 82.432,94.208 82.432,160.768 380.416,160.768 380.416,94.208"/>
+          <path d="M102.912,186.368l35.328,249.856c2.048,15.36,15.36,26.624,30.208,26.624h124.416c15.36,0,28.16-11.264,30.208-26.624L358.4,186.368H102.912z"/>
+        </svg>
+      );
+    }
+
+    function SkipIcon({ className }) {
+      return (
+        <svg className={className} viewBox="0 0 512.095 512.095" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+          <path d="m256.047 0c-141.411 0-256.047 114.636-256.047 256.047s114.636 256.047 256.047 256.047 256.047-114.636 256.047-256.047-114.636-256.047-256.047-256.047zm-192.313 256.047c0-106.212 86.102-192.313 192.313-192.313 41.614 0 80.139 13.221 111.61 35.687l-268.236 268.237c-22.466-31.471-35.687-69.996-35.687-111.611zm192.313 192.314c-41.589 0-80.092-13.204-111.552-35.644l268.221-268.221c22.441 31.46 35.644 69.964 35.644 111.552.001 106.211-86.101 192.313-192.313 192.313z"/>
+        </svg>
+      );
+    }
+
+    // MorningIcon — speech bubble with craving glyph (migraines only)
+    function MorningIcon({ className, drinkName, X }) {
+      const theme = getThemeClasses(CONFIG.themeColor);
+      const icon = CONFIG.playerIcon0;
+      const isDriftwell = icon === '🍵';
+      const isMelloway = icon === '🍶';
+      let cravingInner;
+      if (X === null) {
+        cravingInner = (
+          <g className="text-gray-700">
+            <circle cx="11.5" cy="10" r="0.8"/>
+            <circle cx="14" cy="10" r="0.8"/>
+            <circle cx="16.5" cy="10" r="0.8"/>
+          </g>
+        );
+      } else if (X === 0) {
+        cravingInner = (
+          <g className="text-gray-700" transform="translate(10.5, 6) scale(0.0156)">
+            <path d="m256.047 0c-141.411 0-256.047 114.636-256.047 256.047s114.636 256.047 256.047 256.047 256.047-114.636 256.047-256.047-114.636-256.047-256.047-256.047zm-192.313 256.047c0-106.212 86.102-192.313 192.313-192.313 41.614 0 80.139 13.221 111.61 35.687l-268.236 268.237c-22.466-31.471-35.687-69.996-35.687-111.611zm192.313 192.314c-41.589 0-80.092-13.204-111.552-35.644l268.221-268.221c22.441 31.46 35.644 69.964 35.644 111.552.001 106.211-86.101 192.313-192.313 192.313z"/>
+          </g>
+        );
+      } else if (isDriftwell) {
+        cravingInner = (
+          <g className={theme.iconColor} transform="translate(10.5, 6) scale(0.0156)">
+            <path d="M443.882,5.28C440.842,1.92,436.554,0,432.01,0h-352c-4.512,0-8.832,1.92-11.872,5.28c-3.008,3.328-4.512,7.808-4.064,12.32l48,480c0.832,8.192,7.712,14.4,15.936,14.4h256c8.224,0,15.104-6.208,15.904-14.4l48-480C448.394,13.088,446.922,8.608,443.882,5.28z M401.29,162.496c-40.672,13.152-93.6,19.232-135.136-14.848c-52.064-42.72-115.872-35.36-159.136-22.496L97.706,32h316.608L401.29,162.496z"/>
+          </g>
+        );
+      } else if (isMelloway) {
+        cravingInner = (
+          <g className={theme.iconColor} transform="translate(10, 6) scale(0.08) translate(-25, 0)">
+            <path d="m68.3983231 39.4338799v51.373867c0 3.6944504-2.9977417 6.6922531-6.6921844 6.6922531h-23.4122773c-3.6944466 0-6.6921864-2.9978027-6.6921864-6.6922531v-51.373867c0-3.2933311 1.0977535-6.4916306 3.1244678-9.0988846l5.3199768-6.8294144c1.2877464-1.6572304 1.9844475-3.6839428 1.9844475-5.773922v-2.7444191h15.9388657v2.7444191c0 2.0899792.696701 4.1166916 1.9844475 5.773922l5.3199768 6.8294144c2.0267105 2.607254 3.124466 5.8055534 3.124466 9.0988846z"/>
+            <path d="m58.727375 11.8242331h-17.45475c-.7878952 0-1.426609-.6387148-1.426609-1.426609v-6.471015c-.0000001-.7878943.6387138-1.4266091 1.426609-1.4266091h17.45475c.7878952 0 1.426609.6387148 1.426609 1.4266093v6.471015c.0000001.787894-.6387138 1.4266088-1.426609 1.4266088z"/>
+          </g>
+        );
+      } else {
+        cravingInner = (
+          <g className={theme.iconColor} transform="translate(10.5, 6.5) scale(0.017)">
+            <polygon points="246.784,94.208 246.784,53.248 344.064,29.184 336.384,0 216.064,29.184 216.064,94.208 82.432,94.208 82.432,160.768 380.416,160.768 380.416,94.208" transform="translate(-80, 0)"/>
+            <path d="M102.912,186.368l35.328,249.856c2.048,15.36,15.36,26.624,30.208,26.624h124.416c15.36,0,28.16-11.264,30.208-26.624L358.4,186.368H102.912z" transform="translate(-80, 0)"/>
+          </g>
+        );
+      }
+      return (
+        <svg className={className} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+          <path d="M21,5.5V15a1.5,1.5,0,0,1-1.5,1.5H17.707L16.28,17.927A.751.751,0,0,1,15,17.4v-.9H14a.5.5,0,0,1,0-1h1.5a.5.5,0,0,1,.5.5v.793l1.146-1.147A.5.5,0,0,1,17.5,15.5h2A.5.5,0,0,0,20,15V5.5a.5.5,0,0,0-.5-.5H8.5a.5.5,0,0,0-.5.5V11a.5.5,0,0,1-1,0V5.5A1.5,1.5,0,0,1,8.5,4h11A1.5,1.5,0,0,1,21,5.5Z"/>
+          {cravingInner}
+          <path d="M13,16.5A4.5,4.5,0,1,1,8.5,12,4.505,4.505,0,0,1,13,16.5Zm-2.959-3.127a6.394,6.394,0,0,1-.405.6,3.483,3.483,0,0,0,2.173,1.439A3.5,3.5,0,0,0,10.041,13.373Zm-4.863,2.08a5.5,5.5,0,0,0,3.882-2.4A3.439,3.439,0,0,0,8.5,13,3.492,3.492,0,0,0,5.178,15.453ZM12,16.469a4.212,4.212,0,0,1-1.054-.248A.5.5,0,0,1,10,16v-.261a4.539,4.539,0,0,1-1.067-1,6.5,6.5,0,0,1-.939.734c.011.187,0,.344.006.531a.5.5,0,0,1-1,0V16a6.483,6.483,0,0,1-2,.471,3.5,3.5,0,1,0,6.994,0Zm-2.382.712a.767.767,0,0,1-1.23,0,.5.5,0,1,0-.77.638,1.748,1.748,0,0,0,2.77,0,.5.5,0,1,0-.77-.638Z"/>
+        </svg>
+      );
+    }
+
+    function HappyFaceIcon({ className }) {
+      return (
+        <svg className={className} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+          <path d="m50 98c-26.467 0-48-21.533-48-48s21.533-48 48-48 48 21.533 48 48-21.533 48-48 48zm0-90c-23.159 0-42 18.841-42 42s18.841 42 42 42 42-18.841 42-42-18.841-42-42-42zm26.684 52.342c.737-1.475.141-3.258-1.327-4.006-1.471-.743-3.271-.158-4.03 1.304-.22.422-5.549 10.36-21.327 10.36-15.74 0-21.081-9.889-21.325-10.356-.743-1.474-2.542-2.071-4.017-1.327-1.482.741-2.083 2.543-1.342 4.025.28.558 7.055 13.658 26.684 13.658s26.404-13.1 26.684-13.658zm-11.684-16.342c-3.309 0-6-2.691-6-6s2.691-6 6-6 6 2.691 6 6-2.691 6-6 6zm-30 0c-3.309 0-6-2.691-6-6s2.691-6 6-6 6 2.691 6 6-2.691 6-6 6z"/>
+        </svg>
+      );
+    }
+
+    function SadFaceIcon({ className }) {
+      return (
+        <svg className={className} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+          <path d="m50 98c-26.467 0-48-21.533-48-48s21.533-48 48-48 48 21.533 48 48-21.533 48-48 48zm0-90c-23.159 0-42 18.841-42 42s18.841 42 42 42 42-18.841 42-42-18.841-42-42-42zm26.684 67.658c-.28-.558-7.055-13.658-26.684-13.658s-26.404 13.1-26.684 13.658c-.741 1.482-.14 3.284 1.342 4.025 1.475.744 3.274.147 4.017-1.327.244-.467 5.585-10.356 21.325-10.356 15.778 0 21.107 9.938 21.327 10.36.759 1.462 2.559 2.047 4.03 1.304 1.468-.748 2.064-2.531 1.327-4.006zm-11.684-31.658c-3.309 0-6-2.691-6-6s2.691-6 6-6 6 2.691 6 6-2.691 6-6 6zm-30 0c-3.309 0-6-2.691-6-6s2.691-6 6-6 6 2.691 6 6-2.691 6-6 6z"/>
+        </svg>
+      );
+    }
+
+    function NeutralFaceIcon({ className }) {
+      return (
+        <svg className={className} viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="currentColor" stroke="currentColor">
+          <path d="m42.07179 9.7714a22.99476 22.99476 0 1 1 -4.0696-4.0195" fill="none" strokeLinecap="round" strokeMiterlimit="10" strokeWidth="2"/>
+          <circle cx="40.094" cy="7.781" r="1" stroke="none"/>
+          <ellipse cx="31.6" cy="19.125" rx="2.4" ry="3" stroke="none"/>
+          <ellipse cx="16.4" cy="19.125" rx="2.4" ry="3" stroke="none"/>
+        </svg>
+      );
+    }
+
+    function CalendarIcon({ className }) {
+      return (
+        <svg className={className} viewBox="0 0 511.977 511.977" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+          <path d="m14.977 390.988h392c3.516 0 6.914-1.23 9.609-3.472 3.765-3.153 89.652-77.038 94.889-236.528h-421c-5.217 144.774-84.315 212.822-85.137 213.501-4.819 4.072-6.592 10.723-4.424 16.641 2.153 5.903 7.764 9.858 14.063 9.858z"/>
+          <path d="m496.976 60.988h-75v-15c0-8.4-6.6-15-15-15s-15 6.6-15 15v15h-76v-15c0-8.4-6.6-15-15-15s-15 6.6-15 15v15h-75v-15c0-8.4-6.6-15-15-15s-15 6.6-15 15v15h-75c-8.4 0-15 6.6-15 15v45h421v-45c0-8.4-6.6-15-15-15z"/>
+          <path d="m435.849 410.515c-8.145 6.782-18.369 10.474-28.872 10.474h-316v45c0 8.291 6.709 15 15 15h391c8.291 0 15-6.709 15-15v-168.146c-28.92 70.951-69.276 106.937-76.128 112.672z"/>
+        </svg>
+      );
+    }
+
+    // =============== NEW-DAY OVERLAY ===============
+    function NewDayOverlay({ show, dayNumber }) {
+      if (!show) return null;
+      const theme = getThemeClasses(CONFIG.themeColor);
+      return (
+        <div className={`absolute inset-0 ${theme.panelBg} flex items-center justify-center z-20 rounded-2xl`}>
+          <div className="text-center">
+            <CalendarIcon className={`w-16 h-16 mx-auto mb-4 ${theme.iconColor}`} />
+            <div className="text-3xl font-bold text-gray-900">New Monday</div>
+            <div className="text-xl text-gray-600 mt-2">Week {dayNumber}</div>
+          </div>
+        </div>
+      );
+    }
+
+    // =============== BIOCLIP (dieter X panel) ===============
+    function BioClipLarge({ status }) {
+      const isAYOrder = CONFIG.order === 'AY';
+
+      const getStatusColor = () => {
+        if (isAYOrder) return '#475569';
+        if (status === null) return '#64748b';
+        return status === 1 ? '#22c55e' : '#ef4444';
+      };
+      const getStatusBg = () => {
+        if (isAYOrder) return '#1e293b';
+        if (status === null) return '#1e293b';
+        return status === 1 ? '#14532d' : '#7f1d1d';
+      };
+
+      return (
+        <div className="flex flex-col items-center" style={{ width: '140px' }}>
+          <svg viewBox="0 0 120 160" className="w-32 h-44">
+            <rect x="10" y="10" width="100" height="140" rx="12" fill="#0f172a" stroke="#334155" strokeWidth="2" />
+            <rect x="18" y="20" width="84" height="100" rx="6" fill="#1e293b" />
+            <rect x="22" y="24" width="76" height="92" rx="4" fill={getStatusBg()} className="transition-all duration-500" />
+            <circle cx="60" cy="55" r="24" fill={getStatusColor()} className="transition-all duration-300">
+              {status !== null && !isAYOrder && (
+                <animate attributeName="r" values="24;28;24" dur="0.5s" repeatCount="1" />
+              )}
+            </circle>
+            {!isAYOrder && status === 1 && (
+              <path d="M48 55 L56 63 L72 47" stroke="white" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <animate attributeName="stroke-dasharray" values="0,100;100,0" dur="0.3s" fill="freeze" />
+              </path>
+            )}
+            {!isAYOrder && status === 0 && (
+              <g stroke="white" strokeWidth="4" strokeLinecap="round">
+                <line x1="50" y1="45" x2="70" y2="65">
+                  <animate attributeName="stroke-dasharray" values="0,100;100,0" dur="0.2s" fill="freeze" />
+                </line>
+                <line x1="70" y1="45" x2="50" y2="65">
+                  <animate attributeName="stroke-dasharray" values="0,100;100,0" dur="0.2s" begin="0.2s" fill="freeze" />
+                </line>
+              </g>
+            )}
+            {isAYOrder ? (
+              <text x="60" y="93" textAnchor="middle" fill="#94a3b8" fontSize="9" fontWeight="bold">
+                <tspan x="60" dy="0">SUBSCRIPTION</tspan>
+                <tspan x="60" dy="12">EXPIRED</tspan>
+              </text>
+            ) : (
+              <text x="60" y="100" textAnchor="middle" fill={status === null ? '#64748b' : 'white'} fontSize="11" fontWeight="bold">
+                {status === null ? 'READING...' : status === 1 ? 'NORMAL' : 'ABNORMAL'}
+              </text>
+            )}
+            <rect x="30" y="126" width="60" height="18" rx="4" fill="#334155" />
+            <text x="60" y="139" textAnchor="middle" fill="#94a3b8" fontSize="10" fontFamily="monospace">BioClip™</text>
+            <path d="M0 50 L10 50 L10 110 L0 110 C-4 110 -6 105 -6 100 L-6 60 C-6 55 -4 50 0 50 Z" fill="#475569" />
+          </svg>
+          <div className="text-lg font-bold text-gray-900 mt-4">{CONFIG.playerName1} Level</div>
+        </div>
+      );
+    }
+
+    // =============== INLINE DRINK/SKIP BUTTONS (migraines: shown inside XYConnection) ===============
+    function InlineDrinkSkipButtons({ onChoice, disabled, isFirstRound, selectedChoice, X }) {
+      const theme = getThemeClasses(CONFIG.themeColor);
+      const drinkPayoffText =
+        X === 1 ? `+${CONFIG.currency}${CONFIG.aCost}` :
+        X === 0 ? `-${CONFIG.currency}${CONFIG.aCost}` :
+        null;
+      const drinkPayoffPlaceholder = `+${CONFIG.currency}${CONFIG.aCost}`;
+      return (
+        <div className="flex flex-col items-center">
+          <div className="h-44 flex items-end justify-center gap-3">
+            <button
+              onClick={() => onChoice(1)}
+              disabled={disabled}
+              className={`w-36 h-24 px-2 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 ${
+                disabled
+                  ? selectedChoice === 1
+                    ? `bg-red-600 border-2 border-red-600 shadow-md ring-4 ring-red-300`
+                    : 'bg-gray-100 border-2 border-gray-200 cursor-not-allowed'
+                  : `bg-red-500 border-2 border-red-500 shadow-md hover:shadow-lg hover:bg-red-600 hover:border-red-600 active:shadow-sm active:translate-y-0.5 cursor-pointer ${isFirstRound ? 'first-round-shine-panel' : ''}`
+              }`}
+            >
+              <DrinkIcon className={`w-10 h-10 ${disabled && selectedChoice !== 1 ? 'text-gray-400' : theme.iconColor}`} drinkName={CONFIG.playerName0} />
+              <div className="text-center">
+                <div className={`text-sm font-bold ${drinkPayoffText === null ? 'invisible' : ''} ${disabled && selectedChoice !== 1 ? 'text-gray-300' : 'text-white'}`}>{drinkPayoffText === null ? drinkPayoffPlaceholder : drinkPayoffText}</div>
+                <div className={`text-[10px] ${disabled && selectedChoice !== 1 ? 'text-gray-400' : 'text-white'}`}>Drink {CONFIG.playerName0}</div>
+              </div>
+            </button>
+            <button
+              onClick={() => onChoice(0)}
+              disabled={disabled}
+              className={`w-36 h-24 px-2 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 ${
+                disabled
+                  ? selectedChoice === 0
+                    ? `bg-green-600 border-2 border-green-600 shadow-md ring-4 ring-green-300`
+                    : 'bg-gray-100 border-2 border-gray-200 cursor-not-allowed'
+                  : `bg-green-500 border-2 border-green-500 shadow-md hover:shadow-lg hover:bg-green-600 hover:border-green-600 active:shadow-sm active:translate-y-0.5 cursor-pointer ${isFirstRound ? 'first-round-shine-panel' : ''}`
+              }`}
+            >
+              <SkipIcon className={`w-10 h-10 ${disabled && selectedChoice !== 0 ? 'text-gray-400' : 'text-white'}`} />
+              <div className="text-center">
+                <div className={`text-sm ${disabled && selectedChoice !== 0 ? 'text-gray-300' : 'text-white'}`}>{CONFIG.currency}0</div>
+                <div className={`text-[10px] ${disabled && selectedChoice !== 0 ? 'text-gray-400' : 'text-white'}`}>Skip</div>
+              </div>
+            </button>
+          </div>
+          <div className="text-lg font-bold text-gray-900 mt-4">Your Decision</div>
+          <div className="h-12" />
+        </div>
+      );
+    }
+
+    function InlinePriceElicitationButtons({ price, onChoice, isFirstRound, selectedChoice, disabled, currentX }) {
+      const isMig = CONFIG.supergame === 'migraines';
+      const theme = getThemeClasses(CONFIG.themeColor);
+      const drinkInactive = disabled && selectedChoice !== 1;
+      const skipInactive = disabled && selectedChoice !== 0;
+      // Migraines: button label flips by craving state (+$15 / -$15). Actual payment is always +price.
+      // additional = total - button so the displayed math adds up; total is the same across both rows.
+      const prices = CONFIG.priceElicitationPrices;
+      const baseline = isMig ? prices[Math.floor(prices.length / 2)] : 0;
+      const sign = isMig ? (currentX === 1 ? 1 : -1) : 1;
+      const baselinePayment = sign * baseline;
+      const additional = price - baselinePayment;
+      const totalPayment = price;
+      const formatSignedCurrency = (v) => v === 0
+        ? `${CONFIG.currency}0`
+        : `${v > 0 ? '+' : '-'}${CONFIG.currency}${Math.abs(v)}`;
+      const xKnown = currentX === 0 || currentX === 1;
+      const priceLabel = isMig
+        ? (xKnown ? formatSignedCurrency(baselinePayment) : '')
+        : (price === 0 ? 'Free' : `-${CONFIG.currency}${price}`);
+      return (
+        <div className="flex flex-col items-center">
+          <div className="h-44 flex items-end justify-center gap-3">
+            <button
+              onClick={() => onChoice(1)}
+              disabled={disabled}
+              className={`w-36 h-24 px-2 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 ${
+                disabled
+                  ? selectedChoice === 1
+                    ? `bg-red-600 border-2 border-red-600 shadow-md ring-4 ring-red-300`
+                    : 'bg-gray-100 border-2 border-gray-200 cursor-not-allowed'
+                  : selectedChoice === 1
+                    ? `bg-red-600 border-2 border-red-600 shadow-md ring-4 ring-red-300 cursor-pointer`
+                    : selectedChoice === 0
+                      ? 'bg-gray-100 border-2 border-gray-200 cursor-pointer'
+                      : `bg-red-500 border-2 border-red-500 shadow-md hover:shadow-lg hover:bg-red-600 hover:border-red-600 active:shadow-sm active:translate-y-0.5 cursor-pointer ${isFirstRound ? 'first-round-shine-panel' : ''}`
+              }`}
+            >
+              <DrinkIcon className={`w-10 h-10 ${drinkInactive || selectedChoice === 0 ? 'text-gray-400' : theme.iconColor}`} drinkName={CONFIG.playerName0} />
+              <div className="text-center">
+                <div className={`text-sm font-bold ${drinkInactive ? 'text-gray-400' : 'text-white'}`}>{priceLabel}</div>
+                <div className={`text-[10px] mt-1 ${drinkInactive || selectedChoice === 0 ? 'text-gray-400' : 'text-white'}`}>Drink {CONFIG.playerName0}</div>
+              </div>
+            </button>
+            <button
+              onClick={() => onChoice(0)}
+              disabled={disabled}
+              className={`w-36 h-24 px-2 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 ${
+                disabled
+                  ? selectedChoice === 0
+                    ? `bg-green-600 border-2 border-green-600 shadow-md ring-4 ring-green-300`
+                    : 'bg-gray-100 border-2 border-gray-200 cursor-not-allowed'
+                  : selectedChoice === 0
+                    ? `bg-green-600 border-2 border-green-600 shadow-md ring-4 ring-green-300 cursor-pointer`
+                    : selectedChoice === 1
+                      ? 'bg-gray-100 border-2 border-gray-200 cursor-pointer'
+                      : `bg-green-500 border-2 border-green-500 shadow-md hover:shadow-lg hover:bg-green-600 hover:border-green-600 active:shadow-sm active:translate-y-0.5 cursor-pointer ${isFirstRound ? 'first-round-shine-panel' : ''}`
+              }`}
+            >
+              <SkipIcon className={`w-10 h-10 ${skipInactive || selectedChoice === 1 ? 'text-gray-400' : 'text-white'}`} />
+              <div className="text-center">
+                <div className={`text-sm ${skipInactive || selectedChoice === 1 ? 'text-gray-300' : 'text-white'}`}>{CONFIG.currency}0</div>
+                <div className={`text-[10px] ${skipInactive || selectedChoice === 1 ? 'text-gray-400' : 'text-white'}`}>Skip</div>
+              </div>
+            </button>
+          </div>
+          {isMig && (currentX === 0 || currentX === 1) && (
+            <div className="mt-3 space-y-1 text-lg text-gray-600 text-left">
+              <div className="flex items-center gap-2 whitespace-nowrap">
+                <span>Additional payment for consuming the drink:</span>
+                <span className="font-bold">{formatSignedCurrency(additional)}</span>
+              </div>
+              <div className="flex items-center gap-2 whitespace-nowrap">
+                <span>Total payment for consuming the drink:</span>
+                <span className="inline-block rounded px-2 py-0.5 font-bold bg-amber-400 text-amber-900">{formatSignedCurrency(totalPayment)}</span>
+              </div>
+            </div>
+          )}
+          <div className="text-lg font-bold text-gray-900 mt-4">Your Decision</div>
+          <div className="h-12" />
+        </div>
+      );
+    }
+
+    // =============== MOOD LARGE ===============
+    function MoodLarge({ mood, showBonus }) {
+      const bonusAmount = showBonus || CONFIG.yBonus;
+      return (
+        <div className="flex flex-col items-center" style={{ width: '140px' }}>
+          <div className="w-32 h-44 flex items-end justify-center">
+            <div className={`w-32 h-32 rounded-full flex items-center justify-center transition-all duration-500 flex-shrink-0 ${
+              mood === null ? 'bg-gray-200' : mood === 1 ? 'bg-gradient-to-br from-emerald-400 to-green-600' : 'bg-gradient-to-br from-rose-400 to-red-600'
+            }`}>
+              {mood === null ? (
+                <NeutralFaceIcon className="w-16 h-16 text-gray-400 transition-all duration-300" />
+              ) : mood === 1 ? (
+                <HappyFaceIcon className="w-16 h-16 text-white transition-all duration-300" />
+              ) : (
+                <SadFaceIcon className="w-16 h-16 text-white transition-all duration-300" />
+              )}
+            </div>
+          </div>
+          <div className="text-lg font-bold text-gray-900 mt-4 text-center whitespace-nowrap">
+            {mood === null ? (CONFIG.order === 'AYX' ? 'Shortly after...' : 'Later this day...') : mood === 1 ? `${CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}!` : CONFIG.playerName2Neg.charAt(0).toUpperCase() + CONFIG.playerName2Neg.slice(1)}
+          </div>
+          <div className="h-12 flex items-center justify-center">
+            {mood === null && showBonus ? (
+              <div className="flex items-center gap-1 text-lg whitespace-nowrap">
+                <span className="text-gray-600">(<span className="underline">If</span> {CONFIG.playerName2Pos}:</span>
+                <span className="text-green-600 text-2xl font-bold">{CONFIG.currency}{bonusAmount}</span>
+                <span className="text-gray-600">)</span>
+              </div>
+            ) : (
+              <div className={`${mood === null ? 'invisible' : mood === 1 ? 'text-green-600 text-lg font-bold' : 'text-red-600 text-lg font-bold'}`}>
+                {mood === null ? ' ' : mood === 1 ? `+${CONFIG.currency}${bonusAmount}` : `${CONFIG.currency}0`}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // =============== XY CONNECTION (left panel + rate box + mood) ===============
+    function XYConnection({ X, Y, A, stats, hideRateBox, showBonus, actionSlot, alignStart }) {
+      const isMig = CONFIG.supergame === 'migraines';
+      const isAYOrder = CONFIG.order === 'AY';
+      const isAYXOrder = !isMig && CONFIG.order === 'AYX';
+
+      // Rate box display (and color): migraines splits by A; dieter splits by X (or Y in AYX)
+      let leftLabel, rateValue, colorOn, rateBoxBorder;
+      if (isMig) {
+        const A1Y1Rate = stats.A1.total > 0 ? Math.round((stats.A1.Y1 / stats.A1.total) * 100) : null;
+        const A0Y1Rate = stats.A0.total > 0 ? Math.round((stats.A0.Y1 / stats.A0.total) * 100) : null;
+        const showConnection = A !== null;
+        const connectionColor = A === 1 ? '#ef4444' : '#22c55e';
+        leftLabel = A === null ? 'Historical Rate' : A === 1 ? 'When DRINK' : 'When SKIP';
+        rateValue = A === null ? null : A === 1 ? A1Y1Rate : A0Y1Rate;
+        rateBoxBorder = showConnection ? (A === 1 ? 'border-red-500' : 'border-green-500') : 'border-gray-300';
+        colorOn = { showConnection, connectionColor };
+      } else if (isAYXOrder) {
+        // AYX: condition on Y (mood) — rate shows P(X=normal | Y)
+        const Y1Total = stats.X1.Y1 + stats.X0.Y1;
+        const Y0Total = (stats.X1.total - stats.X1.Y1) + (stats.X0.total - stats.X0.Y1);
+        const Y1X1Rate = Y1Total > 0 ? Math.round((stats.X1.Y1 / Y1Total) * 100) : null;
+        const Y0X1Rate = Y0Total > 0 ? Math.round(((stats.X1.total - stats.X1.Y1) / Y0Total) * 100) : null;
+        const showConnection = Y !== null;
+        const connectionColor = Y === 1 ? '#22c55e' : '#ef4444';
+        leftLabel = Y === null ? 'Historical Rate' : Y === 1 ? `When ${CONFIG.playerName2Pos.toUpperCase()}` : `When ${CONFIG.playerName2Neg.toUpperCase()}`;
+        rateValue = Y === null ? null : Y === 1 ? Y1X1Rate : Y0X1Rate;
+        rateBoxBorder = showConnection ? (Y === 1 ? 'border-green-500' : 'border-red-500') : 'border-gray-300';
+        colorOn = { showConnection, connectionColor };
+      } else {
+        const X1Y1Rate = stats.X1.total > 0 ? Math.round((stats.X1.Y1 / stats.X1.total) * 100) : null;
+        const X0Y1Rate = stats.X0.total > 0 ? Math.round((stats.X0.Y1 / stats.X0.total) * 100) : null;
+        const showConnection = X !== null && !isAYOrder;
+        const connectionColor = X === 1 ? '#22c55e' : '#ef4444';
+        leftLabel = isAYOrder ? 'Historical Rate' : X === null ? 'Historical Rate' : X === 1 ? 'When NORMAL' : 'When ABNORMAL';
+        rateValue = isAYOrder || X === null ? null : X === 1 ? X1Y1Rate : X0Y1Rate;
+        rateBoxBorder = showConnection ? (X === 1 ? 'border-green-500' : 'border-red-500') : 'border-gray-300';
+        colorOn = { showConnection, connectionColor };
+      }
+
+      return (
+        <div className={`relative flex ${alignStart ? 'items-start' : 'items-center'} justify-center pt-8 pb-2 ${isMig ? 'gap-12' : 'gap-8'}`}>
+          {/* Left panel: dieter shows BioClip (or Y face if order==='AYX'); migraines shows action slot (or BioClip if not provided) */}
+          {isMig
+            ? (actionSlot || <BioClipLarge status={null} />)
+            : isAYXOrder
+              ? <MoodLarge mood={Y} showBonus={showBonus} />
+              : <BioClipLarge status={isAYOrder ? null : X} />}
+
+          <div className={`flex flex-col items-center relative ${alignStart ? 'h-44 justify-end' : ''}`}>
+            <svg width="180" height="80" className="absolute" style={alignStart ? { bottom: '10px' } : { top: '50%', transform: 'translateY(-50%)' }}>
+              <line x1="0" y1="40" x2="180" y2="40" stroke="#d1d5db" strokeWidth="4" strokeDasharray="8,4" />
+              {colorOn.showConnection && (
+                <>
+                  <line
+                    x1="0" y1="40" x2="180" y2="40"
+                    stroke={colorOn.connectionColor}
+                    strokeWidth="6"
+                    strokeLinecap="round"
+                    opacity="0.5"
+                  >
+                    <animate attributeName="stroke-dashoffset" values="0;-24" dur="0.5s" repeatCount="indefinite" />
+                    <animate attributeName="stroke-dasharray" values="12,12" dur="0.5s" />
+                  </line>
+                  <circle r="8" fill={colorOn.connectionColor}>
+                    <animate attributeName="cx" values="10;170" dur="0.8s" fill="freeze" />
+                    <animate attributeName="cy" values="40;40" dur="0.8s" />
+                    <animate attributeName="opacity" values="1;0" dur="0.8s" fill="freeze" />
+                  </circle>
+                </>
+              )}
+              <polygon points="170,40 155,30 155,50" fill={colorOn.showConnection ? colorOn.connectionColor : '#d1d5db'} className="transition-all duration-300" />
+            </svg>
+
+            {!hideRateBox && (
+              <div className={`bg-white border-2 rounded-xl px-4 py-3 z-10 transition-all duration-300 shadow-sm ${rateBoxBorder}`} style={{ width: '130px' }}>
+                <div className="text-xs text-gray-500 text-center mb-1">{leftLabel}</div>
+                <div className="text-3xl font-bold text-center text-gray-900">
+                  {rateValue === null ? <span className="text-gray-400">—</span> : `${rateValue}%`}
+                </div>
+                <div className="text-xs text-gray-500 text-center">{isAYXOrder ? 'normal' : CONFIG.playerName2Pos}</div>
+              </div>
+            )}
+          </div>
+
+          {isAYXOrder ? <BioClipLarge status={X} /> : <MoodLarge mood={Y} showBonus={showBonus} />}
+        </div>
+      );
+    }
+
+    // =============== X-STATS PANEL ===============
+    function XStatsPanel({ stats, currentX, currentY, currentA }) {
+      const isMig = CONFIG.supergame === 'migraines';
+      const theme = getThemeClasses(CONFIG.themeColor);
+      const isAYOrder = CONFIG.order === 'AY';
+      const isAYXOrder = !isMig && CONFIG.order === 'AYX';
+
+      if (isMig) {
+        // Migraines: condition on A
+        const A1Y1Rate = stats.A1.total > 0 ? (stats.A1.Y1 / stats.A1.total * 100).toFixed(0) : null;
+        const A0Y1Rate = stats.A0.total > 0 ? (stats.A0.Y1 / stats.A0.total * 100).toFixed(0) : null;
+        return (
+          <div className={`${theme.panelBg} rounded-2xl p-5 border-2 ${theme.panelBorder} shadow-sm`}>
+            <h3 className="text-gray-900 font-bold text-lg mb-4 text-center">Drink and Mood</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className={`rounded-xl p-4 transition-all duration-300 ${currentA === 1 ? 'bg-red-50 ring-2 ring-red-400' : 'bg-gray-50'}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-4 h-4 rounded-full bg-red-500" />
+                  <span className="text-red-600 font-medium">When drink</span>
+                </div>
+                <div className="text-4xl font-bold text-gray-900 mb-1">{A1Y1Rate !== null ? `${A1Y1Rate}%` : '—'}</div>
+                <div className="text-sm text-gray-500">{`${CONFIG.playerName2Pos} (${stats.A1.Y1}/${stats.A1.total})`}</div>
+                <div className="mt-3 h-3 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-red-500 to-rose-400 transition-all duration-500" style={{ width: A1Y1Rate ? `${A1Y1Rate}%` : '0%' }} />
+                </div>
+              </div>
+              <div className={`rounded-xl p-4 transition-all duration-300 ${currentA === 0 ? 'bg-green-50 ring-2 ring-green-400' : 'bg-gray-50'}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-4 h-4 rounded-full bg-green-500" />
+                  <span className="text-green-600 font-medium whitespace-nowrap">When skip</span>
+                </div>
+                <div className="text-4xl font-bold text-gray-900 mb-1">{A0Y1Rate !== null ? `${A0Y1Rate}%` : '—'}</div>
+                <div className="text-sm text-gray-500">{`${CONFIG.playerName2Pos} (${stats.A0.Y1}/${stats.A0.total})`}</div>
+                <div className="mt-3 h-3 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all duration-500" style={{ width: A0Y1Rate ? `${A0Y1Rate}%` : '0%' }} />
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // Dieter + AYX: condition on Y (mood) — "Mood and Chemical"
+      if (isAYXOrder) {
+        const Y1Total = stats.X1.Y1 + stats.X0.Y1;
+        const Y0Total = (stats.X1.total - stats.X1.Y1) + (stats.X0.total - stats.X0.Y1);
+        const Y1X1 = stats.X1.Y1;
+        const Y0X1 = stats.X1.total - stats.X1.Y1;
+        const Y1X1Rate = Y1Total > 0 ? (Y1X1 / Y1Total * 100).toFixed(0) : null;
+        const Y0X1Rate = Y0Total > 0 ? (Y0X1 / Y0Total * 100).toFixed(0) : null;
+        return (
+          <div className={`${theme.panelBg} rounded-2xl p-5 border-2 ${theme.panelBorder} shadow-sm`}>
+            <h3 className="text-gray-900 font-bold text-lg mb-4 text-center">Mood and Chemical</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className={`rounded-xl p-4 transition-all duration-300 ${currentY === 1 ? 'bg-green-50 ring-2 ring-green-400' : 'bg-gray-50'}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-4 h-4 rounded-full bg-green-500 flex-shrink-0" />
+                  <span className="text-green-600 font-medium whitespace-nowrap">When {CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}</span>
+                </div>
+                <div className="text-4xl font-bold text-gray-900 mb-1">{Y1X1Rate !== null ? `${Y1X1Rate}%` : '—'}</div>
+                <div className="text-sm text-gray-500">{`normal (${Y1X1}/${Y1Total})`}</div>
+                <div className="mt-3 h-3 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all duration-500" style={{ width: Y1X1Rate ? `${Y1X1Rate}%` : '0%' }} />
+                </div>
+              </div>
+              <div className={`rounded-xl p-4 transition-all duration-300 ${currentY === 0 ? 'bg-red-50 ring-2 ring-red-400' : 'bg-gray-50'}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-4 h-4 rounded-full bg-red-500 flex-shrink-0" />
+                  <span className="text-red-600 font-medium whitespace-nowrap">When {CONFIG.playerName2Neg.charAt(0).toUpperCase() + CONFIG.playerName2Neg.slice(1)}</span>
+                </div>
+                <div className="text-4xl font-bold text-gray-900 mb-1">{Y0X1Rate !== null ? `${Y0X1Rate}%` : '—'}</div>
+                <div className="text-sm text-gray-500">{`normal (${Y0X1}/${Y0Total})`}</div>
+                <div className="mt-3 h-3 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-red-500 to-rose-400 transition-all duration-500" style={{ width: Y0X1Rate ? `${Y0X1Rate}%` : '0%' }} />
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // Dieter: condition on X
+      const X1Y1Rate = stats.X1.total > 0 ? (stats.X1.Y1 / stats.X1.total * 100).toFixed(0) : null;
+      const X0Y1Rate = stats.X0.total > 0 ? (stats.X0.Y1 / stats.X0.total * 100).toFixed(0) : null;
+      return (
+        <div className={`${theme.panelBg} rounded-2xl p-5 border-2 ${theme.panelBorder} shadow-sm`}>
+          <h3 className="text-gray-900 font-bold text-lg mb-4 text-center">Chemical and Mood</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className={`rounded-xl p-4 transition-all duration-300 ${!isAYOrder && currentX === 1 ? 'bg-green-50 ring-2 ring-green-400' : 'bg-gray-50'}`}>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-4 h-4 rounded-full bg-green-500 flex-shrink-0" />
+                <span className="text-green-600 font-medium">When normal</span>
+              </div>
+              <div className="text-4xl font-bold text-gray-900 mb-1">{isAYOrder ? '—' : X1Y1Rate !== null ? `${X1Y1Rate}%` : '—'}</div>
+              <div className="text-sm text-gray-500">{isAYOrder ? `${CONFIG.playerName2Pos} (-/-)` : `${CONFIG.playerName2Pos} (${stats.X1.Y1}/${stats.X1.total})`}</div>
+              <div className="mt-3 h-3 bg-gray-200 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all duration-500" style={{ width: isAYOrder ? '0%' : X1Y1Rate ? `${X1Y1Rate}%` : '0%' }} />
+              </div>
+            </div>
+            <div className={`rounded-xl p-4 transition-all duration-300 ${!isAYOrder && currentX === 0 ? 'bg-red-50 ring-2 ring-red-400' : 'bg-gray-50'}`}>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-4 h-4 rounded-full bg-red-500 flex-shrink-0" />
+                <span className="text-red-600 font-medium whitespace-nowrap">When abnormal</span>
+              </div>
+              <div className="text-4xl font-bold text-gray-900 mb-1">{isAYOrder ? '—' : X0Y1Rate !== null ? `${X0Y1Rate}%` : '—'}</div>
+              <div className="text-sm text-gray-500">{isAYOrder ? `${CONFIG.playerName2Pos} (-/-)` : `${CONFIG.playerName2Pos} (${stats.X0.Y1}/${stats.X0.total})`}</div>
+              <div className="mt-3 h-3 bg-gray-200 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-red-500 to-rose-400 transition-all duration-500" style={{ width: isAYOrder ? '0%' : X0Y1Rate ? `${X0Y1Rate}%` : '0%' }} />
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // =============== DRINK DECISION PANEL ===============
+    // Dieter: classic panel with Drink/Skip buttons + A→X stats box
+    // Migraines: Morning craving icon + label (buttons live inside XYConnection)
+    function DrinkDecisionPanel({ onChoice, disabled, stats, isFirstRound, selectedChoice, X }) {
+      const isMig = CONFIG.supergame === 'migraines';
+      const theme = getThemeClasses(CONFIG.themeColor);
+
+      if (isMig) {
+        return (
+          <div className={`${theme.panelBg} rounded-xl p-4 border ${theme.panelBorder} shadow-sm flex flex-col items-center`}>
+            <h4 className="text-gray-900 text-lg font-bold mb-3 text-center">Morning</h4>
+            <MorningIcon className="w-24 h-24 text-gray-700" drinkName={CONFIG.playerName0} X={X} />
+            <div className="mt-2 text-lg font-bold text-gray-900">
+              {X === 1 ? 'Craving' : X === 0 ? 'NO craving' : ' '}
+            </div>
+          </div>
+        );
+      }
+
+      // Dieter
+      return (
+        <div className={`${theme.panelBg} rounded-xl p-4 border ${theme.panelBorder} shadow-sm`}>
+          <h4 className="text-gray-900 text-lg font-bold mb-3 text-center">Morning Decision</h4>
+          <div className="flex justify-center gap-3">
+            <button
+              onClick={() => onChoice(1)}
+              disabled={disabled}
+              className={`w-36 h-24 px-2 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 ${
+                disabled
+                  ? selectedChoice === 1
+                    ? `bg-green-600 border-2 border-green-600 shadow-md ring-4 ring-green-300`
+                    : 'bg-gray-100 border-2 border-gray-200 cursor-not-allowed'
+                  : `bg-green-500 border-2 border-green-500 shadow-md hover:shadow-lg hover:bg-green-600 hover:border-green-600 active:shadow-sm active:translate-y-0.5 cursor-pointer ${isFirstRound ? 'first-round-shine-panel' : ''}`
+              }`}
+            >
+              <DrinkIcon className={`w-10 h-10 ${disabled && selectedChoice !== 1 ? 'text-gray-400' : theme.iconColor}`} drinkName={CONFIG.playerName0} />
+              <div className="text-center">
+                <div className={`text-sm ${disabled && selectedChoice !== 1 ? 'text-gray-300' : 'text-white'}`}>-{CONFIG.currency}{CONFIG.aCost}</div>
+                <div className={`text-[10px] ${disabled && selectedChoice !== 1 ? 'text-gray-400' : 'text-white'}`}>Drink {CONFIG.playerName0}</div>
+              </div>
+            </button>
+            <button
+              onClick={() => onChoice(0)}
+              disabled={disabled}
+              className={`w-36 h-24 px-2 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 ${
+                disabled
+                  ? selectedChoice === 0
+                    ? `bg-red-600 border-2 border-red-600 shadow-md ring-4 ring-red-300`
+                    : 'bg-gray-100 border-2 border-gray-200 cursor-not-allowed'
+                  : `bg-red-500 border-2 border-red-500 shadow-md hover:shadow-lg hover:bg-red-600 hover:border-red-600 active:shadow-sm active:translate-y-0.5 cursor-pointer ${isFirstRound ? 'first-round-shine-panel' : ''}`
+              }`}
+            >
+              <SkipIcon className={`w-10 h-10 ${disabled && selectedChoice !== 0 ? 'text-gray-400' : 'text-white'}`} />
+              <div className="text-center">
+                <div className={`text-sm ${disabled && selectedChoice !== 0 ? 'text-gray-300' : 'text-white'}`}>{CONFIG.currency}0</div>
+                <div className={`text-[10px] ${disabled && selectedChoice !== 0 ? 'text-gray-400' : 'text-white'}`}>Skip</div>
+              </div>
+            </button>
+          </div>
+
+          <div className="mt-3 flex justify-center">
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="bg-gray-50 rounded p-2 text-center border border-gray-200 w-36">
+                <div className="text-green-600">{CONFIG.playerName0} ⇢ {CONFIG.playerName1}</div>
+                <div className="text-gray-900 font-bold">
+                  {CONFIG.order === 'AY' ? '—' : stats.A1.total > 0 ? `${Math.round(stats.A1.X1 / stats.A1.total * 100)}% normal` : '—'}
+                </div>
+              </div>
+              <div className="bg-gray-50 rounded p-2 text-center border border-gray-200 w-36">
+                <div className="text-red-600">Skip ⇢ {CONFIG.playerName1}</div>
+                <div className="text-gray-900 font-bold">
+                  {CONFIG.order === 'AY' ? '—' : stats.A0.total > 0 ? `${Math.round(stats.A0.X1 / stats.A0.total * 100)}% normal` : '—'}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // =============== PRICE-ELICITATION DECISION PANEL ===============
+    // Dieter: full panel with buttons (price tag) + A→X stats
+    // Migraines: Morning craving icon + label
+    function PriceElicitationDecisionPanel({ price, onChoice, stats, isFirstRound, selectedChoice, X }) {
+      const isMig = CONFIG.supergame === 'migraines';
+      const theme = getThemeClasses(CONFIG.themeColor);
+
+      if (isMig) {
+        return (
+          <div className={`${theme.panelBg} rounded-xl p-4 border ${theme.panelBorder} shadow-sm flex flex-col items-center`}>
+            <h4 className="text-gray-900 text-lg font-bold mb-3 text-center">Morning</h4>
+            <MorningIcon className="w-24 h-24 text-gray-700" drinkName={CONFIG.playerName0} X={X} />
+            <div className="mt-2 text-lg font-bold text-gray-900">
+              {X === 1 ? 'Craving' : X === 0 ? 'NO craving' : ' '}
+            </div>
+          </div>
+        );
+      }
+
+      // Dieter
+      return (
+        <div className={`${theme.panelBg} rounded-xl p-4 border ${theme.panelBorder} shadow-sm`}>
+          <h4 className="text-gray-900 text-lg font-bold mb-3 text-center">Your Decision</h4>
+          <div className="flex justify-center gap-3">
+            <button
+              onClick={() => onChoice(1)}
+              className={`w-36 h-36 px-2 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                selectedChoice === 1
+                  ? `bg-green-600 border-2 border-green-600 shadow-md ring-4 ring-green-300`
+                  : selectedChoice === 0
+                    ? 'bg-gray-100 border-2 border-gray-200'
+                    : `bg-green-500 border-2 border-green-500 shadow-md hover:shadow-lg hover:bg-green-600 hover:border-green-600 active:shadow-sm active:translate-y-0.5 ${isFirstRound ? 'first-round-shine-panel' : ''}`
+              }`}
+            >
+              <DrinkIcon className={`w-10 h-10 ${selectedChoice === 0 ? 'text-gray-400' : theme.iconColor}`} drinkName={CONFIG.playerName0} />
+              <div className="text-center">
+                <div className="text-base inline-block rounded px-2 py-0.5 font-bold bg-amber-400 text-amber-900">
+                  {price === 0 ? 'Free' : `-${CONFIG.currency}${price}`}
+                </div>
+                <div className={`text-[10px] mt-1 ${selectedChoice === 0 ? 'text-gray-400' : 'text-white'}`}>Drink {CONFIG.playerName0}</div>
+              </div>
+            </button>
+            <button
+              onClick={() => onChoice(0)}
+              className={`w-36 h-36 px-2 py-2 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                selectedChoice === 0
+                  ? `bg-red-600 border-2 border-red-600 shadow-md ring-4 ring-red-300`
+                  : selectedChoice === 1
+                    ? 'bg-gray-100 border-2 border-gray-200'
+                    : `bg-red-500 border-2 border-red-500 shadow-md hover:shadow-lg hover:bg-red-600 hover:border-red-600 active:shadow-sm active:translate-y-0.5 ${isFirstRound ? 'first-round-shine-panel' : ''}`
+              }`}
+            >
+              <SkipIcon className={`w-10 h-10 ${selectedChoice === 1 ? 'text-gray-400' : 'text-white'}`} />
+              <div className="text-center">
+                <div className={`text-base ${selectedChoice === 1 ? 'text-gray-300' : 'text-white'}`}>{CONFIG.currency}0</div>
+                <div className={`text-[10px] ${selectedChoice === 1 ? 'text-gray-400' : 'text-white'}`}>Skip</div>
+              </div>
+            </button>
+          </div>
+
+          <div className="mt-3 flex justify-center">
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="bg-gray-50 rounded p-2 text-center border border-gray-200 w-36">
+                <div className="text-green-600">{CONFIG.playerName0} ⇢ {CONFIG.playerName1}</div>
+                <div className="text-gray-900 font-bold">
+                  {CONFIG.order === 'AY' ? '—' : stats.A1.total > 0 ? `${Math.round(stats.A1.X1 / stats.A1.total * 100)}% normal` : '—'}
+                </div>
+              </div>
+              <div className="bg-gray-50 rounded p-2 text-center border border-gray-200 w-36">
+                <div className="text-red-600">Skip ⇢ {CONFIG.playerName1}</div>
+                <div className="text-gray-900 font-bold">
+                  {CONFIG.order === 'AY' ? '—' : stats.A0.total > 0 ? `${Math.round(stats.A0.X1 / stats.A0.total * 100)}% normal` : '—'}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // =============== DAG / BELIEF IFRAMES ===============
+    function DAGIframe({ onComplete, playerName0, playerName1, playerIcon0, nRounds, themeColor }) {
+      const iframeRef = useRef(null);
+      const isMig = CONFIG.supergame === 'migraines';
+      const dagSrc = isMig ? 'dagElicitationV3.html' : 'dagElicitationV2.html';
+
+      useEffect(() => {
+        const handleMessage = (event) => {
+          if (event.data.type === 'DAG_DATA' && event.data.dataType === 'DAG_COMPLETE') {
+            const d = event.data.data;
+            onComplete(d.initialDAG, d.finalDAG, d.confidence, d.DAGAlertCount, d.initialDAGTime, d.finalDAGTime, d.confidenceTime);
+          }
+        };
+        window.addEventListener('message', handleMessage);
+
+        const sendInit = () => {
+          if (iframeRef.current && iframeRef.current.contentWindow) {
+            iframeRef.current.contentWindow.postMessage({
+              type: 'INIT',
+              gameConfig: {
+                playerName0, playerName1, playerIcon0, nRounds, themeColor,
+                aOnLeftDAG: CONFIG.aOnLeftDAG,
+                ...(isMig ? { supergame: 'migraines' } : {})
+              }
+            }, '*');
+          }
+        };
+        const timeout = setTimeout(sendInit, 500);
+
+        return () => {
+          window.removeEventListener('message', handleMessage);
+          clearTimeout(timeout);
+        };
+      }, [onComplete, playerName0, playerName1, playerIcon0, nRounds, themeColor, isMig]);
+
+      return (
+        <iframe
+          ref={iframeRef}
+          src={dagSrc}
+          style={{ width: '100%', height: '100vh', border: 'none' }}
+          onLoad={() => {
+            if (iframeRef.current && iframeRef.current.contentWindow) {
+              iframeRef.current.contentWindow.postMessage({
+                type: 'INIT',
+                gameConfig: {
+                  playerName0, playerName1, playerIcon0, themeColor,
+                  aOnLeftDAG: CONFIG.aOnLeftDAG,
+                  ...(isMig ? { supergame: 'migraines' } : {})
+                }
+              }, '*');
+            }
+          }}
+        />
+      );
+    }
+
+    function BeliefIframe({ onComplete, playerName0, playerName1, playerName2Pos, playerName2Neg, aCost, currency, order, themeColor }) {
+      const iframeRef = useRef(null);
+      const beliefDataRef = useRef(null);
+      const isMig = CONFIG.supergame === 'migraines';
+
+      useEffect(() => {
+        const handleMessage = (event) => {
+          if (event.data.type === 'GAME_DATA' && event.data.dataType === 'CAUSAL_BELIEFS') {
+            beliefDataRef.current = event.data.data;
+          }
+          if (event.data.type === 'GAME_DATA' && event.data.dataType === 'ELICIT_COMPLETE') {
+            if (beliefDataRef.current) {
+              onComplete(beliefDataRef.current);
+              beliefDataRef.current = null;
+            } else {
+              onComplete({});
+            }
+          }
+        };
+        window.addEventListener('message', handleMessage);
+
+        const mainCausals = isMig
+          ? [
+              { causalElicit: "AY", exoButton: 0, id: "AY0" },
+              { causalElicit: "AY", exoButton: 1, id: "AY1" }
+            ]
+          : (order === 'AY' ? [{ causalElicit: "AY", exoButton: null, id: "AY" }] : [{ causalElicit: "XY", exoButton: null, id: "XY" }]);
+
+        const sendInit = () => {
+          if (iframeRef.current && iframeRef.current.contentWindow) {
+            iframeRef.current.contentWindow.postMessage({
+              type: 'INIT',
+              gameConfig: {
+                playerName0, playerName1, playerName2Pos, playerName2Neg,
+                aCost, currency, themeColor,
+                skipIntro: true,
+                forceSkipPieCharts: true,
+                mainCausals,
+                beliefPaymentMax: 10,
+                beliefPaymentIncentive: 0.5,
+                ...(isMig ? { supergame: 'migraines' } : { order })
+              }
+            }, '*');
+          }
+        };
+        const timeout = setTimeout(sendInit, 500);
+        return () => {
+          window.removeEventListener('message', handleMessage);
+          clearTimeout(timeout);
+        };
+      }, [onComplete, playerName0, playerName1, playerName2Pos, playerName2Neg, aCost, currency, order, themeColor, isMig]);
+
+      return (
+        <iframe
+          ref={iframeRef}
+          src="beliefV2.html"
+          style={{ width: '100%', height: '100vh', border: 'none' }}
+          onLoad={() => {
+            if (iframeRef.current && iframeRef.current.contentWindow) {
+              const mainCausals = isMig
+                ? [
+                    { causalElicit: "AY", exoButton: 0, id: "AY0" },
+                    { causalElicit: "AY", exoButton: 1, id: "AY1" }
+                  ]
+                : (order === 'AY' ? [{ causalElicit: "AY", exoButton: null, id: "AY" }] : [{ causalElicit: "XY", exoButton: null, id: "XY" }]);
+              iframeRef.current.contentWindow.postMessage({
+                type: 'INIT',
+                gameConfig: {
+                  playerName0, playerName1, playerName2Pos, playerName2Neg,
+                  aCost, currency, themeColor,
+                  skipIntro: true,
+                  forceSkipPieCharts: true,
+                  mainCausals,
+                  beliefPaymentMax: 10,
+                  beliefPaymentIncentive: 0.5,
+                  ...(isMig ? { supergame: 'migraines' } : { order })
+                }
+              }, '*');
+            }
+          }}
+        />
+      );
+    }
+
+    // =============== COMPACT HISTORY ===============
+    function CompactHistory({ history }) {
+      const isMig = CONFIG.supergame === 'migraines';
+      const theme = getThemeClasses(CONFIG.themeColor);
+      const isAYOrder = CONFIG.order === 'AY';
+      const isAYXOrder = !isMig && CONFIG.order === 'AYX';
+      const allRounds = history.slice().reverse();
+
+      return (
+        <div className={`${theme.panelBg} rounded-xl p-4 border ${theme.panelBorder} shadow-sm`}>
+          <h4 className="text-gray-900 text-lg font-bold mb-3 text-center">All Weeks</h4>
+          <div className="space-y-1 max-h-36 overflow-y-auto">
+            {allRounds.map(([A, X, Y], idx) => {
+              const roundNumber = history.length - idx;
+              if (isMig) {
+                return (
+                  <div key={roundNumber} className="flex items-center gap-2 text-sm py-1 px-2 bg-gray-50 rounded border border-gray-100">
+                    <span className="text-gray-400 w-6">#{roundNumber}</span>
+                    <span className="w-24 font-medium text-gray-900">{X === 1 ? 'Craving' : 'NO craving'}</span>
+                    <span className={`mx-auto flex items-center justify-center ${A === 1 ? theme.iconColor : 'text-gray-400'}`}>
+                      {A === 1 ? <DrinkIcon className="w-4 h-4" drinkName={CONFIG.playerName0} /> : <SkipIcon className="w-4 h-4" />}
+                    </span>
+                    <span className={`w-10 h-10 flex items-center justify-center rounded-lg ${Y === 1 ? 'bg-green-600' : 'bg-red-600'}`}>
+                      {Y === 1 ? <HappyFaceIcon className="w-6 h-6 text-white" /> : <SadFaceIcon className="w-6 h-6 text-white" />}
+                    </span>
+                  </div>
+                );
+              }
+              // Dieter
+              if (isAYXOrder) {
+                return (
+                  <div key={roundNumber} className="flex items-center gap-2 text-sm py-1 px-2 bg-gray-50 rounded border border-gray-100">
+                    <span className="text-gray-400 w-6">#{roundNumber}</span>
+                    <span className={`w-12 flex items-center justify-center ${A === 1 ? theme.iconColor : 'text-gray-400'}`}>
+                      {A === 1 ? <DrinkIcon className="w-4 h-4" drinkName={CONFIG.playerName0} /> : <SkipIcon className="w-4 h-4" />}
+                    </span>
+                    <span className="flex-1 flex justify-center">
+                      <span className={`w-10 h-10 flex items-center justify-center rounded-lg ${Y === 1 ? 'bg-green-600' : 'bg-red-600'}`}>
+                        {Y === 1 ? <HappyFaceIcon className="w-6 h-6 text-white" /> : <SadFaceIcon className="w-6 h-6 text-white" />}
+                      </span>
+                    </span>
+                    <span className={`w-20 text-right font-medium ${X === 1 ? 'text-green-600' : 'text-red-600'}`}>
+                      {X === 1 ? 'Normal' : 'Abnormal'}
+                    </span>
+                  </div>
+                );
+              }
+              return (
+                <div key={roundNumber} className="flex items-center gap-2 text-sm py-1 px-2 bg-gray-50 rounded border border-gray-100">
+                  <span className="text-gray-400 w-6">#{roundNumber}</span>
+                  <span className={`w-12 flex items-center justify-center ${A === 1 ? theme.iconColor : 'text-gray-400'}`}>
+                    {A === 1 ? <DrinkIcon className="w-4 h-4" drinkName={CONFIG.playerName0} /> : <SkipIcon className="w-4 h-4" />}
+                  </span>
+                  <span className={`flex-1 font-medium ${isAYOrder ? 'text-gray-400' : X === 1 ? 'text-green-600' : 'text-red-600'}`}>
+                    {isAYOrder ? '—' : X === 1 ? 'Normal' : 'Abnormal'}
+                  </span>
+                  <span className={`w-10 h-10 flex items-center justify-center rounded-lg ${Y === 1 ? 'bg-green-600' : 'bg-red-600'}`}>
+                    {Y === 1 ? <HappyFaceIcon className="w-6 h-6 text-white" /> : <SadFaceIcon className="w-6 h-6 text-white" />}
+                  </span>
+                </div>
+              );
+            })}
+            {history.length === 0 && (
+              <p className="text-gray-400 text-center py-4">No days yet</p>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // =============== PRICE ELICITATION INTRO ===============
+    function PriceElicitationIntro({ onContinue }) {
+      const isMig = CONFIG.supergame === 'migraines';
+      const theme = getThemeClasses(CONFIG.themeColor);
+      const [showButton, setShowButton] = useState(false);
+
+      useEffect(() => {
+        const timer = setTimeout(() => setShowButton(true), 10000);
+        return () => clearTimeout(timer);
+      }, []);
+
+      // First-bullet phrasing
+      const introSentence = isMig
+        ? (<>In the next few pages, you will make <strong>{CONFIG.priceElicitationPrices.length * 2} high-stakes choices</strong> about whether to drink {CONFIG.playerName0}.</>)
+        : (<>In the next few pages, you will make <strong>{CONFIG.priceElicitationPrices.length} high-stakes choices</strong> about whether to drink {CONFIG.playerName0}.</>);
+
+      // Range-of-payment bullet
+      const rangeBullet = isMig
+        ? `Consuming the drink yields an additional payment that ranges from ${CONFIG.currency}0 to ${CONFIG.currency}${CONFIG.priceElicitationPrices[CONFIG.priceElicitationPrices.length - 1]}.`
+        : `The price of the drink will vary from ${CONFIG.currency}0 to ${CONFIG.currency}${CONFIG.priceElicitationPrices[CONFIG.priceElicitationPrices.length - 1]} across these choices`;
+
+      // "What doesn't change" first bullet
+      const noChangeBullet = isMig
+        ? `There will be no change in whether or how strongly drinking ${CONFIG.playerName0} affects how you feel.`
+        : `There will be no change in whether or how strongly ${CONFIG.playerName0} and ${CONFIG.playerName1} affect each other, or in whether or how strongly either of them affects how you feel.`;
+
+      return (
+        <div className="min-h-screen bg-white px-4 pt-8">
+          <div className="max-w-6xl mx-auto text-center">
+            <h1 className="text-3xl font-bold text-gray-900 mb-6">High-Stakes Decisions</h1>
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-8 text-left">
+              <p className="text-gray-700 text-lg mb-2">{introSentence}</p>
+
+              <h3 className="text-amber-800 font-bold text-lg mt-5 mb-3">What's Different</h3>
+              <ul className="text-gray-700 text-lg space-y-2 ml-1">
+                <li>
+                  <strong>The stakes are higher:</strong>
+                  <ul className="ml-6 mt-1 space-y-1 list-disc">
+                    <li>You will be given <strong>{CONFIG.currency}30</strong> as endowment.</li>
+                    <li>The bonus for feeling {CONFIG.playerName2Pos} increases from {CONFIG.currency}{CONFIG.yBonus} to <strong>{CONFIG.currency}{CONFIG.priceElicitationBonus}</strong>.</li>
+                    {isMig && (
+                      <>
+                        <li>If you have a craving, you get <strong>{CONFIG.currency}{CONFIG.priceElicitationPrices[Math.floor(CONFIG.priceElicitationPrices.length / 2)]}</strong> instead of {CONFIG.currency}{CONFIG.aCost} for consuming the drink.</li>
+                        <li>If you don't have a craving, you pay <strong>{CONFIG.currency}{CONFIG.priceElicitationPrices[Math.floor(CONFIG.priceElicitationPrices.length / 2)]}</strong> instead of {CONFIG.currency}{CONFIG.aCost} for consuming the drink.</li>
+                      </>
+                    )}
+                    <li>{rangeBullet}</li>
+                  </ul>
+                </li>
+                <li className="mt-3">
+                  <strong>You will not see how you feel after you make your choice.</strong> That is to say, there will be no feedback.
+                </li>
+              </ul>
+
+              <h3 className="text-amber-800 font-bold text-lg mt-5 mb-3">What Doesn't Change</h3>
+              <ul className="text-gray-700 text-lg space-y-2 list-disc ml-6">
+                <li>{noChangeBullet}</li>
+                <li>One of these choices may be randomly selected to decide your bonus payment at the end of this survey, so please consider each decision carefully.</li>
+              </ul>
+            </div>
+            <button
+              onClick={onContinue}
+              className={`px-8 py-4 ${theme.buttonBg} ${theme.buttonHover} text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-500 ${showButton ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+            >Continue to Choices</button>
+          </div>
+        </div>
+      );
+    }
+
+    // =============== PRICE DIVIDER PAGE ===============
+    function PriceDividerPage({ nextPrice, nextX, nextRound, totalRounds, onContinue, choices, onGoBack, isFinalReview }) {
+      const isMig = CONFIG.supergame === 'migraines';
+      const [isLoading, setIsLoading] = useState(true);
+      const [showRest, setShowRest] = useState(false);
+      const orderedPrices = getOrderedPrices();
+      const theme = getThemeClasses(CONFIG.themeColor);
+
+      // For migraines, check inconsistency separately for craving (X=1) and no-craving (X=0).
+      let isInconsistent;
+      if (isMig) {
+        const sortedCraving = orderedPrices.map(p => choices.find(c => c.price === p && c.X === 1)).filter(c => c !== undefined);
+        const sortedNoCraving = orderedPrices.map(p => choices.find(c => c.price === p && c.X === 0)).filter(c => c !== undefined);
+        isInconsistent = hasInconsistentChoices(sortedCraving) || hasInconsistentChoices(sortedNoCraving);
+      } else {
+        const sortedChoices = orderedPrices.map(p => choices.find(c => c.price === p)).filter(c => c !== undefined);
+        isInconsistent = hasInconsistentChoices(sortedChoices);
+      }
+
+      useEffect(() => {
+        setIsLoading(true);
+        setShowRest(false);
+        const t1 = setTimeout(() => setIsLoading(false), 1000);
+        // For migraines (non-review), show title only for ~1.5s, then reveal rest.
+        // Other cases reveal the rest immediately after the spinner.
+        const restDelay = (isMig && !isFinalReview) ? 2500 : 1000;
+        const t2 = setTimeout(() => setShowRest(true), restDelay);
+        return () => { clearTimeout(t1); clearTimeout(t2); };
+      }, [nextRound, isFinalReview]);
+
+      if (isLoading) {
+        return (
+          <div className="min-h-screen bg-white flex items-start justify-center pt-12">
+            <div className="text-center">
+              <div className="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+              <p className="text-gray-500">Loading...</p>
+            </div>
+          </div>
+        );
+      }
+
+      const headline = isMig ? `Drinking ${CONFIG.playerName0} now pays you:` : `The price of ${CONFIG.playerName0} is now:`;
+      // Migraines preview values
+      const prices = CONFIG.priceElicitationPrices;
+      const baseline = prices[Math.floor(prices.length / 2)];
+      const additional = nextPrice - baseline;
+      const formatSignedCurrency = (v) => v === 0
+        ? `${CONFIG.currency}0`
+        : `${v > 0 ? '+' : '-'}${CONFIG.currency}${Math.abs(v)}`;
+
+      return (
+        <div className="min-h-screen bg-white px-4 pt-8">
+          <div className="max-w-6xl mx-auto text-center">
+            {!isFinalReview && (
+              isMig ? (
+                <div className="flex flex-col items-center mb-4">
+                  <MorningIcon className="w-20 h-20 text-gray-700" drinkName={CONFIG.playerName0} X={nextX} />
+                  <h1 className="text-3xl font-bold text-gray-900 mt-2">
+                    {nextX === 1 ? (
+                      <>In the Next Choice, You Have a <span className="bg-yellow-200 px-2 py-0.5 rounded">Craving</span></>
+                    ) : (
+                      <>In the Next Choice, You Have <span className="bg-yellow-200 px-2 py-0.5 rounded">No Craving</span></>
+                    )}
+                  </h1>
+                </div>
+              ) : (
+                <h1 className="text-3xl font-bold text-gray-900 mb-4">Next Choice</h1>
+              )
+            )}
+
+            {showRest && !isFinalReview && (
+              isMig ? (() => {
+                // Button label flips by craving state; actual payment is always +price.
+                // paymentChange = total - button so the displayed math adds up; total is same across rows.
+                const sign = nextX === 1 ? 1 : -1;
+                const buttonAmount = sign * baseline;
+                const paymentChange = nextPrice - buttonAmount;
+                const totalPayment = nextPrice;
+                return (
+                  <div className="flex flex-col items-center mb-6">
+                    {/* Drink button preview */}
+                    <div className="w-36 h-24 px-2 py-2 rounded-xl font-bold flex flex-col items-center justify-center gap-1 border-2 bg-red-500 border-red-500 shadow-md">
+                      <DrinkIcon className={`w-10 h-10 ${theme.iconColor}`} drinkName={CONFIG.playerName0} />
+                      <div className="text-center">
+                        <div className="text-sm font-bold text-white">{formatSignedCurrency(buttonAmount)}</div>
+                        <div className="text-[10px] mt-1 text-white">Drink {CONFIG.playerName0}</div>
+                      </div>
+                    </div>
+                    {/* Additional and Total payment lines, aligned left under button */}
+                    <div className="mt-3 space-y-1 text-lg text-gray-600 text-left">
+                      <div className="flex items-center gap-2 whitespace-nowrap">
+                        <span>Additional payment for consuming the drink:</span>
+                        <span className="font-bold">{formatSignedCurrency(paymentChange)}</span>
+                      </div>
+                      <div className="flex items-center gap-2 whitespace-nowrap">
+                        <span>Total payment for consuming the drink:</span>
+                        <span className="inline-block rounded px-2 py-0.5 font-bold bg-amber-400 text-amber-900">{formatSignedCurrency(totalPayment)}</span>
+                      </div>
+                    </div>
+                    <p className="text-gray-700 text-lg mt-4">
+                      Bonus for feeling {CONFIG.playerName2Pos}: <span className="text-3xl font-bold text-green-600">{CONFIG.currency}{CONFIG.priceElicitationBonus}</span>
+                    </p>
+                  </div>
+                );
+              })() : (
+                <div className="mb-6 border-2 border-gray-200 rounded-xl p-6 inline-block">
+                  <p className="text-gray-700 text-lg">{headline}</p>
+                  <div className="text-4xl font-bold text-amber-600 mt-3">
+                    {nextPrice === 0 ? 'Free' : `${CONFIG.currency}${nextPrice}`}
+                  </div>
+                  <p className="text-gray-700 text-lg mt-4">
+                    Bonus for feeling {CONFIG.playerName2Pos}: <span className="text-3xl font-bold text-green-600">{CONFIG.currency}{CONFIG.priceElicitationBonus}</span>
+                  </p>
+                </div>
+              )
+            )}
+
+            {isFinalReview && (
+              <p className="text-gray-700 text-xl mb-6">
+                You have completed all {totalRounds} choices. Please review your choices below and click "Submit" to continue.
+              </p>
+            )}
+
+            {showRest && (<>
+            {/* Choices so far — chip grid */}
+            <div className="mb-6">
+              <p className="text-gray-500 text-sm mb-2">Your choices:</p>
+              {isMig ? (
+                <>
+                  {[1, 0].map((rowX) => (
+                    <div key={rowX} className="flex items-center justify-center gap-2 mb-1.5">
+                      <span className="text-gray-600 text-xs w-24 text-right">{rowX === 1 ? 'Craving:' : 'No craving:'}</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {orderedPrices.map((price) => {
+                          const choiceData = choices.find(c => c.price === price && c.X === rowX);
+                          const hsIdx = getOrderedHSRounds().findIndex(r => r.price === price && r.X === rowX);
+                          const isNextChoice = !isFinalReview && hsIdx === nextRound - 1;
+                          const isPastChoice = choiceData !== undefined;
+                          return (
+                            <button
+                              key={`${price}-${rowX}`}
+                              onClick={() => isPastChoice && onGoBack && onGoBack(hsIdx + 1)}
+                              disabled={!isPastChoice}
+                              className={`px-2 py-1 rounded text-xs font-medium transition-all ${
+                                isNextChoice
+                                  ? 'bg-amber-50 border border-amber-300 text-amber-600'
+                                  : choiceData
+                                    ? choiceData.choice === 1
+                                      ? 'bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-100 cursor-pointer'
+                                      : 'bg-gray-100 border border-gray-200 text-gray-500 hover:bg-gray-200 cursor-pointer'
+                                    : 'bg-white border border-gray-100 text-gray-300'
+                              }`}
+                            >
+                              <div>Total: {CONFIG.currency}{price}</div>
+                              <div className="text-xs">
+                                {choiceData ? (choiceData.choice === 1 ? 'Drink' : 'Skip') : '—'}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <div className="flex flex-wrap justify-center gap-1.5">
+                  {orderedPrices.map((price, idx) => {
+                    const choiceData = choices.find(c => c.price === price);
+                    const isNextChoice = !isFinalReview && idx === nextRound - 1;
+                    const isPastChoice = choiceData !== undefined;
+                    return (
+                      <button
+                        key={price}
+                        onClick={() => isPastChoice && onGoBack && onGoBack(idx + 1)}
+                        disabled={!isPastChoice}
+                        className={`px-2 py-1 rounded text-xs font-medium transition-all ${
+                          isNextChoice
+                            ? 'bg-amber-50 border border-amber-300 text-amber-600'
+                            : choiceData
+                              ? choiceData.choice === 1
+                                ? 'bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-100 cursor-pointer'
+                                : 'bg-gray-100 border border-gray-200 text-gray-500 hover:bg-gray-200 cursor-pointer'
+                              : 'bg-white border border-gray-100 text-gray-300'
+                        }`}
+                      >
+                        <div>{price === 0 ? 'Free' : `${CONFIG.currency}${price}`}</div>
+                        <div className="text-xs">
+                          {choiceData ? (choiceData.choice === 1 ? 'Drink' : 'Skip') : '—'}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {choices.length > 0 && (
+                <p className="text-gray-400 text-xs mt-2">Click on any choice to change it</p>
+              )}
+            </div>
+
+            {isInconsistent && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-6">
+                <div className="flex items-center justify-center gap-2 text-red-600 font-medium text-sm mb-1">
+                  <span>⚠️</span>
+                  <span>Please Double-Check Your Choices</span>
+                </div>
+                <p className="text-red-500 text-xs">
+                  {isMig
+                    ? `Your choices seem inconsistent: you chose to skip ${CONFIG.playerName0} at a higher payment but drink it at a lower payment. Usually, people are more willing to drink when the payment is higher. Please click on any choice above to change it, or continue if this is intentional.`
+                    : `Your choices seem inconsistent: you chose to drink ${CONFIG.playerName0} at a higher price but skip it at a lower price. Usually, people are more willing to drink when the price is lower. Please click on any choice above to change it, or continue if this is intentional.`}
+                </p>
+              </div>
+            )}
+
+            <button
+              onClick={onContinue}
+              className={`px-8 py-4 ${theme.buttonBg} ${theme.buttonHover} text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all`}
+            >
+              {isFinalReview ? 'Submit' : 'Continue'}
+            </button>
+            </>)}
+          </div>
+        </div>
+      );
+    }
+
+    // =============== PRICE ELICITATION PANEL (per-choice page) ===============
+    function PriceElicitationPanel({ price, roundNumber, totalRounds, onChoice, stats, history, waitingForSpace, pendingChoice, currentX, decisionEnabled }) {
+      const isMig = CONFIG.supergame === 'migraines';
+      const theme = getThemeClasses(CONFIG.themeColor);
+
+      // Pill text
+      let pillText;
+      if (isMig) {
+        if (currentX === null) pillText = 'Morning...';
+        else if (!decisionEnabled) pillText = `Morning: ${currentX === 1 ? 'Craving' : 'NO craving'}`;
+        else pillText = `High-Stakes Choice: Would you drink ${CONFIG.playerName0} for this payment?`;
+      } else {
+        pillText = `High-Stakes Choice: Would you drink ${CONFIG.playerName0} at this price?`;
+      }
+
+      return (
+        <div className="min-h-screen bg-white px-4 pt-0 pb-4">
+          <div className="max-w-6xl mx-auto">
+            <div className={`${theme.panelBg} rounded-2xl p-6 mb-4 border ${theme.panelBorder} shadow-sm relative overflow-hidden`}>
+              <div className="text-center mb-4 h-14 flex items-center justify-center">
+                <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium bg-amber-50 text-amber-700 border border-amber-200 ${isMig && roundNumber === 1 && !waitingForSpace && decisionEnabled ? 'first-round-shine-pill' : ''}`}>
+                  {pillText}
+                </span>
+              </div>
+
+              <div className="absolute top-4 left-4 bg-amber-100 rounded-xl px-4 py-2 border border-amber-300 shadow-sm">
+                <div className="text-amber-700 font-medium text-sm mb-1">High Stakes</div>
+                <div className="flex items-center gap-3">
+                  <div>
+                    <span className="text-amber-600 text-sm">Choice</span>
+                    <div className="text-amber-900 text-2xl font-bold">{roundNumber}</div>
+                  </div>
+                  <div className="text-amber-400 text-xl">/</div>
+                  <div className="text-amber-600 text-lg">{totalRounds}</div>
+                </div>
+                <div className="w-20 h-2 bg-amber-200 rounded-full mt-2 overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-amber-400 to-amber-600 transition-all duration-300" style={{ width: `${(roundNumber / totalRounds) * 100}%` }} />
+                </div>
+              </div>
+
+              <XYConnection
+                X={null}
+                A={null}
+                Y={null}
+                stats={stats}
+                hideRateBox={false}
+                showBonus={CONFIG.priceElicitationBonus}
+                alignStart={isMig}
+                actionSlot={isMig ? (
+                  <InlinePriceElicitationButtons
+                    price={price}
+                    onChoice={onChoice}
+                    isFirstRound={roundNumber === 1 && decisionEnabled && !waitingForSpace}
+                    selectedChoice={pendingChoice}
+                    disabled={!decisionEnabled || waitingForSpace}
+                    currentX={currentX}
+                  />
+                ) : null}
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              {isMig ? (
+                <PriceElicitationDecisionPanel stats={stats} X={currentX} />
+              ) : (
+                <PriceElicitationDecisionPanel
+                  price={price}
+                  onChoice={onChoice}
+                  stats={stats}
+                  isFirstRound={roundNumber === 1 && !waitingForSpace}
+                  selectedChoice={pendingChoice}
+                />
+              )}
+              <XStatsPanel stats={stats} currentX={null} currentY={null} currentA={null} />
+              <CompactHistory history={history} />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // =============== MAIN APP ===============
+    function BeverageExperiment() {
+      const isMig = CONFIG.supergame === 'migraines';
+
+      const [ready, setReady] = useState(false);
+      const [currentRound, setCurrentRound] = useState(1);
+      const [phase, setPhase] = useState('decision');
+      const [history, setHistory] = useState([]);
+      const [currentA, setCurrentA] = useState(null);
+      const [currentX, setCurrentX] = useState(null);
+      const [currentY, setCurrentY] = useState(null);
+      const [showNewDay, setShowNewDay] = useState(false);
+      const [nextDayNumber, setNextDayNumber] = useState(2);
+
+      const [showDAG, setShowDAG] = useState(false);
+      const [dagCompleted, setDagCompleted] = useState(false);
+      const [dagData, setDagData] = useState({ initial: null, final: null, confidence: null, alertCount: null });
+      const [hideRateBox, setHideRateBox] = useState(false);
+
+      const [showBelief, setShowBelief] = useState(false);
+      const [beliefData, setBeliefData] = useState(null);
+
+      const [priceElicitationRound, setPriceElicitationRound] = useState(0);
+      const [priceElicitationChoices, setPriceElicitationChoices] = useState([]);
+      const [showPriceDivider, setShowPriceDivider] = useState(false);
+      const [priceElicitationReturnRound, setPriceElicitationReturnRound] = useState(null);
+
+      const [waitingForSpace, setWaitingForSpace] = useState(null);
+      const [pendingResult, setPendingResult] = useState(null);
+      const [decisionEnabled, setDecisionEnabled] = useState(false); // migraines-only gate
+
+      const [priceElicitationWaitingForSpace, setPriceElicitationWaitingForSpace] = useState(false);
+      const [pendingPriceChoice, setPendingPriceChoice] = useState(null);
+
+      const roundTimesRef = useRef([]);
+      const roundStartTimeRef = useRef(Date.now());
+      const dataSentRef = useRef(false);
+      const halfwayDAGShownRef = useRef(false);
+      const beliefShownRef = useRef(false);
+      const advancePendingRef = useRef(false);
+      const gameCompleteRef = useRef(false);
+      const roundTimestampsRef = useRef([]);
+      const phaseStartTimeRef = useRef(Date.now());
+      const sampledForRoundRef = useRef(null);
+      const sampledForPriceRoundRef = useRef(null);
+
+      // Warn before unload
+      useEffect(() => {
+        const handler = (e) => {
+          if (gameCompleteRef.current) return;
+          e.preventDefault();
+          e.returnValue = '';
+        };
+        window.addEventListener('beforeunload', handler);
+        return () => window.removeEventListener('beforeunload', handler);
+      }, []);
+
+      // Init: wait for Qualtrics config (max 3 s)
+      useEffect(() => {
+        const timeout = setTimeout(() => {
+          if (!ready) {
+            console.log('Timeout: starting with default config');
+            setReady(true);
+            roundStartTimeRef.current = Date.now();
+            phaseStartTimeRef.current = Date.now();
+          }
+        }, 3000);
+        onInitialized(() => {
+          clearTimeout(timeout);
+          setReady(true);
+          roundStartTimeRef.current = Date.now();
+          phaseStartTimeRef.current = Date.now();
+        });
+        return () => clearTimeout(timeout);
+      }, []);
+
+      // Space-bar listener for main outcome→next-round (price elicitation auto-advances now)
+      useEffect(() => {
+        const handleKeyDown = (e) => {
+          // Main round: outcome → next round
+          if (e.code === 'Space' && waitingForSpace === 'nextRound') {
+            e.preventDefault();
+            if (advancePendingRef.current) return;
+            advancePendingRef.current = true;
+            const remaining = Math.max(0, 1000 - (Date.now() - phaseStartTimeRef.current));
+
+            setTimeout(() => {
+              advancePendingRef.current = false;
+              const currentTimestamps = roundTimestampsRef.current[roundTimestampsRef.current.length - 1];
+              if (currentTimestamps) currentTimestamps.outcomeViewTime = (Date.now() - phaseStartTimeRef.current) / 1000;
+
+              setWaitingForSpace(null);
+              setPendingResult(null);
+
+              if (currentRound >= CONFIG.totalRounds) {
+                setPhase('priceIntro');
+              } else if (currentRound === 10 && !beliefShownRef.current) {
+                beliefShownRef.current = true;
+                setShowBelief(true);
+              } else if (currentRound === Math.floor(CONFIG.totalRounds / 2) && !halfwayDAGShownRef.current && CONFIG.order !== 'AY') {
+                halfwayDAGShownRef.current = true;
+                setShowDAG(true);
+              } else {
+                setNextDayNumber(currentRound + 1);
+                setShowNewDay(true);
+                setTimeout(() => {
+                  setCurrentA(null);
+                  setCurrentX(null);
+                  setCurrentY(null);
+                  setDecisionEnabled(false);
+                }, 200);
+                setTimeout(() => {
+                  setShowNewDay(false);
+                  setCurrentRound(prev => prev + 1);
+                  setPhase('decision');
+                  roundStartTimeRef.current = Date.now();
+                  phaseStartTimeRef.current = Date.now();
+                }, 1000);
+              }
+            }, remaining);
+          }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+      }, [waitingForSpace, pendingResult, currentRound]);
+
+      const stats = calculateStats(history);
+
+      // ---- handleChoice: dieter samples here; migraines uses pre-sampled pendingResult ----
+      const handleChoice = useCallback((A) => {
+        const decisionTime = (Date.now() - roundStartTimeRef.current) / 1000;
+        roundTimesRef.current.push(decisionTime);
+        roundTimestampsRef.current.push({
+          round: currentRound,
+          decisionTime,
+          chemicalViewTime: null,
+          outcomeViewTime: null
+        });
+
+        setCurrentA(A);
+
+        if (isMig) {
+          // Migraines: X+Y were sampled at round start; just transition to outcome after a brief reveal
+          const result = pendingResult || simulateRound(A);
+          setTimeout(() => {
+            phaseStartTimeRef.current = Date.now();
+            setPhase('outcome');
+            setCurrentY(result.Y);
+            setHistory(prev => [...prev, [A, result.X, result.Y]]);
+            setWaitingForSpace('nextRound');
+          }, 1200);
+          return;
+        }
+
+        // Dieter: classic 3-phase cascade — decision → chemical → outcome
+        // AYX: Y reveals first (in 'chemical'), then X reveals (in 'outcome')
+        // AXY/AY: X reveals first (in 'chemical'), then Y reveals (in 'outcome')
+        const isAYX = CONFIG.order === 'AYX';
+        setPhase('chemical');
+        const result = simulateRound(A);
+        setPendingResult({ A, X: result.X, Y: result.Y });
+        const preChemicalDelay = CONFIG.order === 'AY' ? 0 : 800;
+        setTimeout(() => {
+          if (isAYX) setCurrentY(result.Y);
+          else setCurrentX(result.X);
+          phaseStartTimeRef.current = Date.now();
+          setTimeout(() => {
+            const currentTimestamps = roundTimestampsRef.current[roundTimestampsRef.current.length - 1];
+            if (currentTimestamps) currentTimestamps.chemicalViewTime = (Date.now() - phaseStartTimeRef.current) / 1000;
+            phaseStartTimeRef.current = Date.now();
+            setPhase('outcome');
+            if (isAYX) setCurrentX(result.X);
+            else setCurrentY(result.Y);
+            setHistory(prev => [...prev, [A, result.X, result.Y]]);
+            setWaitingForSpace('nextRound');
+          }, 1200);
+        }, preChemicalDelay);
+      }, [currentRound, isMig, pendingResult]);
+
+      // ---- migraines-only: sample X+Y at start of each main-game decision round ----
+      useEffect(() => {
+        if (!isMig) return;
+        if (!ready) return;
+        if (phase !== 'decision') return;
+        if (showNewDay) return;
+        if (currentX !== null) return;
+        if (sampledForRoundRef.current === currentRound) return;
+        sampledForRoundRef.current = currentRound;
+        const result = simulateRound(0);
+        setPendingResult({ A: null, X: result.X, Y: result.Y });
+        const timer = setTimeout(() => setCurrentX(result.X), 1200);
+        return () => clearTimeout(timer);
+      }, [ready, phase, showNewDay, currentX, currentRound, isMig]);
+
+      // ---- migraines-only: enable buttons shortly after craving is revealed ----
+      useEffect(() => {
+        if (!isMig) return;
+        if (phase !== 'decision') return;
+        if (currentX === null) return;
+        if (decisionEnabled) return;
+        const timer = setTimeout(() => {
+          setDecisionEnabled(true);
+          roundStartTimeRef.current = Date.now();
+          phaseStartTimeRef.current = Date.now();
+        }, 600);
+        return () => clearTimeout(timer);
+      }, [phase, currentX, decisionEnabled, isMig]);
+
+      // ---- migraines-only: reset craving state on price-round transitions ----
+      useEffect(() => {
+        if (!isMig) return;
+        if (phase !== 'priceElicitation') return;
+        setCurrentX(null);
+        setCurrentY(null);
+        setDecisionEnabled(false);
+        setPendingResult(null);
+        sampledForPriceRoundRef.current = null;
+      }, [phase, priceElicitationRound, showPriceDivider, isMig]);
+
+      // ---- migraines-only: sample for each high-stakes round (X forced by getOrderedHSRounds) ----
+      useEffect(() => {
+        if (!isMig) return;
+        if (!ready) return;
+        if (phase !== 'priceElicitation') return;
+        if (showPriceDivider) return;
+        if (priceElicitationRound === 0) return;
+        if (currentX !== null) return;
+        if (sampledForPriceRoundRef.current === priceElicitationRound) return;
+        sampledForPriceRoundRef.current = priceElicitationRound;
+        const result = simulateRound(0);
+        const hsRound = getOrderedHSRounds()[priceElicitationRound - 1];
+        const X = hsRound ? hsRound.X : 1;
+        setPendingResult({ A: null, X, Y: result.Y });
+        const timer = setTimeout(() => setCurrentX(X), 1200);
+        return () => clearTimeout(timer);
+      }, [ready, phase, showPriceDivider, currentX, priceElicitationRound, isMig]);
+
+      // ---- migraines-only: enable high-stakes buttons as soon as craving is revealed ----
+      useEffect(() => {
+        if (!isMig) return;
+        if (phase !== 'priceElicitation') return;
+        if (currentX === null) return;
+        if (decisionEnabled) return;
+        setDecisionEnabled(true);
+      }, [phase, currentX, decisionEnabled, isMig]);
+
+      // Price elicitation handlers
+      const handlePriceIntroContinue = useCallback(() => {
+        setPriceElicitationRound(0);
+        setShowPriceDivider(true);
+        setPhase('priceElicitation');
+      }, []);
+
+      const commitPriceChoice = useCallback((choice) => {
+        const hsRound = isMig ? getOrderedHSRounds()[priceElicitationRound - 1] : null;
+        const currentPrice = isMig ? hsRound.price : getOrderedPrices()[priceElicitationRound - 1];
+        const currentRoundX = isMig ? hsRound.X : null;
+        const existingIndex = isMig
+          ? priceElicitationChoices.findIndex(c => c.price === currentPrice && c.X === currentRoundX)
+          : priceElicitationChoices.findIndex(c => c.price === currentPrice);
+        const isEditing = existingIndex >= 0;
+
+        const sampledX = isMig ? (pendingResult ? pendingResult.X : currentX) : undefined;
+        const sampledY = isMig ? (pendingResult ? pendingResult.Y : currentY) : undefined;
+        const entry = isMig
+          ? { price: currentPrice, choice, X: sampledX, Y: sampledY }
+          : { price: currentPrice, choice };
+
+        let newChoices;
+        if (isEditing) {
+          newChoices = [...priceElicitationChoices];
+          newChoices[existingIndex] = entry;
+        } else {
+          newChoices = [...priceElicitationChoices, entry];
+        }
+
+        setPriceElicitationChoices(newChoices);
+        setPriceElicitationWaitingForSpace(false);
+        setPendingPriceChoice(null);
+
+        const totalHSRounds = isMig ? getHSTotalRounds() : CONFIG.priceElicitationPrices.length;
+        if (isEditing && priceElicitationReturnRound !== null) {
+          setPriceElicitationRound(priceElicitationReturnRound);
+          setPriceElicitationReturnRound(null);
+          setShowPriceDivider(true);
+        } else if (newChoices.length >= totalHSRounds) {
+          setShowPriceDivider(true);
+          setPriceElicitationRound(totalHSRounds);
+        } else {
+          setShowPriceDivider(true);
+        }
+      }, [isMig, priceElicitationRound, priceElicitationChoices, pendingResult, currentX, currentY, priceElicitationReturnRound]);
+
+      const handlePriceElicitationChoice = useCallback((choice) => {
+        const currentPrice = isMig
+          ? getOrderedHSRounds()[priceElicitationRound - 1].price
+          : getOrderedPrices()[priceElicitationRound - 1];
+        setPendingPriceChoice({ price: currentPrice, choice });
+        setPriceElicitationWaitingForSpace(true);
+        // Auto-forward to summary page after brief visual feedback
+        setTimeout(() => commitPriceChoice(choice), 500);
+      }, [priceElicitationRound, isMig, commitPriceChoice]);
+
+      const handleGoBackToChoice = useCallback((roundNumber) => {
+        setPriceElicitationReturnRound(priceElicitationRound);
+        setPriceElicitationRound(roundNumber);
+        setShowPriceDivider(false);
+      }, [priceElicitationRound]);
+
+      const handlePriceDividerContinue = useCallback(() => {
+        setShowPriceDivider(false);
+        if (priceElicitationRound === 0) setPriceElicitationRound(1);
+        else setPriceElicitationRound(prev => prev + 1);
+      }, [priceElicitationRound]);
+
+      const handleDAGComplete = useCallback((initialDAG, finalDAG, confidence, DAGAlertCount, initialDAGTime, finalDAGTime, confidenceTime) => {
+        setDagData({ initial: initialDAG, final: finalDAG, confidence, alertCount: DAGAlertCount, initialDAGTime, finalDAGTime, confidenceTime });
+        setDagCompleted(true);
+        setShowDAG(false);
+        sendDataToQualtrics('DAG_DATA', {
+          initialDAG, finalDAG, confidence, DAGAlertCount,
+          initialDAGTime, finalDAGTime, confidenceTime,
+          completedAtRound: currentRound
+        });
+        setCurrentA(null); setCurrentX(null); setCurrentY(null); setDecisionEnabled(false);
+        setNextDayNumber(currentRound + 1);
+        setShowNewDay(true);
+        setPhase('decision');
+        setTimeout(() => {
+          setShowNewDay(false);
+          setCurrentRound(prev => prev + 1);
+          roundStartTimeRef.current = Date.now();
+          phaseStartTimeRef.current = Date.now();
+        }, 1000);
+      }, [currentRound]);
+
+      const handleBeliefComplete = useCallback((data) => {
+        setBeliefData(data);
+        setShowBelief(false);
+        sendDataToQualtrics('BELIEF_DATA', { ...data, completedAtRound: currentRound });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (window.parent !== window) window.parent.postMessage({ type: 'SCROLL_TO_TOP' }, '*');
+        setCurrentA(null); setCurrentX(null); setCurrentY(null); setDecisionEnabled(false);
+        setNextDayNumber(currentRound + 1);
+        setShowNewDay(true);
+        setPhase('decision');
+        setTimeout(() => {
+          setShowNewDay(false);
+          setCurrentRound(prev => prev + 1);
+          roundStartTimeRef.current = Date.now();
+          phaseStartTimeRef.current = Date.now();
+        }, 1000);
+      }, [currentRound]);
+
+      if (!ready) {
+        return (
+          <div className="min-h-screen bg-white flex items-start justify-center pt-12">
+            <div className="text-gray-700 text-xl">Loading...</div>
+          </div>
+        );
+      }
+
+      // ---- Final data submission ----
+      if (phase === 'complete' && history.length === CONFIG.totalRounds && priceElicitationChoices.length === (isMig ? getHSTotalRounds() : CONFIG.priceElicitationPrices.length) && !dataSentRef.current) {
+        dataSentRef.current = true;
+
+        // High-stakes outcomes: migraines reuses sampled X/Y from each round; dieter simulates fresh
+        const highStakeOutcomes = priceElicitationChoices.map(c => {
+          if (isMig && (c.X === 0 || c.X === 1) && (c.Y === 0 || c.Y === 1)) {
+            return { price: c.price, choice: c.choice, X: c.X, Y: c.Y };
+          }
+          const result = simulateRound(c.choice);
+          return { price: c.price, choice: c.choice, X: result.X, Y: result.Y };
+        });
+
+        // Per-round payment: migraines (drink pays when craving), dieter (drink always costs)
+        const payment = isMig
+          ? history.map(([A, X, Y]) => (X === 1 ? CONFIG.aCost : -CONFIG.aCost) * A + CONFIG.yBonus * Y)
+          : history.map(([A, X, Y]) => -CONFIG.aCost * A + CONFIG.yBonus * Y);
+
+        // High-stakes payment
+        const paymentHighStake = isMig
+          ? highStakeOutcomes.map(c => 30 + (c.choice === 1 ? c.price : 0) + (c.Y === 1 ? CONFIG.priceElicitationBonus : 0))
+          : highStakeOutcomes.map(c => 30 + (c.choice === 1 ? -c.price : 0) + (c.Y === 1 ? CONFIG.priceElicitationBonus : 0));
+
+        sendDataToQualtrics('FINAL_DATA', {
+          history,
+          roundTimes: roundTimesRef.current,
+          roundTimestamps: roundTimestampsRef.current,
+          payment,
+          dagInitial: dagData.initial,
+          dagFinal: dagData.final,
+          dagConfidence: dagData.confidence,
+          DAGAlertCount: dagData.alertCount,
+          initialDAGTime: dagData.initialDAGTime,
+          finalDAGTime: dagData.finalDAGTime,
+          confidenceTime: dagData.confidenceTime,
+          beliefData,
+          priceElicitation: priceElicitationChoices,
+          highStakeOutcomes,
+          paymentHighStake,
+          tracking: getTrackingData()
+        });
+
+        setTimeout(() => {
+          gameCompleteRef.current = true;
+          sendDataToQualtrics('GAME_COMPLETE', { completed: true, tracking: getTrackingData() });
+        }, 500);
+      }
+
+      // ---- Route to DAG / Belief iframes ----
+      if (showDAG) {
+        return (
+          <DAGIframe
+            onComplete={handleDAGComplete}
+            playerName0={CONFIG.playerName0}
+            playerName1={CONFIG.playerName1}
+            playerIcon0={CONFIG.playerIcon0}
+            nRounds={CONFIG.totalRounds}
+            themeColor={CONFIG.themeColor}
+          />
+        );
+      }
+      if (showBelief) {
+        return (
+          <BeliefIframe
+            onComplete={handleBeliefComplete}
+            playerName0={CONFIG.playerName0}
+            playerName1={CONFIG.playerName1}
+            playerName2Pos={CONFIG.playerName2Pos}
+            playerName2Neg={CONFIG.playerName2Neg}
+            aCost={CONFIG.aCost}
+            currency={CONFIG.currency}
+            order={CONFIG.order}
+            themeColor={CONFIG.themeColor}
+          />
+        );
+      }
+
+      // ---- Price elicitation flow ----
+      if (phase === 'priceIntro') {
+        return <PriceElicitationIntro onContinue={handlePriceIntroContinue} />;
+      }
+      if (phase === 'priceElicitation' && showPriceDivider) {
+        const hsTotal = isMig ? getHSTotalRounds() : CONFIG.priceElicitationPrices.length;
+        const isFinalReview = priceElicitationChoices.length >= hsTotal;
+        const nextRound = priceElicitationRound === 0 ? 1 : priceElicitationRound + 1;
+        const nextHSRound = isMig ? getOrderedHSRounds()[nextRound - 1] : null;
+        const nextPrice = isFinalReview ? null : (isMig ? nextHSRound.price : getOrderedPrices()[nextRound - 1]);
+        const nextX = isMig && nextHSRound ? nextHSRound.X : null;
+        return (
+          <PriceDividerPage
+            nextPrice={nextPrice}
+            nextX={nextX}
+            nextRound={nextRound}
+            totalRounds={hsTotal}
+            onContinue={isFinalReview ? () => setPhase('complete') : handlePriceDividerContinue}
+            choices={priceElicitationChoices}
+            onGoBack={handleGoBackToChoice}
+            isFinalReview={isFinalReview}
+          />
+        );
+      }
+      if (phase === 'priceElicitation') {
+        const hsTotal = isMig ? getHSTotalRounds() : CONFIG.priceElicitationPrices.length;
+        const currentPrice = isMig
+          ? getOrderedHSRounds()[priceElicitationRound - 1].price
+          : getOrderedPrices()[priceElicitationRound - 1];
+        return (
+          <PriceElicitationPanel
+            price={currentPrice}
+            roundNumber={priceElicitationRound}
+            totalRounds={hsTotal}
+            onChoice={handlePriceElicitationChoice}
+            stats={stats}
+            history={history}
+            waitingForSpace={priceElicitationWaitingForSpace}
+            pendingChoice={pendingPriceChoice?.choice}
+            currentX={currentX}
+            decisionEnabled={decisionEnabled}
+          />
+        );
+      }
+      if (phase === 'complete') {
+        return <div className="min-h-screen bg-white" />;
+      }
+
+      // ---- Main game render ----
+      const theme = getThemeClasses(CONFIG.themeColor);
+
+      // Pill text varies by supergame and phase
+      const renderPillText = () => {
+        if (isMig) {
+          if (phase === 'decision' && currentX === null) return 'Morning...';
+          if (phase === 'decision' && currentX !== null && !decisionEnabled) return `Morning: ${currentX === 1 ? 'Craving' : 'NO craving'}`;
+          if (phase === 'decision' && currentX !== null && decisionEnabled) return `Your Decision: Will you drink ${CONFIG.playerName0}?`;
+        } else {
+          if (phase === 'decision') return `Morning: Will you drink ${CONFIG.playerName0}?`;
+          if (phase === 'chemical') {
+            if (CONFIG.order === 'AY') return 'Later this day...';
+            if (CONFIG.order === 'AYX') {
+              // AYX: Y is the first reveal — show anticipation until Y is set, then mood pill
+              if (currentY === null) return 'Shortly after...';
+              const moodName = currentY === 1
+                ? `${CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}!`
+                : CONFIG.playerName2Neg.charAt(0).toUpperCase() + CONFIG.playerName2Neg.slice(1);
+              const Face = currentY === 1 ? HappyFaceIcon : SadFaceIcon;
+              return <>Shortly after: {moodName} <Face className="w-5 h-5 inline-block" /></>;
+            }
+            return `Reading your ${CONFIG.playerName1} level...`;
+          }
+        }
+        if (phase === 'outcome') {
+          // AYX: X is the second reveal — announce the level + Press-Space in the same pill
+          if (CONFIG.order === 'AYX') {
+            if (waitingForSpace === 'nextRound') {
+              return (
+                <>
+                  Your {CONFIG.playerName1} Level is {currentX === 1 ? 'Normal' : 'Abnormal'}.
+                  <br />
+                  Press "Space" to continue
+                </>
+              );
+            }
+            return <>Reading your {CONFIG.playerName1} level...</>;
+          }
+          const moodName = currentY === 1
+            ? `${CONFIG.playerName2Pos.charAt(0).toUpperCase() + CONFIG.playerName2Pos.slice(1)}!`
+            : CONFIG.playerName2Neg.charAt(0).toUpperCase() + CONFIG.playerName2Neg.slice(1);
+          const Face = currentY === 1 ? HappyFaceIcon : SadFaceIcon;
+          return (
+            <>Later this day: {moodName} <Face className="w-5 h-5 inline-block" />
+              {waitingForSpace === 'nextRound' ? (<><br />Press "Space" to continue</>) : null}
+            </>
+          );
+        }
+        return '';
+      };
+
+      // Pill background color
+      let pillClass = theme.pillBg + ' ' + theme.pillText + ' border ' + theme.pillBorder;
+      if (phase === 'chemical') {
+        // AYX 'chemical' phase reveals Y — color by mood; otherwise neutral amber
+        if (CONFIG.order === 'AYX' && currentY !== null) {
+          pillClass = currentY === 1
+            ? 'bg-green-50 text-green-700 border border-green-200'
+            : 'bg-red-50 text-red-700 border border-red-200';
+        } else {
+          pillClass = 'bg-amber-50 text-amber-700 border border-amber-200';
+        }
+      }
+      else if (phase === 'outcome') {
+        // AYX 'outcome': amber while "Reading..."; color by X (Normal=green, Abnormal=red) once announced
+        if (CONFIG.order === 'AYX') {
+          if (waitingForSpace === 'nextRound') {
+            pillClass = currentX === 1
+              ? 'bg-green-50 text-green-700 border border-green-200'
+              : 'bg-red-50 text-red-700 border border-red-200';
+          } else {
+            pillClass = 'bg-amber-50 text-amber-700 border border-amber-200';
+          }
+        } else {
+          pillClass = currentY === 1
+            ? 'bg-green-50 text-green-700 border border-green-200'
+            : 'bg-red-50 text-red-700 border border-red-200';
+        }
+      }
+
+      const firstRoundShine = isMig
+        ? (currentRound === 1 && phase === 'decision' && decisionEnabled)
+        : (currentRound === 1 && phase === 'decision');
+
+      return (
+        <div className="min-h-screen bg-white px-4 pt-0 pb-4">
+          <div className="max-w-6xl mx-auto">
+            <div className={`${theme.panelBg} rounded-2xl p-6 mb-4 border ${theme.panelBorder} shadow-sm relative overflow-hidden`}>
+              <NewDayOverlay show={showNewDay} dayNumber={nextDayNumber} />
+
+              <div className="text-center mb-4 h-14 flex items-center justify-center">
+                <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${pillClass} ${firstRoundShine ? 'first-round-shine-pill' : ''}`}>
+                  {renderPillText()}
+                </span>
+              </div>
+
+              <div className="absolute top-4 left-4 bg-white rounded-xl px-4 py-2 border border-gray-200 shadow-sm">
+                <div className="text-gray-700 font-medium text-sm mb-1">Monday</div>
+                <div className="flex items-center gap-3">
+                  <div>
+                    <span className="text-gray-400 text-sm">Week</span>
+                    <div className="text-gray-900 text-2xl font-bold">{currentRound}</div>
+                  </div>
+                  <div className="text-gray-300 text-xl">/</div>
+                  <div className="text-gray-400 text-lg">{CONFIG.totalRounds}</div>
+                </div>
+                <div className="w-20 h-2 bg-gray-200 rounded-full mt-2 overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-blue-400 to-blue-600 transition-all duration-300" style={{ width: `${(currentRound / CONFIG.totalRounds) * 100}%` }} />
+                </div>
+              </div>
+
+              <XYConnection
+                X={isMig ? null : currentX}
+                A={isMig ? currentA : null}
+                Y={currentY}
+                stats={stats}
+                hideRateBox={hideRateBox}
+                actionSlot={isMig ? (
+                  <InlineDrinkSkipButtons
+                    onChoice={handleChoice}
+                    disabled={phase !== 'decision' || !decisionEnabled || currentA !== null}
+                    isFirstRound={currentRound === 1 && decisionEnabled}
+                    selectedChoice={currentA}
+                    X={currentX}
+                  />
+                ) : null}
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              {isMig ? (
+                <DrinkDecisionPanel stats={stats} X={currentX} />
+              ) : (
+                <DrinkDecisionPanel
+                  onChoice={handleChoice}
+                  disabled={phase !== 'decision'}
+                  stats={stats}
+                  isFirstRound={currentRound === 1}
+                  selectedChoice={currentA}
+                />
+              )}
+              <XStatsPanel stats={stats} currentX={currentX} currentY={currentY} currentA={currentA} />
+              <CompactHistory history={history} />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<BeverageExperiment />);
+  </script>
+</body>
+</html>
