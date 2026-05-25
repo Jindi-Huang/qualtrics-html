@@ -1409,11 +1409,13 @@
 
       const handleNextStep = () => setIntroStep(prev => prev + 1);
 
-      // Step 0 paragraph differs slightly by supergame
+      // Step 0 paragraph differs slightly by supergame (and by order for dieter)
       const step0Content = CONFIG.order === 'AY' ? (
         <>The next decision screen will ask about how your decision to drink <strong>{CONFIG.playerName0}</strong> is related to <strong>how you feel</strong>.</>
       ) : isMig ? (
         <>What do you believe about the relationship between <strong>cravings (or not)</strong>, your decision to drink <strong>{CONFIG.playerName0}</strong>, and <strong>how you feel</strong>? To answer this question, each of the next {CONFIG.mainCausals.length} decision screens show you a different scenario.</>
+      ) : CONFIG.order === 'AYX' ? (
+        <>What do you believe about the relationship between your decision to drink <strong>{CONFIG.playerName0}</strong>, <strong>how you feel</strong>, and your <strong>{CONFIG.playerName1} level</strong>? To answer this question, each of the next {CONFIG.mainCausals.length} decision screens show you a different scenario.</>
       ) : (
         <>What do you believe about the relationship between your decision to drink <strong>{CONFIG.playerName0}</strong>, your <strong>{CONFIG.playerName1} level</strong>, and <strong>how you feel</strong>? To answer this question, each of the next {CONFIG.mainCausals.length} decision screens show you a different scenario.</>
       );
@@ -1486,12 +1488,12 @@
               </div>
               {introStep === 0 && <NextStepButton onClick={handleNextStep} />}
 
-              {/* Step 1 — X intervention intro (skipped in AY-only order) */}
-              {CONFIG.order !== 'AY' && introStep >= 1 && step1Block}
+              {/* Step 1 — first intervention intro (X-intervention by default, Y-intervention for AYX) */}
+              {CONFIG.order !== 'AY' && introStep >= 1 && (CONFIG.order === 'AYX' ? step2Block : step1Block)}
               {CONFIG.order !== 'AY' && introStep === 1 && <NextStepButton onClick={handleNextStep} />}
 
-              {/* Step 2 — Y intervention intro */}
-              {CONFIG.order !== 'AY' && introStep >= 2 && step2Block}
+              {/* Step 2 — second intervention intro (Y-intervention by default, X-intervention for AYX) */}
+              {CONFIG.order !== 'AY' && introStep >= 2 && (CONFIG.order === 'AYX' ? step1Block : step2Block)}
               {CONFIG.order !== 'AY' && introStep === 2 && <NextStepButton onClick={handleNextStep} />}
 
               {/* Final step — payment info */}
