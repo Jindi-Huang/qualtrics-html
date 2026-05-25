@@ -1094,7 +1094,7 @@
           walkthroughStep0: exoButton === null
             ? `In this scenario, you make choices about whether to consume the drink as before...`
             : `In this scenario, you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0} ...`,
-          walkthroughStep1: `Report how <strong>normal or abnormal ${playerName1} level</strong> (due to taking ${playerName1}-normal-injection rather than ${playerName1}-abnormal-injection)...`,
+          walkthroughStep1: `Report how <strong>a normal or abnormal ${playerName1} level</strong> (due to taking ${playerName1}-normal-injection rather than ${playerName1}-abnormal-injection)...`,
           walkthroughStep2: `...affects <strong>how you feel</strong>.`,
           walkthroughHighlight: { step0: 'A', step1: 'X', step2: ['X', 'Y'] },
           causePanel: 'X', outcomePanel: 'Y',
@@ -1105,8 +1105,8 @@
             ? `What is the chance that you feel <strong>${playerName2Pos}</strong> if your <strong>${playerName1} level is normal</strong>?`
             : `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}. Immediately after, you are required to take ${playerName1}-normal-injection which sets your ${playerName1} level to <strong>normal</strong>.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
           verbalQuestion: exoButton === null
-            ? `Suppose that you make choices about whether to consume the drink as before.<br>How does having <strong>normal</strong> instead of <strong>abnormal ${playerName1} level</strong> (due to taking ${playerName1}-normal-injection rather than ${playerName1}-abnormal-injection) change the chance that you feel <strong>${playerName2Pos}</strong>?`
-            : `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}.<br>How does having <strong>normal</strong> instead of <strong>abnormal ${playerName1} level</strong> (due to taking ${playerName1}-normal-injection rather than ${playerName1}-abnormal-injection) change the chance that you feel <strong>${playerName2Pos}</strong>?`,
+            ? `Suppose that you make choices about whether to consume the drink as before.<br>How does having <strong>a normal</strong> instead of <strong>an abnormal ${playerName1} level</strong> (due to taking ${playerName1}-normal-injection rather than ${playerName1}-abnormal-injection) change the chance that you feel <strong>${playerName2Pos}</strong>?`
+            : `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}.<br>How does having <strong>a normal</strong> instead of <strong>an abnormal ${playerName1} level</strong> (due to taking ${playerName1}-normal-injection rather than ${playerName1}-abnormal-injection) change the chance that you feel <strong>${playerName2Pos}</strong>?`,
           pie1Color: themeHex, pie2Color: themeHex
         },
         YX: {
