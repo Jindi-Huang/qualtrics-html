@@ -413,7 +413,7 @@
       } : {
         drinkNoPay:    { id: 'drinkNoPay',    text: `Whether I drink the beverage or not does${' '}`, underline: 'not', after: ` affect my payment.` },
         drinkCost:     { id: 'drinkCost',     text: `Drinking the beverage will cost ${CONFIG.currency}${CONFIG.aCost.toFixed(2)}.` },
-        feelGoodBonus: { id: 'feelGoodBonus', text: `If I feel good at the end of the day, and my decision for that day is selected to determine my bonus payment, I'll receive an additional ${CONFIG.currency}${CONFIG.yBonus.toFixed(2)} bonus.` },
+        feelGoodBonus: { id: 'feelGoodBonus', text: `If I feel good ${isEndogDieterRO ? 'shortly after making my decision' : 'at the end of the day'}, and my decision for that day is selected to determine my bonus payment, I'll receive an additional ${CONFIG.currency}${CONFIG.yBonus.toFixed(2)} bonus.` },
         oneRound:      { id: 'oneRound',      text: `My bonus payment will be determined by one decision randomly selected from throughout the survey.` },
         sumAll:        { id: 'sumAll',        text: `My bonus payment will be the sum of all the payments I collect over all rounds I play.` },
         bioClipPay:    { id: 'bioClipPay',    text: `My blood chemical levels measured by BioClip directly affects my payment.` }
@@ -426,8 +426,12 @@
         drinkNotNecessarily: { id: 'drinkNotNecessarily', text: `If I consume the drink and later feel good, this does `, underline: 'not necessarily', after: ` mean that the drink caused me to feel good.` },
         drinkNecessarily:    { id: 'drinkNecessarily',    text: `If I consume the drink and later feel good, this necessarily means that the drink caused me to feel good.` }
       } : {
-        normalCausesGood:    { id: 'normalCausesGood',    text: `If my BioClip shows a normal chemical level and I later feel good, this necessarily means that the normal chemical level caused me to feel good.` },
-        normalNotCausesGood: { id: 'normalNotCausesGood', text: `If my BioClip shows a normal chemical level and I later feel good, this does `, underline: 'not necessarily', after: ` mean that the normal chemical level caused me to feel good; the chemical level might have been a response to my feeling good.` },
+        normalCausesGood:    { id: 'normalCausesGood',    text: isEndogDieterRO
+          ? `If I feel good and I later see that my BioClip shows a normal chemical level, this necessarily means that the normal chemical level caused me to feel good.`
+          : `If my BioClip shows a normal chemical level and I later feel good, this necessarily means that the normal chemical level caused me to feel good.` },
+        normalNotCausesGood: { id: 'normalNotCausesGood', text: isEndogDieterRO
+          ? `If I feel good and I later see that my BioClip shows a normal chemical level, this does `
+          : `If my BioClip shows a normal chemical level and I later feel good, this does `, underline: 'not necessarily', after: ` mean that the normal chemical level caused me to feel good; the chemical level might have been a response to my feeling good.` },
         twoVersions:         { id: 'twoVersions',         text: `Each blood chemical has two possibilities: either it is a cause of how you feel, or is a response to how you feel. Different chemicals may work in different ways.` }
       };
       const q2Items = q2Order.map(id => q2ItemsMap[id]);
@@ -611,7 +615,7 @@
               {isMig ? (
                 <>Each <span onClick={() => setAttentionCheck(1)} className={`cursor-pointer ${attentionCheck === 1 ? 'text-green-600' : ''}`}>Monday</span> morning, <strong>you may or may not feel a craving for the new drink</strong>. Whether you feel a craving determines the cost or payment associated with consuming the drink. You then decide whether or not to drink it. Your main concern is whether you will feel good or bad later in the day. Whether you can give in to the craving also matters.</>
               ) : isEndogDieterRO ? (
-                <>Each <span onClick={() => setAttentionCheck(1)} className={`cursor-pointer ${attentionCheck === 1 ? 'text-green-600' : ''}`}>Monday</span> morning, when you get up, you decide whether to consume the drink. Shortly after, you will feel good or bad. Later in the day, your BioClip tells you whether the blood chemical it targets is at a normal level. What you care about is how you feel.</>
+                <>Each <span onClick={() => setAttentionCheck(1)} className={`cursor-pointer ${attentionCheck === 1 ? 'text-green-600' : ''}`}>Monday</span> morning, when you get up, you decide whether to consume the drink. Shortly after, you will see whether you feel good or bad. Later that day, your BioClip tells you whether the blood chemical the drink targets is at a normal level. What you care about is how you feel.</>
               ) : (
                 <>Each <span onClick={() => setAttentionCheck(1)} className={`cursor-pointer ${attentionCheck === 1 ? 'text-green-600' : ''}`}>Monday</span> morning, when you get up, you decide whether to consume the drink. Shortly after, your BioClip tells you whether the blood chemical it targets is at a normal level. What you care about is whether you will feel good or bad later in the day.</>
               )}
@@ -720,7 +724,7 @@
               <div className="bg-amber-50 border border-amber-300 rounded-xl p-4">
                 <h3 className="text-amber-600 font-bold mb-2 flex items-center gap-2"><span>?</span> What You Don't Know</h3>
                 <p className="text-gray-600">
-                  Whether having a normal or abnormal chemical level affects how you <strong className="text-gray-900">feel later that day</strong>.
+                  Whether having a normal or abnormal chemical level affects how you <strong className="text-gray-900">{isEndogDieterRO ? 'feel shortly after' : 'feel later that day'}</strong>.
                 </p>
               </div>
             </div>
@@ -750,7 +754,7 @@
                   ) : (
                     <>
                       <h3 className="text-blue-600 font-bold mb-2">Possibility {idx + 1}: The chemical level <span className="underline">is a cause</span> of how you feel.</h3>
-                      <p className="text-gray-600">Hence, normalizing your chemical level (by consuming the drink) <b>raises the chance that you will feel good</b> later that day.</p>
+                      <p className="text-gray-600">Hence, normalizing your chemical level (by consuming the drink) <b>raises the chance that you will feel good</b>.</p>
                     </>
                   )}
                 </div>
@@ -855,7 +859,7 @@
                 <HappyFaceIcon className="w-6 h-6 text-green-600 flex-shrink-0" />
                 <div>
                   <div className="text-gray-900 font-medium">Feeling Good Bonus</div>
-                  <div className="text-gray-500">If you feel good at the end of the day, you receive an additional <b>{CONFIG.currency}{CONFIG.yBonus.toFixed(2)} bonus</b>, if you feel bad, you don't.</div>
+                  <div className="text-gray-500">If you feel good {isEndogDieterRO ? 'shortly after' : 'at the end of the day'}, you receive an additional <b>{CONFIG.currency}{CONFIG.yBonus.toFixed(2)} bonus</b>, if you feel bad, you don't.</div>
                 </div>
               </div>
 
@@ -920,9 +924,21 @@
       );
 
       // ====== Compose page array dynamically ======
+      // Dieter: include the "BioClip data for one drink" page only for EndogDieterBinary; renumber the rest accordingly.
+      const dieterPages = (() => {
+        const arr = [setupSection, eachWeekSection];
+        let n = 3;
+        if (CONFIG.experiment === 'EndogDieterBinary') arr.push(bioClipTrialSection(n++));
+        arr.push(whatYouKnowSection(n++));
+        arr.push(twoPossibilitiesSection(n++));
+        arr.push(noteSection(n++));
+        arr.push(paymentSection(n++));
+        arr.push(comprehensionSection);
+        return arr;
+      })();
       const pages = isMig
         ? [setupSection, eachWeekSection, paymentSection(3), twoPossibilitiesSection(4), noteSection(5), comprehensionSection]
-        : [setupSection, eachWeekSection, bioClipTrialSection(3), whatYouKnowSection(4), twoPossibilitiesSection(5), noteSection(6), paymentSection(7), comprehensionSection];
+        : dieterPages;
 
       const instructionCount = pages.length - 1; // last entry is comprehension
       const isLastPage = currentPage === pages.length - 1;
