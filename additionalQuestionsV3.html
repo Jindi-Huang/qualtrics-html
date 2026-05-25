@@ -126,7 +126,7 @@
       gameVersionsDescriptionOrderMigraines2: 'B',
       order: 'AXY',  // 'AXY' shows all questions, 'AY' hides X-related questions
       themeColor: 'purple',  // Theme color: 'blue', 'purple', 'teal', 'yellow'
-      supergame: 'migraines', // 'dieter' (current behavior) or 'migraines'
+      supergame: 'dieter',    // 'dieter' (current behavior) or 'migraines'
       aCost: 0.05,           // Per-round drinking cost (used in migraines Q1 framing)
       currency: '$'          // Currency symbol
     };
@@ -418,6 +418,15 @@
         }] : [])
       ];
 
+      // Dieter + AYX: display Y-question (q3) before X-question (q2). Keys are preserved so data still saves to q2/q3 as before.
+      if (!isMig && !isAYOrder && CONFIG.order === 'AYX') {
+        const q2Idx = page1Questions.findIndex(q => q.key === 'q2');
+        const q3Idx = page1Questions.findIndex(q => q.key === 'q3');
+        if (q2Idx !== -1 && q3Idx !== -1) {
+          [page1Questions[q2Idx], page1Questions[q3Idx]] = [page1Questions[q3Idx], page1Questions[q2Idx]];
+        }
+      }
+
       const q4 = {
         key: 'q4',
         text: isMig
@@ -496,7 +505,9 @@
                     ? `Now, please answer some questions about ${CONFIG.playerName0} and how you feel. You made decisions about ${CONFIG.playerName0} for ${CONFIG.nRounds} weeks; please only consider the second half of that period (weeks ${Math.floor(CONFIG.nRounds / 2)} to ${CONFIG.nRounds}) when answering these questions.`
                     : isMig
                       ? `Now, please answer some questions about your craving, drinking ${CONFIG.playerName0}, and how you feel. You made decisions about ${CONFIG.playerName0} for ${CONFIG.nRounds} weeks; please only consider the second half of that period (weeks ${Math.floor(CONFIG.nRounds / 2)} to ${CONFIG.nRounds}) when answering these questions.`
-                      : `Now, please answer some questions about drinking ${CONFIG.playerName0}, your ${CONFIG.playerName1} level and how you feel. You made decisions about ${CONFIG.playerName0} for ${CONFIG.nRounds} weeks; please only consider the second half of that period (weeks ${Math.floor(CONFIG.nRounds / 2)} to ${CONFIG.nRounds}) when answering these questions.`
+                      : CONFIG.order === 'AYX'
+                        ? `Now, please answer some questions about drinking ${CONFIG.playerName0}, how you feel and your ${CONFIG.playerName1} level. You made decisions about ${CONFIG.playerName0} for ${CONFIG.nRounds} weeks; please only consider the second half of that period (weeks ${Math.floor(CONFIG.nRounds / 2)} to ${CONFIG.nRounds}) when answering these questions.`
+                        : `Now, please answer some questions about drinking ${CONFIG.playerName0}, your ${CONFIG.playerName1} level and how you feel. You made decisions about ${CONFIG.playerName0} for ${CONFIG.nRounds} weeks; please only consider the second half of that period (weeks ${Math.floor(CONFIG.nRounds / 2)} to ${CONFIG.nRounds}) when answering these questions.`
                   }
                 </p>
 
