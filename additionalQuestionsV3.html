@@ -433,14 +433,18 @@
           ? `How often did you feel <strong>${CONFIG.playerName2Pos}</strong> <span style="color: #64748b; font-style: italic;">(what percentage of the weeks)</span>?`
           : isAYOrder
             ? `<strong>Whenever you did NOT drink ${CONFIG.playerName0}</strong>, how often did you feel ${CONFIG.playerName2Pos}?`
-            : `<strong>Whenever you did NOT drink ${CONFIG.playerName0}</strong>, how often was your ${CONFIG.playerName1} level normal and you also felt ${CONFIG.playerName2Pos}?`
+            : CONFIG.order === 'AYX'
+              ? `<strong>Whenever you did NOT drink ${CONFIG.playerName0}</strong>, how often did you feel ${CONFIG.playerName2Pos} and have a normal ${CONFIG.playerName1} level at the same time?`
+              : `<strong>Whenever you did NOT drink ${CONFIG.playerName0}</strong>, how often did you have a normal ${CONFIG.playerName1} level and feel ${CONFIG.playerName2Pos} at the same time?`
       };
 
       const q5 = {
         key: 'q5',
         text: isAYOrder
           ? `<strong>Whenever you did drink ${CONFIG.playerName0}</strong>, how often did you feel ${CONFIG.playerName2Pos}?`
-          : `<strong>Whenever you did drink ${CONFIG.playerName0}</strong>, how often was your ${CONFIG.playerName1} level normal and you also felt ${CONFIG.playerName2Pos}?`
+          : CONFIG.order === 'AYX'
+            ? `<strong>Whenever you did drink ${CONFIG.playerName0}</strong>, how often did you feel ${CONFIG.playerName2Pos} and have a normal ${CONFIG.playerName1} level at the same time?`
+            : `<strong>Whenever you did drink ${CONFIG.playerName0}</strong>, how often did you have a normal ${CONFIG.playerName1} level and feel ${CONFIG.playerName2Pos} at the same time?`
       };
 
       // Q6 (AXY only): cause-vs-response judgment about X → Y
@@ -620,7 +624,9 @@
                       ? `Q6. In your own words, describe how your choice to drink ${CONFIG.playerName0} influence how you feel.`
                       : isMig
                         ? `Q6. In your own words, describe how your craving, your choice to drink ${CONFIG.playerName0}, and how you feel influence each other, and in what ways.`
-                        : `Q7. In your own words, describe how your choice to drink ${CONFIG.playerName0}, your ${CONFIG.playerName1} level, and how you feel influence each other, and in what ways.`
+                        : CONFIG.order === 'AYX'
+                          ? `Q7. In your own words, describe how your choice to drink ${CONFIG.playerName0}, how you feel, and your ${CONFIG.playerName1} level influence each other, and in what ways.`
+                          : `Q7. In your own words, describe how your choice to drink ${CONFIG.playerName0}, your ${CONFIG.playerName1} level, and how you feel influence each other, and in what ways.`
                     }
                   </p>
                   <textarea
