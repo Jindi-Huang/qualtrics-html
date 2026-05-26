@@ -87,6 +87,9 @@
           if (qConfig.pY !== undefined) CONFIG.pY = qConfig.pY;
           if (qConfig.pX_y !== undefined) CONFIG.pX_y = qConfig.pX_y;
           if (qConfig.pX_Y !== undefined) CONFIG.pX_Y = qConfig.pX_Y;
+          if (qConfig.pX !== undefined) CONFIG.pX = parseFloat(qConfig.pX);
+          if (qConfig.pY_A !== undefined) CONFIG.pY_A = parseFloat(qConfig.pY_A);
+          if (qConfig.pY_a !== undefined) CONFIG.pY_a = parseFloat(qConfig.pY_a);
           if (qConfig.order) CONFIG.order = qConfig.order;
           if (qConfig.increasingPrice !== undefined) CONFIG.increasingPrice = parseInt(qConfig.increasingPrice);
           if (qConfig.cravingFirstHS !== undefined) CONFIG.cravingFirstHS = parseInt(qConfig.cravingFirstHS);
@@ -194,6 +197,10 @@
       pX_y: 0.60,   // P(X=1 | Y=0)
       pX_Y: 0.10,   // P(X=1 | Y=1)
 
+      pX:   0.35,   // P(X=1)
+      pY_A: 0.30,   // P(Y=1 | A=1)
+      pY_a: 0.50,   // P(Y=1 | A=0)
+
       // Display switch (dieter): 'AXY' shows X, 'AY' hides X
       order: null,                // null → supergame default (dieter:'AY', migraines:'AXY')
 
@@ -289,10 +296,16 @@
       return switches > 1;
     }
 
-    // Simulate one round based on DGP. A only matters in dieter+causal=0 (collider) and dieter+causal=1 (chain).
-    // In migraines, A does not enter the DGP.
+    // Simulate one round based on DGP. A matters in dieter+causal=0 (collider), dieter+causal=1 (chain),
+    // and migraines+causal=1 (A → Y, X exogenous). In migraines+causal=0, A does not enter the DGP.
     function simulateRound(A) {
       if (CONFIG.supergame === 'migraines') {
+        if (CONFIG.causal === 1) {
+          const X = Math.random() < CONFIG.pX ? 1 : 0;
+          const pY = A === 1 ? CONFIG.pY_A : CONFIG.pY_a;
+          const Y = Math.random() < pY ? 1 : 0;
+          return { A, X, Y };
+        }
         const Y = Math.random() < CONFIG.pY ? 1 : 0;
         const pX = Y === 1 ? CONFIG.pX_Y : CONFIG.pX_y;
         const X = Math.random() < pX ? 1 : 0;
