@@ -12,6 +12,16 @@
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; padding: 0; background: #ffffff; }
+    @keyframes errorShake {
+      0%   { transform: translateX(0);    opacity: 0.4; }
+      15%  { transform: translateX(-6px); opacity: 1;   }
+      30%  { transform: translateX(6px);  }
+      45%  { transform: translateX(-4px); }
+      60%  { transform: translateX(4px);  }
+      75%  { transform: translateX(-2px); }
+      100% { transform: translateX(0);    opacity: 1;   }
+    }
+    .error-shake { animation: errorShake 0.5s ease-in-out; }
   </style>
 </head>
 <body>
@@ -371,6 +381,8 @@
       const [allAnswersQ2, setAllAnswersQ2] = useState([]);
       const [q1Error, setQ1Error] = useState(null);
       const [q2Error, setQ2Error] = useState(null);
+      const [q1ErrorAttempt, setQ1ErrorAttempt] = useState(0);
+      const [q2ErrorAttempt, setQ2ErrorAttempt] = useState(0);
       const [showNextButton, setShowNextButton] = useState(false);
       const nextButtonDelay = 10000; // 10 s
 
@@ -500,6 +512,7 @@
           newAllQ1 = [...allAnswersQ1, q1Selected];
           setAllAnswersQ1(newAllQ1);
           setQ1Error('Your answer to Question 1 is incorrect. Please try again.');
+          setQ1ErrorAttempt(a => a + 1);
         } else {
           setQ1Error(null);
           if (!allAnswersQ1.length || !q1Ok) {
@@ -513,6 +526,7 @@
           newAllQ2 = [...allAnswersQ2, q2Selected];
           setAllAnswersQ2(newAllQ2);
           setQ2Error('Your answer to Question 2 is incorrect. Please try again.');
+          setQ2ErrorAttempt(a => a + 1);
         } else {
           setQ2Error(null);
           if (!allAnswersQ2.length || !q2Ok) {
@@ -908,7 +922,7 @@
             <div className="space-y-3">
               {q1Items.map(item => renderItem(item, 1))}
             </div>
-            {q1Error && <p className="text-red-600 mt-3 font-medium">{q1Error}</p>}
+            {q1Error && <p key={q1ErrorAttempt} className="text-red-600 mt-3 font-medium error-shake">{q1Error}</p>}
           </div>
 
           <div className="bg-gray-50 rounded-xl p-4 mt-6">
@@ -918,7 +932,7 @@
             <div className="space-y-3">
               {q2Items.map(item => renderItem(item, 2))}
             </div>
-            {q2Error && <p className="text-red-600 mt-3 font-medium">{q2Error}</p>}
+            {q2Error && <p key={q2ErrorAttempt} className="text-red-600 mt-3 font-medium error-shake">{q2Error}</p>}
           </div>
         </section>
       );

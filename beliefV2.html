@@ -1,4 +1,4 @@
-p<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -1087,7 +1087,7 @@ p<!DOCTYPE html>
             : `Suppose you must <strong>drink</strong> ${playerName0}, immediately after that, you are required to take ${playerName1}-${exoButton === 1 ? 'normal-injection' : 'abnormal-injection'} which sets your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
           verbalQuestion: exoButton === null
             ? `How does <strong>drinking ${playerName0}</strong> change the chance that you feel <strong>${playerName2Pos}</strong>?`
-            : `Suppose you are required to take ${playerName1}-${exoButton === 1 ? 'normal-injection' : 'abnormal-injection'} which sets your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong> immediately after deciding whether to drink ${playerName0}.<br>How does <strong>your choice to drink ${playerName0}</strong> change the chance that you feel <strong>${playerName2Pos}</strong>?`,
+            : `Suppose you are required to take ${playerName1}-${exoButton === 1 ? 'normal-injection' : 'abnormal-injection'} which sets your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong> regardless of whether you drink ${playerName0} or not.<br>How does <strong>your choice to drink ${playerName0}</strong> change the chance that you feel <strong>${playerName2Pos}</strong>?`,
           pie1Color: themeHex, pie2Color: themeHex
         },
         XY: {
