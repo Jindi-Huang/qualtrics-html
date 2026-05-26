@@ -791,7 +791,7 @@
             <p className="text-gray-700 mt-4">
               {isMig
                 ? 'Both, neither, or only one of the drinks in this study might affect how you feel later in the day.'
-                : <>Both, neither, or only one of the blood chemicals in this survey might be a cause of how you feel, and the rest might be a response to how you feel.</>
+                : <>Both, neither, or only one of the blood chemicals in this survey might be a cause of how you feel. Those that are not a cause are a response to how you feel.</>
               }
             </p>
           </div>
@@ -942,11 +942,11 @@
       const dieterPages = (() => {
         const arr = [setupSection, eachWeekSection];
         let n = 3;
+        arr.push(paymentSection(n++));
         if (CONFIG.experiment === 'EndogDieterBinary') arr.push(bioClipTrialSection(n++));
         arr.push(whatYouKnowSection(n++));
         arr.push(twoPossibilitiesSection(n++));
         arr.push(noteSection(n++));
-        arr.push(paymentSection(n++));
         arr.push(comprehensionSection);
         return arr;
       })();
