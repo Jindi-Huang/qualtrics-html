@@ -123,6 +123,7 @@
       aCostMigraines1: -1.00,  // signed payoff when craving (stored negative; displayed via |value|)
       yBonus: 2.00,
       nRounds: 10,
+      nSupergames: 2,
       playerName0: 'Qivex-norm',
       playerName1: 'Qivex',
       playerIcon0: '',
@@ -156,17 +157,18 @@
 
     // Examples shown on page 1
     function getExamples() {
+      const n = CONFIG.nSupergames;
       if (CONFIG.supergame === 'migraines') {
         return [
           { drink: CONFIG.playerName0_1, chemical: CONFIG.playerName1_1, color: CONFIG.color_1, icon: CONFIG.playerIcon0_1, effect: `might make you more ${CONFIG.playerName2Neg_1}` },
           { drink: CONFIG.playerName0_2, chemical: CONFIG.playerName1_2, color: CONFIG.color_2, icon: CONFIG.playerIcon0_2, effect: `might make you more ${CONFIG.playerName2Neg_2}` }
-        ];
+        ].slice(0, n);
       }
       return [
         { drink: CONFIG.playerName0_1, chemical: CONFIG.playerName1_1, color: CONFIG.color_1, icon: CONFIG.playerIcon0_1 },
         { drink: CONFIG.playerName0_2, chemical: CONFIG.playerName1_2, color: CONFIG.color_2, icon: CONFIG.playerIcon0_2 },
         { drink: CONFIG.playerName0_3, chemical: CONFIG.playerName1_3, color: CONFIG.color_3, icon: CONFIG.playerIcon0_3 }
-      ];
+      ].slice(0, n);
     }
   </script>
 
@@ -370,6 +372,8 @@
     function Instructions() {
       const isMig = CONFIG.supergame === 'migraines';
       const isEndogDieterRO = !isMig && CONFIG.experiment === 'EndogDieterRO';
+      const nSG = CONFIG.nSupergames;
+      const nWord = (n) => ({ 1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five' }[n] || String(n));
 
       const [ready, setReady] = useState(false);
       const [currentPage, setCurrentPage] = useState(0);
@@ -595,9 +599,9 @@
               </>
             )}
 
-            <div className={`grid grid-cols-1 ${isMig ? 'md:grid-cols-2' : 'md:grid-cols-3'} gap-3 mt-4`}>
+            <div className="flex flex-wrap justify-center gap-3 mt-4">
               {getExamples().map((ex, i) => (
-                <div key={i} className="bg-white rounded-lg p-4 flex items-center gap-3 border border-gray-200 shadow-sm">
+                <div key={i} className="bg-white rounded-lg p-4 flex items-center gap-3 border border-gray-200 shadow-sm flex-1 min-w-[200px] max-w-sm">
                   <DrinkIcon className="w-6 h-6 flex-shrink-0" drinkName={ex.drink} icon={ex.icon} style={{ color: getThemeIconColor(ex.color) }} />
                   <div>
                     <div className="text-gray-900 font-medium">{ex.drink}</div>
@@ -609,8 +613,8 @@
 
             <p className="text-gray-700 mt-4">
               {isMig
-                ? <>You will see two different drinks in this survey. <b>Different drinks may work in different ways.</b> For each drink, you will make decisions across {CONFIG.nRounds} rounds. Think of each round as one day in a week.</>
-                : <>You will see three different drinks and three blood chemicals in this survey. <b>Different drinks and chemicals may work in different ways.</b> For each drink, you will make decisions across {CONFIG.nRounds} rounds. Think of each round as one day in a week.</>
+                ? <>You will see {nWord(nSG)} different drinks in this survey. <b>Different drinks may work in different ways.</b> For each drink, you will make decisions across {CONFIG.nRounds} rounds. Think of each round as one day in a week.</>
+                : <>You will see {nWord(nSG)} different drinks and {nWord(nSG)} blood chemicals in this survey. <b>Different drinks and chemicals may work in different ways.</b> For each drink, you will make decisions across {CONFIG.nRounds} rounds. Think of each round as one day in a week.</>
               }
             </p>
           </div>
@@ -708,7 +712,7 @@
           </h2>
           <div className="bg-gray-50 rounded-xl p-4">
             <p className="text-gray-700 mb-4">
-              You will see three drinks in a random order. You only have a trial subscription to the BioClip smartphone extension. Hence, you can only view blood chemical levels for the first drink you see. The trial expires after that, so the blood chemical levels related to the second and third drinks will be hidden.
+              You will see {nWord(nSG)} drinks in a random order. You only have a trial subscription to the BioClip smartphone extension. Hence, you can only view blood chemical levels for the first drink you see. The trial expires after that, so the blood chemical levels related to the {nSG === 2 ? 'second' : 'second and third'} drink{nSG === 2 ? '' : 's'} will be hidden.
             </p>
             <p className="text-gray-700 mb-4">
               After the trial expires, the BioClip will display "Subscription Expired" as shown below:
@@ -838,6 +842,9 @@
             Payment
           </h2>
           <div className="bg-gray-50 rounded-xl p-4">
+            <p className="text-gray-700 mb-4">
+              You will make decisions in many rounds (that we call "weeks"). You will be paid according to one round from this entire study, chosen at random. Your payment depends on whether, in the selected week, you consumed the drink, and whether you felt good {isEndogDieterRO ? 'shortly after' : 'later that day'}.{!isMig && ' The BioClip’s reading does not directly affect your payment.'} Here are the specifics:
+            </p>
             <div className="space-y-3">
               <div className="flex items-center gap-3 bg-gray-100 rounded-lg p-3">
                 <span className="text-2xl">💰</span>
@@ -887,11 +894,21 @@
                 </div>
               )}
             </div>
+          </div>
+        </section>
+      );
 
-            <p className="text-gray-600 mt-4">
-              <b>For each of the {isMig ? 'two' : 'three'} drinks in this survey{isMig ? '' : ' and the blood chemical they target'}, you will make decisions in {CONFIG.nRounds} rounds.</b> This may sound like a lot, but because each round only takes a few seconds, this is quite manageable.
+      const surveyStructureSection = (n) => (
+        <section>
+          <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
+            <PageBadge n={n} />
+            Survey Overview
+          </h2>
+          <div className="bg-gray-50 rounded-xl p-4">
+            <p className="text-gray-700">
+              <b>For each of the {nWord(nSG)} drinks in this survey{isMig ? '' : ' and the blood chemical they target'}, you will make decisions in {CONFIG.nRounds} rounds.</b> This may sound like a lot, but because each round only takes a few seconds, this is quite manageable.
             </p>
-            <p className="text-gray-600 mt-2">
+            <p className="text-gray-700 mt-3">
               You will make some additional decisions related to each drink. <b>Your bonus payment will be determined by a single decision from the entire survey,</b> randomly selected at the end.
             </p>
           </div>
@@ -947,11 +964,12 @@
         arr.push(whatYouKnowSection(n++));
         arr.push(twoPossibilitiesSection(n++));
         arr.push(noteSection(n++));
+        arr.push(surveyStructureSection(n++));
         arr.push(comprehensionSection);
         return arr;
       })();
       const pages = isMig
-        ? [setupSection, eachWeekSection, paymentSection(3), twoPossibilitiesSection(4), noteSection(5), comprehensionSection]
+        ? [setupSection, eachWeekSection, paymentSection(3), twoPossibilitiesSection(4), noteSection(5), surveyStructureSection(6), comprehensionSection]
         : dieterPages;
 
       const instructionCount = pages.length - 1; // last entry is comprehension
