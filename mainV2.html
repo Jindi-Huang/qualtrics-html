@@ -1105,7 +1105,7 @@
     function DAGIframe({ onComplete, playerName0, playerName1, playerIcon0, nRounds, themeColor }) {
       const iframeRef = useRef(null);
       const isMig = CONFIG.supergame === 'migraines';
-      const dagSrc = isMig ? 'dagElicitationV3.html' : 'dagElicitationV2.html';
+      const dagSrc = 'dagElicitationV3.html';
 
       useEffect(() => {
         const handleMessage = (event) => {
