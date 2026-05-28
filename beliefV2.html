@@ -1074,7 +1074,7 @@
         AY: {
           walkthroughStep0: exoButton === null
             ? null
-            : `In this scenario, immediately after deciding whether to drink ${playerName0}, you are required to take ${playerName1}-${exoButton === 1 ? 'normal-injection' : 'abnormal-injection'} which sets your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong>...`,
+            : `In this scenario, you are required to take ${playerName1}-${exoButton === 1 ? 'normal-injection' : 'abnormal-injection'} which sets your ${playerName1} level to <strong>${exoButton === 1 ? 'normal' : 'abnormal'}</strong> regardless of whether you drink ${playerName0} or not...`,
           walkthroughStep1: `Report how <strong>your choice to drink ${playerName0}</strong>...`,
           walkthroughStep2: `...affects <strong>how you feel</strong>.`,
           walkthroughHighlight: { step0: 'X', step1: 'A', step2: ['A', 'Y'] },
