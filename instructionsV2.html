@@ -50,7 +50,8 @@
           if (qConfig.aCostMigraines0 !== undefined) CONFIG.aCostMigraines0 = qConfig.aCostMigraines0;
           if (qConfig.aCostMigraines1 !== undefined) CONFIG.aCostMigraines1 = qConfig.aCostMigraines1;
           if (qConfig.yBonus !== undefined) CONFIG.yBonus = qConfig.yBonus;
-          if (qConfig.nRounds !== undefined) CONFIG.nRounds = qConfig.nRounds;
+          if (qConfig.nRounds !== undefined) CONFIG.nRounds = Number(qConfig.nRounds);
+          if (qConfig.nSupergames !== undefined) CONFIG.nSupergames = Number(qConfig.nSupergames);
           if (qConfig.playerName0) CONFIG.playerName0 = qConfig.playerName0;
           if (qConfig.playerName1) CONFIG.playerName1 = qConfig.playerName1;
           if (qConfig.playerIcon0) CONFIG.playerIcon0 = qConfig.playerIcon0;
@@ -70,6 +71,7 @@
           // Migraines example labels — "might make you more {playerName2Neg_n}"
           if (qConfig.playerName2Neg_1) CONFIG.playerName2Neg_1 = qConfig.playerName2Neg_1;
           if (qConfig.playerName2Neg_2) CONFIG.playerName2Neg_2 = qConfig.playerName2Neg_2;
+          if (qConfig.playerName2Neg_3) CONFIG.playerName2Neg_3 = qConfig.playerName2Neg_3;
           console.log('Applied config:', CONFIG);
         }
 
