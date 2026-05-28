@@ -1157,7 +1157,36 @@
       );
     }
 
-    function BeliefIframe({ onComplete, playerName0, playerName1, playerName2Pos, playerName2Neg, aCost, currency, order, themeColor }) {
+    // Round-10 rational-inference benchmark (mirrors calcRI.js: first 10 rounds, percentages x100).
+    // Keys are UN-SUFFIXED so beliefV2's lookup rationalInference["causal_"+id] resolves for the
+    // round-10 questions (AY in the binary game, XY in the 3-variable dieter games).
+    function computeRound10RI(history, causal) {
+      const h = history.slice(0, 10);
+      const c = (a, x, y) => h.filter(r => r[0] === a && r[1] === x && r[2] === y).length;
+      const div = (num, den) => den === 0 ? null : num / den;   // empty cell -> null (full payment, like calcRI's JSON null)
+      const pct = v => v === null ? null : v * 100;
+      const effect = (hi, lo) => (hi === null || lo === null) ? null : (hi - lo) * 100;
+
+      const pY_A = div(c(1,0,1) + c(1,1,1), c(1,0,0) + c(1,0,1) + c(1,1,0) + c(1,1,1));  // P(Y=1 | A=1)
+      const pY_a = div(c(0,0,1) + c(0,1,1), c(0,0,0) + c(0,0,1) + c(0,1,0) + c(0,1,1));  // P(Y=1 | A=0)
+      const pY_X = div(c(1,1,1) + c(0,1,1), c(1,1,0) + c(1,1,1) + c(0,1,0) + c(0,1,1));  // P(Y=1 | X=1)
+      const pY_x = div(c(1,0,1) + c(0,0,1), c(1,0,0) + c(1,0,1) + c(0,0,0) + c(0,0,1));  // P(Y=1 | X=0)
+      const pY  = h.length ? h.filter(r => r[2] === 1).length / h.length : null;          // P(Y=1)
+
+      const RI = { "pNo_AY": pct(pY_a), "pYes_AY": pct(pY_A), "causal_AY": effect(pY_A, pY_a) };
+      if (Number(causal) === 1) {           // chain A->X->Y: real X->Y effect
+        RI["pNo_XY"]  = pct(pY_x);
+        RI["pYes_XY"] = pct(pY_X);
+        RI["causal_XY"] = effect(pY_X, pY_x);
+      } else {                              // collider: X does not cause Y -> 0 effect, both sliders = P(Y)
+        RI["pNo_XY"]  = pct(pY);
+        RI["pYes_XY"] = pct(pY);
+        RI["causal_XY"] = 0;
+      }
+      return RI;
+    }
+
+    function BeliefIframe({ onComplete, playerName0, playerName1, playerName2Pos, playerName2Neg, aCost, currency, order, themeColor, rationalInference }) {
       const iframeRef = useRef(null);
       const beliefDataRef = useRef(null);
       const isMig = CONFIG.supergame === 'migraines';
@@ -1195,6 +1224,7 @@
                 skipIntro: true,
                 forceSkipPieCharts: true,
                 mainCausals,
+                rationalInference,
                 beliefPaymentMax: 10,
                 beliefPaymentIncentive: 0.5,
                 ...(isMig ? { supergame: 'migraines' } : { order })
@@ -1230,6 +1260,7 @@
                   skipIntro: true,
                   forceSkipPieCharts: true,
                   mainCausals,
+                  rationalInference,
                   beliefPaymentMax: 10,
                   beliefPaymentIncentive: 0.5,
                   ...(isMig ? { supergame: 'migraines' } : { order })
@@ -2085,6 +2116,8 @@
           finalDAGTime: dagData.finalDAGTime,
           confidenceTime: dagData.confidenceTime,
           beliefData,
+          rationalInferenceRound10: computeRound10RI(history, CONFIG.causal),
+          beliefPaymentRound10: (beliefData && beliefData.beliefPayment) ? beliefData.beliefPayment : null,  // verbal payment from the round-10 belief
           priceElicitation: priceElicitationChoices,
           highStakeOutcomes,
           paymentHighStake,
@@ -2122,6 +2155,7 @@
             currency={CONFIG.currency}
             order={CONFIG.order}
             themeColor={CONFIG.themeColor}
+            rationalInference={computeRound10RI(history, CONFIG.causal)}
           />
         );
       }

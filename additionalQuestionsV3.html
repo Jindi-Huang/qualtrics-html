@@ -53,7 +53,8 @@
           if (qConfig.playerName2) CONFIG.playerName2 = qConfig.playerName2;
           if (qConfig.playerPronoun2) CONFIG.playerPronoun2 = qConfig.playerPronoun2;
           if (qConfig.playerIcon0) CONFIG.playerIcon0 = qConfig.playerIcon0;
-          if (qConfig.nRounds !== undefined) CONFIG.nRounds = qConfig.nRounds;
+          if (qConfig.nRounds !== undefined) CONFIG.nRounds = Number(qConfig.nRounds);
+          if (qConfig.nRoundsAnalysis !== undefined) CONFIG.nRoundsAnalysis = Number(qConfig.nRoundsAnalysis);
           if (qConfig.currentSymbol) CONFIG.currentSymbol = qConfig.currentSymbol;
           if (qConfig.gameCounter !== undefined) CONFIG.gameCounter = qConfig.gameCounter;
           if (qConfig.gameVersionsDescriptionOrderDieter1) CONFIG.gameVersionsDescriptionOrderDieter1 = qConfig.gameVersionsDescriptionOrderDieter1;
@@ -118,6 +119,7 @@
       playerPronoun2: 'it',
       playerIcon0: '',
       nRounds: 30,
+      nRoundsAnalysis: 30,   // last N weeks participants are asked to consider (Qualtrics-supplied)
       currentSymbol: '1',
       gameCounter: 1,
       gameVersionsDescriptionOrderDieter1: 'A',
@@ -230,9 +232,9 @@
             <p className="text-base text-gray-600 mb-3" dangerouslySetInnerHTML={{ __html: introText }} />
           )}
           {questionContent ? (
-            <p className="text-base text-gray-800 mb-4">Q{questionNumber}. {questionContent}</p>
+            <p className="text-base text-gray-800 mb-4">{questionContent}</p>
           ) : (
-            <p className="text-base text-gray-800 mb-4" dangerouslySetInnerHTML={{ __html: `Q${questionNumber}. ${questionText}` }} />
+            <p className="text-base text-gray-800 mb-4" dangerouslySetInnerHTML={{ __html: questionText }} />
           )}
           <div className="space-y-2 ml-4">
             {optionList.map((option, idx) => (
@@ -406,19 +408,19 @@
         <div className="min-h-screen bg-white pt-0 pb-10 px-4">
           <div className="max-w-5xl mx-auto">
             <h1 className="text-2xl font-bold text-gray-900 mb-4 text-center">
-              Questions about Drink {CONFIG.gameCounter}
+              Questions About {CONFIG.playerName0}
             </h1>
 
             {page === 1 && (
               <>
                 <p className="text-base text-gray-800 mb-8">
                   {isAYOrder
-                    ? `Now, please answer some questions about ${CONFIG.playerName0} and how you feel. You made decisions about ${CONFIG.playerName0} for ${CONFIG.nRounds} weeks; please only consider the second half of that period (weeks ${Math.floor(CONFIG.nRounds / 2)} to ${CONFIG.nRounds}) when answering these questions.`
+                    ? `Now, please answer some questions about ${CONFIG.playerName0} and how you feel. You made decisions about ${CONFIG.playerName0} for ${CONFIG.nRounds} weeks; please only consider the last ${CONFIG.nRoundsAnalysis} weeks when answering these questions.`
                     : isMig
-                      ? `Now, please answer some questions about your craving, drinking ${CONFIG.playerName0}, and how you feel. You made decisions about ${CONFIG.playerName0} for ${CONFIG.nRounds} weeks; please only consider the second half of that period (weeks ${Math.floor(CONFIG.nRounds / 2)} to ${CONFIG.nRounds}) when answering these questions.`
+                      ? `Now, please answer some questions about your craving, drinking ${CONFIG.playerName0}, and how you feel. You made decisions about ${CONFIG.playerName0} for ${CONFIG.nRounds} weeks; please only consider the last ${CONFIG.nRoundsAnalysis} weeks when answering these questions.`
                       : CONFIG.order === 'AYX'
-                        ? `Now, please answer some questions about drinking ${CONFIG.playerName0}, how you feel and your ${CONFIG.playerName1} level. You made decisions about ${CONFIG.playerName0} for ${CONFIG.nRounds} weeks; please only consider the second half of that period (weeks ${Math.floor(CONFIG.nRounds / 2)} to ${CONFIG.nRounds}) when answering these questions.`
-                        : `Now, please answer some questions about drinking ${CONFIG.playerName0}, your ${CONFIG.playerName1} level and how you feel. You made decisions about ${CONFIG.playerName0} for ${CONFIG.nRounds} weeks; please only consider the second half of that period (weeks ${Math.floor(CONFIG.nRounds / 2)} to ${CONFIG.nRounds}) when answering these questions.`
+                        ? `Now, please answer some questions about drinking ${CONFIG.playerName0}, how you feel and your ${CONFIG.playerName1} level. You made decisions about ${CONFIG.playerName0} for ${CONFIG.nRounds} weeks; please only consider the last ${CONFIG.nRoundsAnalysis} weeks when answering these questions.`
+                        : `Now, please answer some questions about drinking ${CONFIG.playerName0}, your ${CONFIG.playerName1} level and how you feel. You made decisions about ${CONFIG.playerName0} for ${CONFIG.nRounds} weeks; please only consider the last ${CONFIG.nRoundsAnalysis} weeks when answering these questions.`
                   }
                 </p>
 
@@ -465,7 +467,7 @@
             {page === 2 && (
               <>
                 <p className="text-base text-gray-800 mb-8">
-                  You made decisions about {CONFIG.playerName0} for {CONFIG.nRounds} weeks; please only consider the second half of that period (weeks {Math.floor(CONFIG.nRounds / 2)} to {CONFIG.nRounds}) when answering these questions.
+                  You made decisions about {CONFIG.playerName0} for {CONFIG.nRounds} weeks; please only consider the last {CONFIG.nRoundsAnalysis} weeks when answering these questions.
                 </p>
                 <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
                 <RadioQuestion
