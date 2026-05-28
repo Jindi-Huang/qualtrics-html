@@ -62,7 +62,7 @@
       noConfirmation: null,  // If 1, skip confirmation step and go directly to confidence
       nRounds: 30,
       themeColor: 'purple',  // Theme color: 'blue', 'purple', 'teal', 'yellow'
-      supergame: 'migraines', // 'migraines' (default, bubble icon + "Craving or Not") or 'dieter' (BioClip + "{playerName1} Level")
+      supergame: 'dieter', // 'dieter' (default, BioClip + "{playerName1} Level") or 'migraines' (bubble icon + "Craving or Not")
       aOnLeftDAG: 1 // 1 → A on left (x=200), 0 → A on right (x=500)
     };
 
@@ -294,12 +294,12 @@
       const xLabel = isMigraines ? 'whether you are craving' : `your ${playerName1} level`;
       const nodeNames = {
         'A': `Your choice to drink ${playerName0}`,
-        'X': isMigraines ? 'Whether you crave' : `${playerName1} level`,
+        'X': isMigraines ? 'Whether you crave' : `Your ${playerName1} level`,
         'Y': 'How you feel'
       };
       const nodeNamesLower = {
         'A': `your choice to drink ${playerName0}`,
-        'X': isMigraines ? 'whether you crave' : `${playerName1} level`,
+        'X': isMigraines ? 'whether you crave' : `your ${playerName1} level`,
         'Y': 'how you feel'
       };
 
