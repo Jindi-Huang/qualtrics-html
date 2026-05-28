@@ -370,7 +370,7 @@
       currency: '$',              // Currency symbol
       order: 'AY',                // Order: 'AXY' or 'AY'
       themeColor: 'purple',       // Theme color: 'blue', 'purple', 'teal', 'yellow'
-      supergame: 'migraines'      // 'dieter' (legacy) or 'migraines' (drop chemical from copy)
+      supergame: 'dieter'         // 'dieter' (legacy) or 'migraines' (drop chemical from copy)
     };
 
     // Note: getThemeColorsVanilla() and getDrinkIconSVG() are loaded from shared-icons.js
@@ -429,7 +429,7 @@
           bonusHTML +=
             `<li>If you consume the drink, you pay ${CONFIG.currency}${Number(CONFIG.aCost).toFixed(2)} for it.</li>`;
           if (CONFIG.order === 'AY') {
-            bonusHTML += `<li>The trial subscription to the BioClip extension has expired. You no longer see the blood chemical levels.</li>`;
+            bonusHTML += `<li>The BioClip smartphone extension is not available. You cannot see the blood chemical levels.</li>`;
           }
         }
         bonusEl.innerHTML = bonusHTML;

@@ -114,8 +114,8 @@
     // supergame: 'dieter' → mirrors dieterInstructionsV3.html
     //            'migraines' → mirrors counfoundedChoiceInstructionsV2.html
     const CONFIG = {
-      supergame: 'migraines',
-      experiment: 'EndogDieterRO',  // 'EndogDieterRO' triggers Y-before-X reveal order for dieter
+      supergame: 'dieter',
+      experiment: 'EndogDieterBinary',  // 'EndogDieterRO' triggers Y-before-X reveal order; 'EndogDieterBinary' adds the BioClip trial page
       currency: '$',
       basePay: 2.00,
       aCost: 0.00,
@@ -708,18 +708,18 @@
         <section>
           <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
             <PageBadge n={n} />
-            You'll Only See BioClip Data for One Drink
+            BioClip Access Varies by Participant
           </h2>
           <div className="bg-gray-50 rounded-xl p-4">
             <p className="text-gray-700 mb-4">
-              You will see {nWord(nSG)} drinks in a random order. You only have a trial subscription to the BioClip smartphone extension. Hence, you can only view blood chemical levels for the first drink you see. The trial expires after that, so the blood chemical levels related to the {nSG === 2 ? 'second' : 'second and third'} drink{nSG === 2 ? '' : 's'} will be hidden.
+              The BioClip smartphone extension will only be available to a subset of participants. For everyone else, the screen will display "Subscription Expired" as shown below:
             </p>
-            <p className="text-gray-700 mb-4">
-              After the trial expires, the BioClip will display "Subscription Expired" as shown below:
-            </p>
-            <div className="flex justify-center">
+            <div className="flex justify-center mb-4">
               <BioClipMini status="expired" />
             </div>
+            <p className="text-gray-700">
+              If this is the case, you cannot see your blood chemical level.
+            </p>
           </div>
         </section>
       );
@@ -959,8 +959,8 @@
       const dieterPages = (() => {
         const arr = [setupSection, eachWeekSection];
         let n = 3;
-        arr.push(paymentSection(n++));
         if (CONFIG.experiment === 'EndogDieterBinary') arr.push(bioClipTrialSection(n++));
+        arr.push(paymentSection(n++));
         arr.push(whatYouKnowSection(n++));
         arr.push(twoPossibilitiesSection(n++));
         arr.push(noteSection(n++));
