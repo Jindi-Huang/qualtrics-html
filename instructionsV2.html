@@ -631,7 +631,7 @@
           <div className="bg-gray-50 rounded-xl p-4">
             <p className="text-gray-700 mb-4">
               {isMig ? (
-                <>Each <span onClick={() => setAttentionCheck(1)} className={`cursor-pointer ${attentionCheck === 1 ? 'text-green-600' : ''}`}>Monday</span> morning, <strong>you may or may not feel a craving for the new drink</strong>. Whether you feel a craving determines the cost or payment associated with consuming the drink. You then decide whether or not to drink it. Your main concern is whether you will feel good or bad later in the day. Whether you can give in to the craving also matters.</>
+                <>Each <span onClick={() => setAttentionCheck(1)} className={`cursor-pointer ${attentionCheck === 1 ? 'text-green-600' : ''}`}>Monday</span> morning, <strong>you may or may not feel a craving for the new drink</strong>. Whether you feel a craving determines the cost or payment associated with consuming the drink. You then decide whether or not to drink it. Your main concern is whether you will feel good or bad later in the day. Whether you give in to the craving also matters.</>
               ) : isEndogDieterRO ? (
                 <>Each <span onClick={() => setAttentionCheck(1)} className={`cursor-pointer ${attentionCheck === 1 ? 'text-green-600' : ''}`}>Monday</span> morning, when you get up, you decide whether to consume the drink. Shortly after, you will see whether you feel good or bad. Later that day, your BioClip tells you whether the blood chemical the drink targets is at a normal level. What you care about is how you feel.</>
               ) : (
@@ -767,7 +767,7 @@
                   {isMig ? (
                     <>
                       <h3 className="text-blue-600 font-bold mb-2">Possibility {idx + 1}: The drink <span className="underline">affects</span> how you will feel later that day.</h3>
-                      <p className="text-gray-600">Consuming the drink <b>decreases the chance that you will feel good</b> later that day.</p>
+                      <p className="text-gray-600">Consuming the drink <b>reduces the chance that you will feel good</b> later that day.</p>
                     </>
                   ) : (
                     <>
