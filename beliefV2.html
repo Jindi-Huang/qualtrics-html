@@ -78,6 +78,7 @@
           if (qConfig.currentSymbol) CONFIG.currentSymbol = qConfig.currentSymbol;
           if (qConfig.rationalInference) CONFIG.rationalInference = qConfig.rationalInference;
           if (qConfig.increasingOrder !== undefined) CONFIG.increasingOrder = qConfig.increasingOrder;
+          if (qConfig.noChangeFirst !== undefined) CONFIG.noChangeFirst = qConfig.noChangeFirst;
           if (qConfig.order) CONFIG.order = qConfig.order;
           if (qConfig.themeColor) CONFIG.themeColor = qConfig.themeColor;
           if (qConfig.skipIntro !== undefined) CONFIG.skipIntro = qConfig.skipIntro;
@@ -157,7 +158,8 @@
       nRounds: 10,
       currentSymbol: null,
       rationalInference: null,
-      increasingOrder: Math.random() < 0.5 ? 1 : 0,
+      increasingOrder: 1,
+      noChangeFirst: 1,            // 1 → "No change" on top, options 1-9%→90-100% (top→bottom); 0 → "No change" on bottom, options 90-100%→1-9%
       order: 'AYX',
       themeColor: 'purple',
       skipIntro: false,
@@ -492,71 +494,90 @@
     }
 
     // =============== VERBAL SCALE ===============
-    function VerbalScale({ value, onChange, options, increasingOrder }) {
-      const decreaseOptions = [...options.slice(0, 10)].reverse();
-      const noChangeOption = options[10];
-      const increaseOptions = options.slice(11);
+    function VerbalScale({ value, onChange, options, increasingOrder, noChangeFirst }) {
       const accentColor = getThemeHexColor();
+      const noChangeOption = options[10];
 
-      const decreaseColumn = (
+      // Canonical entries keep their stored value index:
+      //   decreases: index 0 = 90-100% (largest) ... index 9 = 1-9% (smallest)
+      //   increases: index 11 = 1-9% (smallest) ... index 20 = 90-100% (largest)
+      const decreaseEntries = options.slice(0, 10).map((label, i) => ({ label, index: i }));
+      const increaseEntries = options.slice(11).map((label, i) => ({ label, index: 11 + i }));
+
+      // Order each column so the smallest magnitude (1-9%) sits adjacent to "No change".
+      //   noChangeFirst → "No change" on top, so 1-9% at the top: decreases reversed, increases natural.
+      //   else          → "No change" on bottom, so 1-9% at the bottom: decreases natural, increases reversed.
+      const decreaseDisplay = noChangeFirst ? [...decreaseEntries].reverse() : decreaseEntries;
+      const increaseDisplay = noChangeFirst ? increaseEntries : [...increaseEntries].reverse();
+
+      const renderColumn = (entries) => (
         <div className="space-y-1">
-          <div className="text-sm text-gray-700 font-medium mb-2 text-center">Decreases</div>
-          {decreaseOptions.map((option, idx) => {
-            const actualIndex = 9 - idx;
-            const isSelected = value === actualIndex;
+          {entries.map(entry => {
+            const isSelected = value === entry.index;
             return (
               <label
-                key={actualIndex}
+                key={entry.index}
                 className={`flex items-center p-1.5 rounded-lg border-2 cursor-pointer transition-all text-sm whitespace-nowrap ${
                   isSelected ? `${getThemeClassesLocal().buttonBg} text-white border-transparent font-medium` : 'bg-white border-gray-200 hover:border-gray-300'
                 }`}
-                onClick={() => onChange(actualIndex)}
+                onClick={() => onChange(entry.index)}
               >
-                <input type="radio" name="causalEffect" checked={isSelected} onChange={() => onChange(actualIndex)} className="mr-1.5 w-3 h-3" style={{ accentColor }} />
-                <span>{option}</span>
+                <input type="radio" name="causalEffect" checked={isSelected} onChange={() => onChange(entry.index)} className="mr-1.5 w-3 h-3" style={{ accentColor }} />
+                <span>{entry.label}</span>
               </label>
             );
           })}
         </div>
       );
 
-      const increaseColumn = (
-        <div className="space-y-1">
-          <div className="text-sm text-gray-700 font-medium mb-2 text-center">Increases</div>
-          {increaseOptions.map((option, idx) => {
-            const actualIndex = 11 + idx;
-            const isSelected = value === actualIndex;
-            return (
-              <label
-                key={actualIndex}
-                className={`flex items-center p-1.5 rounded-lg border-2 cursor-pointer transition-all text-sm whitespace-nowrap ${
-                  isSelected ? `${getThemeClassesLocal().buttonBg} text-white border-transparent font-medium` : 'bg-white border-gray-200 hover:border-gray-300'
-                }`}
-                onClick={() => onChange(actualIndex)}
-              >
-                <input type="radio" name="causalEffect" checked={isSelected} onChange={() => onChange(actualIndex)} className="mr-1.5 w-3 h-3" style={{ accentColor }} />
-                <span>{option}</span>
-              </label>
-            );
-          })}
+      const headerCell = (label) => (
+        <div className="text-sm text-gray-700 font-medium text-center">{label}</div>
+      );
+
+      const decreaseColumn = renderColumn(decreaseDisplay);
+      const increaseColumn = renderColumn(increaseDisplay);
+
+      // Column headers, sitting on top so the full-width "No change" button can go beneath them.
+      const headerRow = (
+        <div className="grid grid-cols-2 gap-2 mb-2">
+          {increasingOrder ? headerCell('Increases') : headerCell('Decreases')}
+          {increasingOrder ? headerCell('Decreases') : headerCell('Increases')}
         </div>
+      );
+
+      const grid = (
+        <div className="grid grid-cols-2 gap-2">
+          {increasingOrder ? increaseColumn : decreaseColumn}
+          {increasingOrder ? decreaseColumn : increaseColumn}
+        </div>
+      );
+
+      const noChangeRow = (
+        <label
+          className={`flex items-center justify-center p-2 rounded-lg border-2 cursor-pointer transition-all text-sm font-medium ${
+            value === 10 ? `${getThemeClassesLocal().buttonBg} text-white border-transparent` : 'bg-white border-gray-200 hover:border-gray-300'
+          }`}
+          onClick={() => onChange(10)}
+        >
+          <input type="radio" name="causalEffect" checked={value === 10} onChange={() => onChange(10)} className="mr-2" style={{ accentColor }} />
+          <span>{noChangeOption}</span>
+        </label>
       );
 
       return (
         <div>
-          <div className="grid grid-cols-2 gap-2 mb-2">
-            {increasingOrder ? increaseColumn : decreaseColumn}
-            {increasingOrder ? decreaseColumn : increaseColumn}
-          </div>
-          <label
-            className={`flex items-center justify-center p-2 rounded-lg border-2 cursor-pointer transition-all text-sm font-medium ${
-              value === 10 ? `${getThemeClassesLocal().buttonBg} text-white border-transparent` : 'bg-white border-gray-200 hover:border-gray-300'
-            }`}
-            onClick={() => onChange(10)}
-          >
-            <input type="radio" name="causalEffect" checked={value === 10} onChange={() => onChange(10)} className="mr-2" style={{ accentColor }} />
-            <span>{noChangeOption}</span>
-          </label>
+          {headerRow}
+          {noChangeFirst ? (
+            <>
+              <div className="mb-2">{noChangeRow}</div>
+              {grid}
+            </>
+          ) : (
+            <>
+              <div className="mb-2">{grid}</div>
+              {noChangeRow}
+            </>
+          )}
         </div>
       );
     }
@@ -1382,7 +1403,7 @@
                       <div className="animate-fadeIn">
                         <p className="text-gray-700 text-center mb-4" dangerouslySetInnerHTML={{ __html: config.verbalQuestion }} />
                         <div className="max-w-2xl mx-auto">
-                          <VerbalScale value={verbalValue} onChange={setVerbalValue} options={verbalOptions} increasingOrder={increasingOrder === 1} />
+                          <VerbalScale value={verbalValue} onChange={setVerbalValue} options={verbalOptions} increasingOrder={increasingOrder === 1} noChangeFirst={CONFIG.noChangeFirst === 1} />
                         </div>
                         <div className="flex justify-center gap-4 mt-4">
                           {!skipPieCharts && (
@@ -1602,7 +1623,8 @@
             pie2Values: newResponses.map(r => r.pie2Value),
             verbalValues: newResponses.map(r => r.verbalValue),
             beliefs: newResponses.map(r => r.verbalValue),
-            increasingOrder: CONFIG.increasingOrder
+            increasingOrder: CONFIG.increasingOrder,
+            noChangeFirst: CONFIG.noChangeFirst
           });
 
           console.log('Payments calculated:', payments);

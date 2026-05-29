@@ -46,7 +46,9 @@ Qualtrics.SurveyEngine.addOnReady(function() {
         themeColor: "${e://Field/color}",
 		supergame: "${e://Field/supergame}",
 		aOnLeftDAG: "${e://Field/aOnLeftDAG}",
-		cravingFirstHS: "${e://Field/cravingFirstHS}"
+		cravingFirstHS: "${e://Field/cravingFirstHS}",
+		noChangeFirst: "${e://Field/noChangeFirst}",
+		increasingOrder: "${e://Field/increasingOrder}"
     };
 
     console.log('Game configuration for ID ' + gameConfig.id + ':', gameConfig);

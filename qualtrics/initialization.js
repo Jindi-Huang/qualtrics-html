@@ -258,6 +258,9 @@ Qualtrics.SurveyEngine.addOnReady(function() {
 	
 	const increasingOrder = Math.random() < 0.5 ? 0 : 1;
     Qualtrics.SurveyEngine.setEmbeddedData('increasingOrder', increasingOrder);
+    
+    const noChangeFirst = Math.random() < 0.5 ? 0 : 1;
+    Qualtrics.SurveyEngine.setEmbeddedData('noChangeFirst', noChangeFirst);
 	
 	const increasingPrice = Math.random() < 0.5 ? 0 : 1;
     Qualtrics.SurveyEngine.setEmbeddedData('increasingPrice', increasingPrice);

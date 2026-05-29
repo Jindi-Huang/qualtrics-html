@@ -95,6 +95,8 @@
           if (qConfig.cravingFirstHS !== undefined) CONFIG.cravingFirstHS = parseInt(qConfig.cravingFirstHS);
           if (qConfig.themeColor) CONFIG.themeColor = qConfig.themeColor;
           if (qConfig.aOnLeftDAG !== undefined) CONFIG.aOnLeftDAG = parseInt(qConfig.aOnLeftDAG);
+          if (qConfig.increasingOrder !== undefined) CONFIG.increasingOrder = parseInt(qConfig.increasingOrder);
+          if (qConfig.noChangeFirst !== undefined) CONFIG.noChangeFirst = parseInt(qConfig.noChangeFirst);
 
           applySupergameDefaults();
           console.log('Applied config:', CONFIG);
@@ -220,7 +222,10 @@
       playerIcon0: '🥤',
       currentSymbol: null,
       themeColor: 'purple',
-      aOnLeftDAG: 1           // 1 → A on left in DAG; 0 → A on right
+      aOnLeftDAG: 1,          // 1 → A on left in DAG; 0 → A on right
+      // Belief elicitation layout (forwarded to beliefV2 iframe)
+      increasingOrder: 1,     // 1 → Increases column on left; 0 → Decreases on left
+      noChangeFirst: 1        // 1 → "No change" on top, options 1-9%→90-100%; 0 → "No change" on bottom, options 90-100%→1-9%
     };
 
     function applySupergameDefaults() {
@@ -1227,6 +1232,8 @@
                 rationalInference,
                 beliefPaymentMax: 10,
                 beliefPaymentIncentive: 0.5,
+                increasingOrder: CONFIG.increasingOrder,
+                noChangeFirst: CONFIG.noChangeFirst,
                 ...(isMig ? { supergame: 'migraines' } : { order })
               }
             }, '*');
@@ -1263,6 +1270,8 @@
                   rationalInference,
                   beliefPaymentMax: 10,
                   beliefPaymentIncentive: 0.5,
+                  increasingOrder: CONFIG.increasingOrder,
+                  noChangeFirst: CONFIG.noChangeFirst,
                   ...(isMig ? { supergame: 'migraines' } : { order })
                 }
               }, '*');

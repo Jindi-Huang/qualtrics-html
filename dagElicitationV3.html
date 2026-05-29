@@ -475,6 +475,13 @@
         onComplete(initialEdges, finalEdges || edgesRef.current, confidence, alertCountRef.current, dagTimesRef.current);
       };
 
+      // Back from confidence to the (editable) drawing screen — only offered when
+      // there is no confirmation step (noConfirmation === 1), so people can fix mistakes.
+      const handleBack = () => {
+        setShowConfidence(false);
+        pageEnteredRef.current = Date.now();
+      };
+
       // Draw curved arrow path
       const getArrowPath = (from, to, curveDirection = 1) => {
         const fromNode = getNode(from);
@@ -679,7 +686,15 @@
                     </div>
                   </div>
 
-                  <div className="flex justify-end">
+                  <div className="flex justify-between items-center">
+                    {CONFIG.noConfirmation === 1 ? (
+                      <button
+                        onClick={handleBack}
+                        className="px-8 py-3 rounded-lg font-medium text-lg border-2 border-gray-300 text-gray-700 hover:bg-gray-100"
+                      >
+                        Back
+                      </button>
+                    ) : <span />}
                     <button
                       onClick={handleConfidenceSubmit}
                       disabled={confidence === null || !showNextButton}

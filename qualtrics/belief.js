@@ -22,6 +22,7 @@ Qualtrics.SurveyEngine.addOnReady(function() {
         beliefPaymentMax: parseFloat("${e://Field/beliefPaymentMax}"),
         beliefPaymentIncentive: parseFloat("${e://Field/beliefPaymentIncentive}"),
         increasingOrder: parseInt("${e://Field/increasingOrder}"),
+        noChangeFirst: parseInt("${e://Field/noChangeFirst}"),
         rationalInference: JSON.parse(Qualtrics.SurveyEngine.getEmbeddedData("rationalInference_" + id)),
         mainCausal1: JSON.parse(Qualtrics.SurveyEngine.getEmbeddedData("mainCausal1")),
         mainCausal2: JSON.parse(Qualtrics.SurveyEngine.getEmbeddedData("mainCausal2")),
