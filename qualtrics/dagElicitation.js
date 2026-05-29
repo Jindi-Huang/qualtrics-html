@@ -43,6 +43,7 @@ Qualtrics.SurveyEngine.addOnReady(function() {
             Qualtrics.SurveyEngine.setEmbeddedData('subjDAGTime2_' + id, JSON.stringify(dagData.initialDAGTime));
             Qualtrics.SurveyEngine.setEmbeddedData('dagConfidenceTime2_' + id, JSON.stringify(dagData.confidenceTime));
             Qualtrics.SurveyEngine.setEmbeddedData('dagShowDetailsViewed2_' + id, JSON.stringify(dagData.showDetailsViewed));
+            Qualtrics.SurveyEngine.setEmbeddedData('dagBackLog2_' + id, JSON.stringify(dagData.dagBackLog));
 			Qualtrics.SurveyEngine.setEmbeddedData('configReceivedDAG_' + id, JSON.stringify(event.data.configReceived ? '1' : '0'));
 			Qualtrics.SurveyEngine.setEmbeddedData('dagAllData_' + id, JSON.stringify(data));
 

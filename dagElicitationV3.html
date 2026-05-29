@@ -259,6 +259,8 @@
       const [showNextButton, setShowNextButton] = useState(false);
       const alertCountRef = useRef(0);
       const showDetailsClickedRef = useRef(false); // did the participant ever open the payment "Show details"?
+      // Log of the no-confirmation Back-and-edit flow: a snapshot at each "Continue" + how many times "Back" was clicked.
+      const dagBackLogRef = useRef({ backCount: 0, confirms: [] });
       const pageEnteredRef = useRef(Date.now());
       const edgesRef = useRef([]);
       useEffect(() => { edgesRef.current = edges; }, [edges]);
@@ -394,6 +396,11 @@
         // If noConfirmation is set, skip confirmation and go directly to confidence
         if (CONFIG.noConfirmation === 1) {
           setFinalEdges([...edgesRef.current]);
+          // Snapshot this confirmed DAG (confirms[0] = original; later entries = after Back-and-edit).
+          dagBackLogRef.current.confirms.push({
+            edges: edgesRef.current.map(e => ({ from: e.from, to: e.to })),
+            drawTime: dagTimesRef.current.initialDAGTime
+          });
           recordConfirmationEnd();
           setShowConfidence(true);
         } else {
@@ -475,7 +482,16 @@
       const handleConfidenceSubmit = () => {
         if (confidence === null) return;
         dagTimesRef.current.confidenceTime = (Date.now() - pageEnteredRef.current) / 1000;
-        onComplete(initialEdges, finalEdges || edgesRef.current, confidence, alertCountRef.current, dagTimesRef.current, showDetailsClickedRef.current);
+        const confirms = dagBackLogRef.current.confirms;
+        const edgeKey = (edges) => edges.map(e => e.from + '->' + e.to).sort().join(',');
+        const dagBackLog = {
+          backCount: dagBackLogRef.current.backCount,
+          numConfirms: confirms.length,
+          // Did the final DAG differ from the first one they confirmed (i.e. did a Back-and-edit change anything)?
+          changed: confirms.length > 1 && edgeKey(confirms[0].edges) !== edgeKey(confirms[confirms.length - 1].edges),
+          confirms: confirms
+        };
+        onComplete(initialEdges, finalEdges || edgesRef.current, confidence, alertCountRef.current, dagTimesRef.current, showDetailsClickedRef.current, dagBackLog);
       };
 
       // Back from confidence to the (editable) drawing screen — only offered when
@@ -483,6 +499,7 @@
       const handleBack = () => {
         setShowConfidence(false);
         pageEnteredRef.current = Date.now();
+        dagBackLogRef.current.backCount += 1;
       };
 
       // Draw curved arrow path
@@ -1072,7 +1089,7 @@
 
     // Main App
     function App() {
-      const handleComplete = (initialEdges, finalEdges, confidence, dagAlertCount, dagTimes, showDetailsViewed) => {
+      const handleComplete = (initialEdges, finalEdges, confidence, dagAlertCount, dagTimes, showDetailsViewed, dagBackLog) => {
         sendToParent('DAG_COMPLETE', {
           initialDAG: initialEdges,
           finalDAG: finalEdges,
@@ -1081,7 +1098,8 @@
           initialDAGTime: dagTimes.initialDAGTime,
           finalDAGTime: dagTimes.finalDAGTime,
           confidenceTime: dagTimes.confidenceTime,
-          showDetailsViewed: showDetailsViewed
+          showDetailsViewed: showDetailsViewed,
+          dagBackLog: dagBackLog
         });
       };
 
