@@ -322,6 +322,10 @@
   <script type="text/babel">
     const { useState, useEffect, useRef, useCallback } = React;
 
+    // Shared across IntroPage / BeliefElicitation / CausalBeliefApp: did the participant ever open the
+    // payment "Show details" (either path)? Read once at CAUSAL_BELIEFS submit time.
+    const detailsClickedRef = { current: false };
+
     // =============== ICON COMPONENTS ===============
     function DrinkIcon({ className, drinkName, style }) {
       const icon = CONFIG.playerIcon0;
@@ -1166,7 +1170,6 @@
       const [startTime] = useState(Date.now());
       const [showNextButton, setShowNextButton] = useState(false);
       const [showPaymentDetails, setShowPaymentDetails] = useState(false);
-      const detailsClickedRef = useRef(false); // did the participant ever open the payment details (either path)?
 
       const { causalElicit, exoButton, id } = scenario;
 
