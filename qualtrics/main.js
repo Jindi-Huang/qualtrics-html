@@ -109,10 +109,13 @@ Qualtrics.SurveyEngine.addOnReady(function() {
                         Qualtrics.SurveyEngine.setEmbeddedData('subjDAGTime0_' + gameId, JSON.stringify(data.initialDAGTime));
                         Qualtrics.SurveyEngine.setEmbeddedData('subjDAGTime1_' + gameId, JSON.stringify(data.finalDAGTime));
                         Qualtrics.SurveyEngine.setEmbeddedData('dagConfidenceTime1_' + gameId, JSON.stringify(data.confidenceTime));
+                        Qualtrics.SurveyEngine.setEmbeddedData('dagShowDetailsViewed1_' + gameId, JSON.stringify(data.dagShowDetailsViewed));
                         Qualtrics.SurveyEngine.setEmbeddedData('tracking_' + gameId, JSON.stringify(data.tracking));
                         Qualtrics.SurveyEngine.setEmbeddedData('highStake_' + gameId, JSON.stringify(data.priceElicitation));
                         Qualtrics.SurveyEngine.setEmbeddedData('paymentHighStake_' + gameId, JSON.stringify(data.paymentHighStake));
+                        Qualtrics.SurveyEngine.setEmbeddedData('highStakeLog_' + gameId, JSON.stringify(data.highStakeLog));
                         Qualtrics.SurveyEngine.setEmbeddedData('beliefRound10_' + gameId, JSON.stringify(data.beliefData));
+                        Qualtrics.SurveyEngine.setEmbeddedData('beliefDetailsClickedRound10_' + gameId, JSON.stringify(data.beliefData ? data.beliefData.detailsClicked : null));
 						Qualtrics.SurveyEngine.setEmbeddedData('rationalInferenceRound10_' + gameId, JSON.stringify(data.rationalInferenceRound10));
 						Qualtrics.SurveyEngine.setEmbeddedData('beliefPaymentRound10_' + gameId, JSON.stringify(data.beliefPaymentRound10));
 						Qualtrics.SurveyEngine.setEmbeddedData('configReceivedMain_' + gameId, JSON.stringify(event.data.configReceived ? '1' : '0'));

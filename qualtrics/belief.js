@@ -101,6 +101,7 @@ Qualtrics.SurveyEngine.addOnReady(function() {
                     Qualtrics.SurveyEngine.setEmbeddedData("slider1Values_" + id, JSON.stringify(data.pie1Values));
                     Qualtrics.SurveyEngine.setEmbeddedData("slider2Values_" + id, JSON.stringify(data.pie2Values));
                     Qualtrics.SurveyEngine.setEmbeddedData("beliefs_" + id, JSON.stringify(data.verbalValues));
+                    Qualtrics.SurveyEngine.setEmbeddedData("beliefDetailsClicked_" + id, JSON.stringify(data.detailsClicked));
 					Qualtrics.SurveyEngine.setEmbeddedData('configReceivedBeliefs_' + id, JSON.stringify(event.data.configReceived ? '1' : '0'));
 					Qualtrics.SurveyEngine.setEmbeddedData('beliefAllData_' + id, JSON.stringify(data));
 

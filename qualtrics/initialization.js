@@ -44,8 +44,9 @@ Qualtrics.SurveyEngine.addOnReady(function() {
 
 	// Helper function to select items by ID and shuffle them
 	function selectAndShuffleByIds(arrays, ids) {
-		const filtered = arrays.filter(item => ids.includes(item.id));
-		return shuffle([...filtered]);
+		// Map over ids (not the source) so repeated ids (e.g. [3,3] noise-benchmark groups) yield duplicates.
+		const selected = ids.map(targetId => arrays.find(item => item.id === targetId)).filter(Boolean);
+		return shuffle([...selected]);
 	}
 
 	// Select Dieter configs based on experiment value

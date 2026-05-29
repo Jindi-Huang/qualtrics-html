@@ -63,7 +63,8 @@
       nRounds: 30,
       themeColor: 'purple',  // Theme color: 'blue', 'purple', 'teal', 'yellow'
       supergame: 'dieter', // 'dieter' (default, BioClip + "{playerName1} Level") or 'migraines' (bubble icon + "Craving or Not")
-      aOnLeftDAG: 1 // 1 → A on left (x=200), 0 → A on right (x=500)
+      aOnLeftDAG: 1, // 1 → A on left (x=200), 0 → A on right (x=500)
+      beliefPaymentMax: 10 // bonus ($) paid if the DAG answer is correct (Qualtrics-supplied)
     };
 
     // Note: getThemeIconColor() is loaded from shared-icons.js
@@ -110,6 +111,7 @@
           if (qConfig.themeColor) CONFIG.themeColor = qConfig.themeColor;
           if (qConfig.supergame) CONFIG.supergame = qConfig.supergame;
           if (qConfig.aOnLeftDAG !== undefined) CONFIG.aOnLeftDAG = parseInt(qConfig.aOnLeftDAG);
+          if (qConfig.beliefPaymentMax !== undefined) CONFIG.beliefPaymentMax = parseFloat(qConfig.beliefPaymentMax);
         }
 
         if (!isInitialized) {
@@ -256,6 +258,7 @@
       const [finalEdges, setFinalEdges] = useState(null);
       const [showNextButton, setShowNextButton] = useState(false);
       const alertCountRef = useRef(0);
+      const showDetailsClickedRef = useRef(false); // did the participant ever open the payment "Show details"?
       const pageEnteredRef = useRef(Date.now());
       const edgesRef = useRef([]);
       useEffect(() => { edgesRef.current = edges; }, [edges]);
@@ -472,7 +475,7 @@
       const handleConfidenceSubmit = () => {
         if (confidence === null) return;
         dagTimesRef.current.confidenceTime = (Date.now() - pageEnteredRef.current) / 1000;
-        onComplete(initialEdges, finalEdges || edgesRef.current, confidence, alertCountRef.current, dagTimesRef.current);
+        onComplete(initialEdges, finalEdges || edgesRef.current, confidence, alertCountRef.current, dagTimesRef.current, showDetailsClickedRef.current);
       };
 
       // Back from confidence to the (editable) drawing screen — only offered when
@@ -616,7 +619,7 @@
                   <p className="text-sm text-gray-500 text-center mb-4">
                     The payment mechanism is set up such that you will earn the most by answering truthfully.{' '}
                     <button
-                      onClick={() => setShowDetails(!showDetails)}
+                      onClick={() => { setShowDetails(!showDetails); showDetailsClickedRef.current = true; }}
                       className={`${theme.pillText} hover:opacity-80 underline`}
                     >
                       {showDetails ? 'Hide details' : 'Show details'}
@@ -630,7 +633,7 @@
                         <li>After you enter your confidence, we will randomly draw a number <strong>X</strong> between 0 and 100.</li>
                         <li>If your stated confidence is <strong>greater than X%</strong>:
                           <ul className="list-disc list-inside ml-4 mt-1">
-                            <li>You will receive a bonus if the "who influences whom" relationship you provided is correct.</li>
+                            <li>You will receive a bonus of <strong>${CONFIG.beliefPaymentMax}</strong> if the "who influences whom" relationship you provided is correct.</li>
                           </ul>
                         </li>
                         <li>If your stated confidence is <strong>less than X</strong>:
@@ -724,6 +727,7 @@
                 <h2 className="text-2xl font-bold text-gray-800 mb-3 text-center">
                   {CONFIG.noConfirmation !== 1 && <>{`Before making your decisions for the final ${Math.floor(CONFIG.nRounds / 2)} weeks for this drink...`}<br /></>}How do you think these factors influence each other?
                 </h2>
+                <p className="text-sm text-gray-500 text-center mb-4">If this question is randomly selected for your bonus payment, you will receive <strong>${CONFIG.beliefPaymentMax}</strong> if your answer is correct.</p>
                 <ul className="text-gray-600 space-y-2 text-base list-disc list-inside">
                   <li>Please draw arrows between the three factors below. An arrow from one factor to another means the former could directly influence the latter. Draw an arrow if you think there was a direct influence, regardless of whether the influence was strong or weak, positive or negative.</li>
                   <li>To draw an arrow, click on a factor, hold your mouse pressed, and move it to another factor.</li>
@@ -1068,7 +1072,7 @@
 
     // Main App
     function App() {
-      const handleComplete = (initialEdges, finalEdges, confidence, dagAlertCount, dagTimes) => {
+      const handleComplete = (initialEdges, finalEdges, confidence, dagAlertCount, dagTimes, showDetailsViewed) => {
         sendToParent('DAG_COMPLETE', {
           initialDAG: initialEdges,
           finalDAG: finalEdges,
@@ -1076,7 +1080,8 @@
           DAGAlertCount: dagAlertCount,
           initialDAGTime: dagTimes.initialDAGTime,
           finalDAGTime: dagTimes.finalDAGTime,
-          confidenceTime: dagTimes.confidenceTime
+          confidenceTime: dagTimes.confidenceTime,
+          showDetailsViewed: showDetailsViewed
         });
       };
 

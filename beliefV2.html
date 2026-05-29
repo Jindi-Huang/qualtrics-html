@@ -1166,6 +1166,7 @@
       const [startTime] = useState(Date.now());
       const [showNextButton, setShowNextButton] = useState(false);
       const [showPaymentDetails, setShowPaymentDetails] = useState(false);
+      const detailsClickedRef = useRef(false); // did the participant ever open the payment details (either path)?
 
       const { causalElicit, exoButton, id } = scenario;
 
@@ -1289,7 +1290,7 @@
                       <p className="text-gray-600 text-sm">
                         If this question is randomly selected to determine your bonus payment, you will receive {CONFIG.currency}{Number(CONFIG.beliefPaymentMax).toFixed(0)} if your report is accurate. The less accurate your report, the lower this bonus will be.{' '}
                         {!showPaymentDetails && (
-                          <button onClick={() => setShowPaymentDetails(true)} className={`${getThemeClassesLocal().pillText} hover:opacity-80 underline`}>
+                          <button onClick={() => { setShowPaymentDetails(true); detailsClickedRef.current = true; }} className={`${getThemeClassesLocal().pillText} hover:opacity-80 underline`}>
                             Show details
                           </button>
                         )}
@@ -1538,7 +1539,7 @@
                   </div>
 
                   {!showDetails && (
-                    <button onClick={() => setShowDetails(true)} className={`${getThemeClassesLocal().pillText} hover:opacity-80 underline mb-6 block`}>
+                    <button onClick={() => { setShowDetails(true); detailsClickedRef.current = true; }} className={`${getThemeClassesLocal().pillText} hover:opacity-80 underline mb-6 block`}>
                       Show payment details
                     </button>
                   )}
@@ -1624,7 +1625,8 @@
             verbalValues: newResponses.map(r => r.verbalValue),
             beliefs: newResponses.map(r => r.verbalValue),
             increasingOrder: CONFIG.increasingOrder,
-            noChangeFirst: CONFIG.noChangeFirst
+            noChangeFirst: CONFIG.noChangeFirst,
+            detailsClicked: detailsClickedRef.current
           });
 
           console.log('Payments calculated:', payments);

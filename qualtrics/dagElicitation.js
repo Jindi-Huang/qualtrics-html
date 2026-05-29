@@ -19,7 +19,8 @@ Qualtrics.SurveyEngine.addOnReady(function() {
                     noConfirmation: 1,
                     themeColor: "${e://Field/color}",
 					supergame: "${e://Field/supergame}",
-					aOnLeftDAG: "${e://Field/aOnLeftDAG}"
+					aOnLeftDAG: "${e://Field/aOnLeftDAG}",
+					beliefPaymentMax: parseFloat("${e://Field/beliefPaymentMax}"),
                 }
             }, '*');
             console.log('Sent INIT to DAG iframe');
@@ -41,6 +42,7 @@ Qualtrics.SurveyEngine.addOnReady(function() {
             Qualtrics.SurveyEngine.setEmbeddedData('DAGAlertCount2_' + id, dagData.DAGAlertCount);
             Qualtrics.SurveyEngine.setEmbeddedData('subjDAGTime2_' + id, JSON.stringify(dagData.initialDAGTime));
             Qualtrics.SurveyEngine.setEmbeddedData('dagConfidenceTime2_' + id, JSON.stringify(dagData.confidenceTime));
+            Qualtrics.SurveyEngine.setEmbeddedData('dagShowDetailsViewed2_' + id, JSON.stringify(dagData.showDetailsViewed));
 			Qualtrics.SurveyEngine.setEmbeddedData('configReceivedDAG_' + id, JSON.stringify(event.data.configReceived ? '1' : '0'));
 			Qualtrics.SurveyEngine.setEmbeddedData('dagAllData_' + id, JSON.stringify(data));
 

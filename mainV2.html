@@ -208,8 +208,10 @@
       order: null,                // null → supergame default (dieter:'AY', migraines:'AXY')
 
       // Price elicitation
-      priceElicitationPrices: [0, 7.5, 15, 22.5, 30],
+      priceElicitationPrices: [0, 7.5, 15, 22.5, 30, 37.5],
+      migrainesBaseline: 15,      // ± baseline on the migraines high-stakes drink button; recomputed as 10×aCost in applySupergameDefaults
       priceElicitationBonus: 100,
+      priceElicitationEndowment: 40,  // endowment added to every high-stakes payment (covers max drink price)
       increasingPrice: 0,         // 1 = low to high, 0 = high to low
       cravingFirstHS: 1,          // 1 = craving case first, 0 = no-craving case first (per price level)
 
@@ -231,10 +233,12 @@
     function applySupergameDefaults() {
       const isMig = CONFIG.supergame === 'migraines';
       if (CONFIG.yBonus === null || CONFIG.yBonus === undefined) CONFIG.yBonus = isMig ? 10.00 : 10.00;
-      if (CONFIG.totalRounds === null || CONFIG.totalRounds === undefined) CONFIG.totalRounds = 12;
+      if (CONFIG.totalRounds === null || CONFIG.totalRounds === undefined) CONFIG.totalRounds = 1;
       if (CONFIG.playerName0 === null || CONFIG.playerName0 === undefined) CONFIG.playerName0 = isMig ? 'Driftwell' : 'Zerqalase-norm';
       if (CONFIG.playerName1 === null || CONFIG.playerName1 === undefined) CONFIG.playerName1 = isMig ? 'Driftwell' : 'Zerqalase';
       if (CONFIG.order === null || CONFIG.order === undefined) CONFIG.order = isMig ? 'AXY' : 'AYX';
+      // High-stakes migraines baseline scales with the per-round drink cost.
+      CONFIG.migrainesBaseline = 10 * CONFIG.aCost;
     }
 
     // Allow standalone testing: ?supergame=migraines or ?supergame=dieter
@@ -627,7 +631,7 @@
       // Migraines: button label flips by craving state (+$15 / -$15). Actual payment is always +price.
       // additional = total - button so the displayed math adds up; total is the same across both rows.
       const prices = CONFIG.priceElicitationPrices;
-      const baseline = isMig ? prices[Math.floor(prices.length / 2)] : 0;
+      const baseline = isMig ? CONFIG.migrainesBaseline : 0;
       const sign = isMig ? (currentX === 1 ? 1 : -1) : 1;
       const baselinePayment = sign * baseline;
       const additional = price - baselinePayment;
@@ -1116,7 +1120,7 @@
         const handleMessage = (event) => {
           if (event.data.type === 'DAG_DATA' && event.data.dataType === 'DAG_COMPLETE') {
             const d = event.data.data;
-            onComplete(d.initialDAG, d.finalDAG, d.confidence, d.DAGAlertCount, d.initialDAGTime, d.finalDAGTime, d.confidenceTime);
+            onComplete(d.initialDAG, d.finalDAG, d.confidence, d.DAGAlertCount, d.initialDAGTime, d.finalDAGTime, d.confidenceTime, d.showDetailsViewed);
           }
         };
         window.addEventListener('message', handleMessage);
@@ -1389,12 +1393,12 @@
                 <li>
                   <strong>The stakes are higher:</strong>
                   <ul className="ml-6 mt-1 space-y-1 list-disc">
-                    <li>You will be given <strong>{CONFIG.currency}30</strong> as endowment.</li>
+                    <li>You will be given <strong>{CONFIG.currency}{CONFIG.priceElicitationEndowment}</strong> as endowment.</li>
                     <li>The bonus for feeling {CONFIG.playerName2Pos} increases from {CONFIG.currency}{CONFIG.yBonus} to <strong>{CONFIG.currency}{CONFIG.priceElicitationBonus}</strong>.</li>
                     {isMig && (
                       <>
-                        <li>If you have a craving, you get <strong>{CONFIG.currency}{CONFIG.priceElicitationPrices[Math.floor(CONFIG.priceElicitationPrices.length / 2)]}</strong> instead of {CONFIG.currency}{CONFIG.aCost} for consuming the drink.</li>
-                        <li>If you don't have a craving, you pay <strong>{CONFIG.currency}{CONFIG.priceElicitationPrices[Math.floor(CONFIG.priceElicitationPrices.length / 2)]}</strong> instead of {CONFIG.currency}{CONFIG.aCost} for consuming the drink.</li>
+                        <li>If you have a craving, you get <strong>{CONFIG.currency}{CONFIG.migrainesBaseline}</strong> instead of {CONFIG.currency}{CONFIG.aCost} for consuming the drink.</li>
+                        <li>If you don't have a craving, you pay <strong>{CONFIG.currency}{CONFIG.migrainesBaseline}</strong> instead of {CONFIG.currency}{CONFIG.aCost} for consuming the drink.</li>
                       </>
                     )}
                     <li>{rangeBullet}</li>
@@ -1464,7 +1468,7 @@
       const headline = isMig ? `Drinking ${CONFIG.playerName0} now pays you:` : `The price of ${CONFIG.playerName0} is now:`;
       // Migraines preview values
       const prices = CONFIG.priceElicitationPrices;
-      const baseline = prices[Math.floor(prices.length / 2)];
+      const baseline = CONFIG.migrainesBaseline;
       const additional = nextPrice - baseline;
       const formatSignedCurrency = (v) => v === 0
         ? `${CONFIG.currency}0`
@@ -1771,6 +1775,8 @@
       const phaseStartTimeRef = useRef(Date.now());
       const sampledForRoundRef = useRef(null);
       const sampledForPriceRoundRef = useRef(null);
+      // High-stakes monotonicity log: per-question warning/changed flags (keyed by `price|X`) + full edit log.
+      const highStakeLogRef = useRef({ byKey: {}, editLog: [], startTime: null });
 
       // Warn before unload
       useEffect(() => {
@@ -2003,6 +2009,33 @@
           newChoices = [...priceElicitationChoices, entry];
         }
 
+        // ----- Monotonicity log -----
+        // Did answering this question leave ITS OWN price scale non-monotonic? (migraines: same-X subgroup;
+        // dieter: whole set) — i.e. the exact condition that fires the warning because of this question.
+        const orderedPricesForLog = getOrderedPrices();
+        const groupForLog = isMig
+          ? orderedPricesForLog.map(p => newChoices.find(c => c.price === p && c.X === entry.X)).filter(c => c !== undefined)
+          : orderedPricesForLog.map(p => newChoices.find(c => c.price === p)).filter(c => c !== undefined);
+        const leftInconsistent = hasInconsistentChoices(groupForLog);
+
+        const hsLog = highStakeLogRef.current;
+        if (hsLog.startTime === null) hsLog.startTime = Date.now();
+        const logKey = `${currentPrice}|${entry.X !== undefined ? entry.X : ''}`;
+        if (!hsLog.byKey[logKey]) hsLog.byKey[logKey] = { warningShown: false, changed: false };
+        if (leftInconsistent) hsLog.byKey[logKey].warningShown = true;
+        if (isEditing) {
+          hsLog.byKey[logKey].changed = true;
+          const prevEntry = priceElicitationChoices[existingIndex];
+          hsLog.editLog.push({
+            price: currentPrice,
+            X: entry.X !== undefined ? entry.X : null,
+            from: prevEntry ? prevEntry.choice : null,
+            to: choice,
+            leftInconsistent,
+            t: Date.now() - hsLog.startTime
+          });
+        }
+
         setPriceElicitationChoices(newChoices);
         setPriceElicitationWaitingForSpace(false);
         setPendingPriceChoice(null);
@@ -2042,13 +2075,13 @@
         else setPriceElicitationRound(prev => prev + 1);
       }, [priceElicitationRound]);
 
-      const handleDAGComplete = useCallback((initialDAG, finalDAG, confidence, DAGAlertCount, initialDAGTime, finalDAGTime, confidenceTime) => {
-        setDagData({ initial: initialDAG, final: finalDAG, confidence, alertCount: DAGAlertCount, initialDAGTime, finalDAGTime, confidenceTime });
+      const handleDAGComplete = useCallback((initialDAG, finalDAG, confidence, DAGAlertCount, initialDAGTime, finalDAGTime, confidenceTime, showDetailsViewed) => {
+        setDagData({ initial: initialDAG, final: finalDAG, confidence, alertCount: DAGAlertCount, initialDAGTime, finalDAGTime, confidenceTime, showDetailsViewed });
         setDagCompleted(true);
         setShowDAG(false);
         sendDataToQualtrics('DAG_DATA', {
           initialDAG, finalDAG, confidence, DAGAlertCount,
-          initialDAGTime, finalDAGTime, confidenceTime,
+          initialDAGTime, finalDAGTime, confidenceTime, showDetailsViewed,
           completedAtRound: currentRound
         });
         setCurrentA(null); setCurrentX(null); setCurrentY(null); setDecisionEnabled(false);
@@ -2107,10 +2140,20 @@
           ? history.map(([A, X, Y]) => (X === 1 ? CONFIG.aCost : -CONFIG.aCost) * A + CONFIG.yBonus * Y)
           : history.map(([A, X, Y]) => -CONFIG.aCost * A + CONFIG.yBonus * Y);
 
+        // High-stakes monotonicity log → arrays aligned 1:1 with priceElicitationChoices / highStakeOutcomes.
+        const hsLog = highStakeLogRef.current;
+        const logEntryFor = (c) => hsLog.byKey[`${c.price}|${c.X !== undefined ? c.X : ''}`];
+        const highStakeLog = {
+          warningShown: priceElicitationChoices.map(c => !!(logEntryFor(c) && logEntryFor(c).warningShown)),
+          changed:      priceElicitationChoices.map(c => !!(logEntryFor(c) && logEntryFor(c).changed)),
+          editLog:      hsLog.editLog
+        };
+        console.log('[highStakeLog]', JSON.stringify(highStakeLog, null, 2));
+
         // High-stakes payment
         const paymentHighStake = isMig
-          ? highStakeOutcomes.map(c => 30 + (c.choice === 1 ? c.price : 0) + (c.Y === 1 ? CONFIG.priceElicitationBonus : 0))
-          : highStakeOutcomes.map(c => 30 + (c.choice === 1 ? -c.price : 0) + (c.Y === 1 ? CONFIG.priceElicitationBonus : 0));
+          ? highStakeOutcomes.map(c => CONFIG.priceElicitationEndowment + (c.choice === 1 ? c.price : 0) + (c.Y === 1 ? CONFIG.priceElicitationBonus : 0))
+          : highStakeOutcomes.map(c => CONFIG.priceElicitationEndowment + (c.choice === 1 ? -c.price : 0) + (c.Y === 1 ? CONFIG.priceElicitationBonus : 0));
 
         sendDataToQualtrics('FINAL_DATA', {
           history,
@@ -2124,12 +2167,14 @@
           initialDAGTime: dagData.initialDAGTime,
           finalDAGTime: dagData.finalDAGTime,
           confidenceTime: dagData.confidenceTime,
+          dagShowDetailsViewed: dagData.showDetailsViewed,
           beliefData,
           rationalInferenceRound10: computeRound10RI(history, CONFIG.causal),
           beliefPaymentRound10: (beliefData && beliefData.beliefPayment) ? beliefData.beliefPayment : null,  // verbal payment from the round-10 belief
           priceElicitation: priceElicitationChoices,
           highStakeOutcomes,
           paymentHighStake,
+          highStakeLog,
           tracking: getTrackingData()
         });
 
