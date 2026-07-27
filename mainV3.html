@@ -243,7 +243,7 @@
       currentSymbol: null,
       themeColor: 'purple',
       aOnLeftDAG: 1,          // 1 → A on left in DAG; 0 → A on right
-      // Belief elicitation layout (forwarded to beliefV2 iframe)
+      // Belief elicitation layout (forwarded to the belief iframe)
       increasingOrder: 1,     // 1 → Increases column on left; 0 → Decreases on left
       noChangeFirst: 1        // 1 → "No change" on top, options 1-9%→90-100%; 0 → "No change" on bottom, options 90-100%→1-9%
     };
@@ -1150,7 +1150,7 @@
     function DAGIframe({ onComplete, playerName0, playerName1, playerIcon0, nRounds, themeColor }) {
       const iframeRef = useRef(null);
       const isMig = CONFIG.supergame === 'migraines';
-      const dagSrc = 'dagElicitationV3.html';
+      const dagSrc = 'dagElicitationV4.html';
 
       useEffect(() => {
         const handleMessage = (event) => {
@@ -1203,7 +1203,7 @@
     }
 
     // Round-10 rational-inference benchmark (mirrors calcRI.js: first 10 rounds, percentages x100).
-    // Keys are UN-SUFFIXED so beliefV2's lookup rationalInference["causal_"+id] resolves for the
+    // Keys are UN-SUFFIXED so the belief iframe's lookup rationalInference["causal_"+id] resolves for the
     // round-10 questions (AY in the binary game, XY in the 3-variable dieter games).
     function computeRound10RI(history, causal) {
       const h = history.slice(0, 10);
@@ -1277,7 +1277,8 @@
                 beliefPaymentIncentive: 0.5,
                 increasingOrder: CONFIG.increasingOrder,
                 noChangeFirst: CONFIG.noChangeFirst,
-                ...(isMig ? { supergame: 'migraines' } : { order })
+                order,
+                ...(isMig ? { supergame: 'migraines' } : {})
               }
             }, '*');
           }
@@ -1292,7 +1293,7 @@
       return (
         <iframe
           ref={iframeRef}
-          src="beliefV2.html"
+          src="beliefV3.html"
           style={{ width: '100%', height: '100vh', border: 'none' }}
           onLoad={() => {
             if (iframeRef.current && iframeRef.current.contentWindow) {
@@ -1318,7 +1319,8 @@
                   beliefPaymentIncentive: 0.5,
                   increasingOrder: CONFIG.increasingOrder,
                   noChangeFirst: CONFIG.noChangeFirst,
-                  ...(isMig ? { supergame: 'migraines' } : { order })
+                  order,
+                  ...(isMig ? { supergame: 'migraines' } : {})
                 }
               }, '*');
             }
