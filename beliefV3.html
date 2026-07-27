@@ -1367,6 +1367,21 @@
                     </div>
                   )}
 
+                  {/* Migraines counterpart of the dieter explainer above: introduce CraveOn/CraveOff
+                      inline whenever the question wording references them (AY conditional scenarios
+                      without the exo_X gate, and XY scenarios) */}
+                  {skipIntro && isMig &&
+                    ((causalElicit === 'AY' && exoButton !== null && !(CONFIG.exo_X === 0 || CONFIG.exo_X === 1)) || causalElicit === 'XY') && (
+                    <div className="text-gray-700 space-y-3 mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p>This question asks what will happen if your cravings are switched on or off by one of these two medicines:</p>
+                      <ul className="list-disc list-inside space-y-1 ml-4">
+                        <li><strong>CraveOn</strong> makes you crave <strong>for sure</strong>.</li>
+                        <li><strong>CraveOff</strong> makes you not crave <strong>for sure</strong>.</li>
+                      </ul>
+                      <p>These medicines have <i>no direct effects</i> on how you feel. However, <i>if</i> how you feel is a response of your body to your cravings, you may feel different if you take CraveOn or CraveOff.</p>
+                    </div>
+                  )}
+
                   <div key={walkthroughStep} className="border border-yellow-200 rounded-lg p-4 mb-4 animate-blink">
                     <p className="text-gray-700 text-center text-lg" dangerouslySetInnerHTML={{ __html: walkthroughContent.text }} />
                   </div>
