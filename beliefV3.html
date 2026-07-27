@@ -53,7 +53,15 @@
         gameId = event.data.gameId;
 
         if (event.data.gameConfig) {
-          const qConfig = event.data.gameConfig;
+          // Drop empty-string / NaN values (Qualtrics sends "" for unset embedded data):
+          // they must fall back to supergame defaults, not clobber them
+          const qConfig = {};
+          for (const k in event.data.gameConfig) {
+            const v = event.data.gameConfig[k];
+            if (v === '') continue;
+            if (typeof v === 'number' && isNaN(v)) continue;
+            qConfig[k] = v;
+          }
 
           // Handle supergame first so defaults reset properly
           if (qConfig.supergame) {
@@ -83,9 +91,15 @@
           if (qConfig.themeColor) CONFIG.themeColor = qConfig.themeColor;
           if (qConfig.skipIntro !== undefined) CONFIG.skipIntro = qConfig.skipIntro;
           if (qConfig.forceSkipPieCharts !== undefined) CONFIG.forceSkipPieCharts = qConfig.forceSkipPieCharts;
+          if (qConfig.exo_X !== undefined) {
+            const exoXParsed = parseInt(qConfig.exo_X);
+            CONFIG.exo_X = (exoXParsed === 0 || exoXParsed === 1) ? exoXParsed : null;
+          }
 
+          let mainCausalsProvided = false;
           if (qConfig.mainCausals) {
             CONFIG.mainCausals = qConfig.mainCausals;
+            mainCausalsProvided = true;
           } else {
             const prefix = qConfig.supergame === 'migraines' ? 'mainCausalMigraines' : 'mainCausal';
             if (qConfig[prefix + '1']) {
@@ -93,12 +107,17 @@
               for (let i = 1; qConfig[prefix + i]; i++) {
                 allMetaData.push(qConfig[prefix + i]);
               }
-              if (allMetaData.length > 0) CONFIG.mainCausals = allMetaData;
+              if (allMetaData.length > 0) {
+                CONFIG.mainCausals = allMetaData;
+                mainCausalsProvided = true;
+              }
             }
           }
 
           applySupergameDefaults();
-          applyOrderFilter();
+          // An explicitly-passed scenario list always wins; the order/exo_X filter only
+          // applies to the default set.
+          if (!mainCausalsProvided) applyOrderFilter();
           console.log('Applied config:', CONFIG);
         }
 
@@ -142,7 +161,7 @@
     // supergame: 'dieter' replicates dietersDilemmaBeliefV2.html behavior
     //            'migraines' replicates confoundedChoiceBeliefV2.html behavior
     const CONFIG = {
-      supergame: 'dieter',         // 'dieter' or 'migraines'
+      supergame: 'migraines',      // 'dieter' or 'migraines'
       playerName0: 'Zerqalase-norm',
       playerName1: 'Zerqalase',
       playerName2Pos: 'energetic',
@@ -160,10 +179,13 @@
       rationalInference: null,
       increasingOrder: 1,
       noChangeFirst: 1,            // 1 → "No change" on top, options 1-9%→90-100% (top→bottom); 0 → "No change" on bottom, options 90-100%→1-9%
-      order: 'AYX',
+      order: 'AY',
       themeColor: 'purple',
       skipIntro: false,
       forceSkipPieCharts: false,  // when true (set by parent), always skip pie-chart elicitation
+      // Exogenous X gate (migraines only): null → full scenario set; 0/1 → only the AY belief
+      // conditional on X == exo_X (AY0 or AY1) is elicited
+      exo_X: 1,
       mainCausals: null            // null → use supergame default
     };
 
@@ -193,8 +215,7 @@
         { causalElicit: "XY", exoButton: null, id: "XY" }
       ],
       [
-        { causalElicit: "YX", exoButton: 0, id: "YX0" },
-        { causalElicit: "YX", exoButton: 1, id: "YX1" }
+        { causalElicit: "YX", exoButton: null, id: "YX" }
       ],
       [
         { causalElicit: "XA", exoButton: null, id: "XA" }
@@ -214,16 +235,25 @@
 
     function applyOrderFilter() {
       if (CONFIG.order === 'AY') {
-        CONFIG.mainCausals = [{ causalElicit: "AY", exoButton: null, id: "AY" }];
+        // Migraines + exo_X set: the single AY belief conditional on X == exo_X (AY0/AY1);
+        // otherwise the unconditioned AY belief
+        if (CONFIG.supergame === 'migraines' && (CONFIG.exo_X === 0 || CONFIG.exo_X === 1)) {
+          CONFIG.mainCausals = [{ causalElicit: "AY", exoButton: CONFIG.exo_X, id: "AY" + CONFIG.exo_X }];
+        } else {
+          CONFIG.mainCausals = [{ causalElicit: "AY", exoButton: null, id: "AY" }];
+        }
       }
     }
 
-    // Allow standalone testing: ?supergame=migraines or ?supergame=dieter
+    // Allow standalone testing: ?supergame=migraines or ?supergame=dieter, ?exo_X=0 or ?exo_X=1
     try {
-      const urlSupergame = new URLSearchParams(window.location.search).get('supergame');
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlSupergame = urlParams.get('supergame');
       if (urlSupergame === 'migraines' || urlSupergame === 'dieter') {
         CONFIG.supergame = urlSupergame;
       }
+      const urlExoX = urlParams.get('exo_X');
+      if (urlExoX === '0' || urlExoX === '1') CONFIG.exo_X = parseInt(urlExoX);
     } catch (e) {}
 
     // Apply defaults for standalone testing
@@ -980,6 +1010,15 @@
 
       if (isMig) {
         // ---- Migraines (confoundedChoiceBeliefV2) wording ----
+        // AY conditioning clause: with exo_X set, the craving state is a plain fact
+        // ("Suppose you are craving"); otherwise it is induced by CraveOn/CraveOff.
+        const exoXSet = CONFIG.exo_X === 0 || CONFIG.exo_X === 1;
+        const craveClause = (exo) => exoXSet
+          ? `Suppose you are <strong>${exo === 1 ? 'craving' : 'not craving'}</strong>, so ${exo === 1 ? `you get ${currency}${aCost}` : `it costs you ${currency}${aCost}`} if you drink ${playerName0}.`
+          : `Suppose you are required to take ${exo === 1 ? 'CraveOn' : 'CraveOff'} which makes you <strong>${exo === 1 ? 'crave' : 'not crave'}</strong>, so ${exo === 1 ? `you get ${currency}${aCost}` : `it costs you ${currency}${aCost}`} if you drink ${playerName0}.`;
+        const craveClauseIntro = (exo) => exoXSet
+          ? `In this scenario, you are <strong>${exo === 1 ? 'craving' : 'not craving'}</strong>, so ${exo === 1 ? `you get ${currency}${aCost}` : `it costs you ${currency}${aCost}`} if you drink ${playerName0}...`
+          : `In this scenario, you are required to take ${exo === 1 ? 'CraveOn' : 'CraveOff'} which makes you <strong>${exo === 1 ? 'crave' : 'not crave'}</strong>, so ${exo === 1 ? `you get ${currency}${aCost}` : `it costs you ${currency}${aCost}`} if you drink ${playerName0}...`;
         return {
           AX: {
             walkthroughStep0: exoButton === null
@@ -1005,20 +1044,20 @@
           AY: {
             walkthroughStep0: exoButton === null
               ? null
-              : `In this scenario, you are required to take ${exoButton === 1 ? 'CraveOn' : 'CraveOff'} which makes you <strong>${exoButton === 1 ? 'crave' : 'not crave'}</strong>, so ${exoButton === 1 ? `you get ${currency}${aCost}` : `it costs you ${currency}${aCost}`} if you drink ${playerName0}...`,
+              : craveClauseIntro(exoButton),
             walkthroughStep1: `Report how <strong>your choice to drink ${playerName0}</strong>...`,
             walkthroughStep2: `...affects <strong>how you feel</strong>.`,
             walkthroughHighlight: { step0: 'X', step1: 'A', step2: ['A', 'Y'] },
             causePanel: 'A', outcomePanel: 'Y',
             pie1Question: exoButton === null
-              ? `What is the chance that you feel <strong>${playerName2Pos}</strong> if you must <strong>not</strong> drink ${playerName0}?`
-              : `Suppose you are required to take ${exoButton === 1 ? 'CraveOn' : 'CraveOff'} which makes you <strong>${exoButton === 1 ? 'crave' : 'not crave'}</strong>, so ${exoButton === 1 ? `you get ${currency}${aCost}` : `it costs you ${currency}${aCost}`} if you drink ${playerName0}.<br>What is the chance that you feel <strong>${playerName2Pos}</strong> if you must <strong>not</strong> drink ${playerName0}?`,
+              ? `What is the chance that you feel <strong>${playerName2Neg}</strong> if you must <strong>not</strong> drink ${playerName0}?`
+              : `${craveClause(exoButton)}<br>What is the chance that you feel <strong>${playerName2Neg}</strong> if you must <strong>not</strong> drink ${playerName0}?`,
             pie2Question: exoButton === null
-              ? `What is the chance that you feel <strong>${playerName2Pos}</strong> if you must <strong>drink</strong> ${playerName0}?`
-              : `Suppose you are required to take ${exoButton === 1 ? 'CraveOn' : 'CraveOff'} which makes you <strong>${exoButton === 1 ? 'crave' : 'not crave'}</strong>, so ${exoButton === 1 ? `you get ${currency}${aCost}` : `it costs you ${currency}${aCost}`} if you drink ${playerName0}.<br>What is the chance that you feel <strong>${playerName2Pos}</strong> if you must <strong>drink</strong> ${playerName0}?`,
+              ? `What is the chance that you feel <strong>${playerName2Neg}</strong> if you must <strong>drink</strong> ${playerName0}?`
+              : `${craveClause(exoButton)}<br>What is the chance that you feel <strong>${playerName2Neg}</strong> if you must <strong>drink</strong> ${playerName0}?`,
             verbalQuestion: exoButton === null
-              ? `How does <strong>drinking ${playerName0}</strong> change the chance that you feel <strong>${playerName2Pos}</strong>?`
-              : `Suppose you are required to take ${exoButton === 1 ? 'CraveOn' : 'CraveOff'} which makes you <strong>${exoButton === 1 ? 'crave' : 'not crave'}</strong>, so ${exoButton === 1 ? `you get ${currency}${aCost}` : `it costs you ${currency}${aCost}`} if you drink ${playerName0}.<br>How does <strong>your choice to drink ${playerName0}</strong> change the chance that you feel <strong>${playerName2Pos}</strong>?`,
+              ? `How does <strong>drinking ${playerName0}</strong> change the chance that you feel <strong>${playerName2Neg}</strong>?`
+              : `${craveClause(exoButton)}<br>How does <strong>your choice to drink ${playerName0}</strong> change the chance that you feel <strong>${playerName2Neg}</strong>?`,
             pie1Color: themeHex, pie2Color: themeHex
           },
           XY: {
@@ -1030,25 +1069,33 @@
             walkthroughHighlight: { step0: 'A', step1: 'X', step2: ['X', 'Y'] },
             causePanel: 'X', outcomePanel: 'Y',
             pie1Question: exoButton === null
-              ? `What is the chance that you feel <strong>${playerName2Pos}</strong> if you are <strong>not craving</strong>?`
-              : `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}. Immediately after, you are required to take CraveOff which makes you <strong>not crave</strong>, so it costs you ${currency}${aCost} if you drink ${playerName0}.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
+              ? `What is the chance that you feel <strong>${playerName2Neg}</strong> if you are <strong>not craving</strong>?`
+              : `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}. Immediately after, you are required to take CraveOff which makes you <strong>not crave</strong>, so it costs you ${currency}${aCost} if you drink ${playerName0}.<br>What is the chance that you feel <strong>${playerName2Neg}</strong>?`,
             pie2Question: exoButton === null
-              ? `What is the chance that you feel <strong>${playerName2Pos}</strong> if you are <strong>craving</strong>?`
-              : `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}. Immediately after, you are required to take CraveOn which makes you <strong>crave</strong>, so you get ${currency}${aCost} if you drink ${playerName0}.<br>What is the chance that you feel <strong>${playerName2Pos}</strong>?`,
+              ? `What is the chance that you feel <strong>${playerName2Neg}</strong> if you are <strong>craving</strong>?`
+              : `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}. Immediately after, you are required to take CraveOn which makes you <strong>crave</strong>, so you get ${currency}${aCost} if you drink ${playerName0}.<br>What is the chance that you feel <strong>${playerName2Neg}</strong>?`,
             verbalQuestion: exoButton === null
-              ? `Suppose that you make choices about whether to consume the drink as before.<br>How does being <strong>craving</strong> instead of <strong>not craving</strong> (due to taking CraveOn rather than CraveOff) change the chance that you feel <strong>${playerName2Pos}</strong>?`
-              : `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}.<br>How does being <strong>craving</strong> instead of <strong>not craving</strong> (due to taking CraveOn rather than CraveOff) change the chance that you feel <strong>${playerName2Pos}</strong>?`,
+              ? `Suppose that you make choices about whether to consume the drink as before.<br>How does being <strong>craving</strong> instead of <strong>not craving</strong> (due to taking CraveOn rather than CraveOff) change the chance that you feel <strong>${playerName2Neg}</strong>?`
+              : `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}.<br>How does being <strong>craving</strong> instead of <strong>not craving</strong> (due to taking CraveOn rather than CraveOff) change the chance that you feel <strong>${playerName2Neg}</strong>?`,
             pie1Color: themeHex, pie2Color: themeHex
           },
           YX: {
-            walkthroughStep0: `In this scenario, you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0} ...`,
-            walkthroughStep1: `Report how <strong>the way you feel</strong> (due to taking ${playerName2PosExo} rather than ${playerName2NegExo})...`,
+            walkthroughStep0: exoButton === null
+              ? `In this scenario, you make choices about whether to consume the drink as before...`
+              : `In this scenario, you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0} ...`,
+            walkthroughStep1: `Report how <strong>the way you feel</strong> (due to taking ${playerName2NegExo} rather than ${playerName2PosExo})...`,
             walkthroughStep2: `...affects your <strong>craving for ${playerName0}</strong>.`,
             walkthroughHighlight: { step0: 'A', step1: 'Y', step2: ['Y', 'X'] },
             causePanel: 'Y', outcomePanel: 'X',
-            pie1Question: `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}. Immediately after, you are required to take ${playerName2NegExo} which makes you feel <strong>${playerName2Neg}</strong>.<br>What is the chance that your <strong>${playerName1} level is normal</strong>?`,
-            pie2Question: `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}. Immediately after, you are required to take ${playerName2PosExo} which makes you feel <strong>${playerName2Pos}</strong>.<br>What is the chance that your <strong>${playerName1} level is normal</strong>?`,
-            verbalQuestion: `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}.<br>How does being <strong>${playerName2Pos}</strong> instead of <strong>${playerName2Neg}</strong> (due to taking ${playerName2PosExo} rather than ${playerName2NegExo}) change the chance that you are <strong>craving</strong>?`,
+            pie1Question: exoButton === null
+              ? `Suppose you are required to take ${playerName2PosExo} which makes you feel <strong>${playerName2Pos}</strong>.<br>What is the chance that you are <strong>craving</strong>?`
+              : `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}. Immediately after, you are required to take ${playerName2PosExo} which makes you feel <strong>${playerName2Pos}</strong>.<br>What is the chance that your <strong>${playerName1} level is normal</strong>?`,
+            pie2Question: exoButton === null
+              ? `Suppose you are required to take ${playerName2NegExo} which makes you feel <strong>${playerName2Neg}</strong>.<br>What is the chance that you are <strong>craving</strong>?`
+              : `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}. Immediately after, you are required to take ${playerName2NegExo} which makes you feel <strong>${playerName2Neg}</strong>.<br>What is the chance that your <strong>${playerName1} level is normal</strong>?`,
+            verbalQuestion: exoButton === null
+              ? `Suppose that you make choices about whether to consume the drink as before.<br>How does being <strong>${playerName2Neg}</strong> instead of <strong>${playerName2Pos}</strong> (due to taking ${playerName2NegExo} rather than ${playerName2PosExo}) change the chance that you are <strong>craving</strong>?`
+              : `Suppose you must ${exoButton === 1 ? '<strong>drink</strong>' : '<strong>not</strong> drink'} ${playerName0}.<br>How does being <strong>${playerName2Neg}</strong> instead of <strong>${playerName2Pos}</strong> (due to taking ${playerName2NegExo} rather than ${playerName2PosExo}) change the chance that you are <strong>craving</strong>?`,
             pie1Color: themeHex, pie2Color: themeHex
           },
           XA: {
