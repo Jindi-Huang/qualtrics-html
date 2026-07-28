@@ -115,9 +115,10 @@
           }
 
           applySupergameDefaults();
-          // An explicitly-passed scenario list always wins; the order/exo_X filter only
-          // applies to the default set.
-          if (!mainCausalsProvided) applyOrderFilter();
+          // Precedence: an explicitly-passed order applies the AY filter even over a passed
+          // scenario list; a passed list without an order is used as-is (the default order
+          // must not clobber it).
+          if (qConfig.order !== undefined || !mainCausalsProvided) applyOrderFilter();
           console.log('Applied config:', CONFIG);
         }
 
