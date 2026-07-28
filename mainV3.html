@@ -1937,13 +1937,18 @@
         setCurrentA(A);
 
         if (isMig) {
-          // Migraines: X+Y were sampled at round start; just transition to outcome after a brief reveal
-          const result = pendingResult || simulateRound(A);
+          // Migraines: X was sampled and shown at round start. Y is decided only now, after the
+          // choice — causal chain (causal=1) draws Y | A; collider (causal=0) keeps the Y that
+          // was drawn jointly with X at round start (A does not enter that DGP).
+          const pre = pendingResult || simulateRound(A);
+          const Y = Number(CONFIG.causal) === 1
+            ? (Math.random() < (A === 1 ? CONFIG.pY_A : CONFIG.pY_a) ? 1 : 0)
+            : pre.Y;
           setTimeout(() => {
             phaseStartTimeRef.current = Date.now();
             setPhase('outcome');
-            setCurrentY(result.Y);
-            setHistory(prev => [...prev, [A, result.X, result.Y]]);
+            setCurrentY(Y);
+            setHistory(prev => [...prev, [A, pre.X, Y]]);
             setWaitingForSpace('nextRound');
           }, 1200);
           return;
@@ -2207,10 +2212,15 @@
       if (phase === 'complete' && history.length === CONFIG.totalRounds && priceElicitationChoices.length === (isMig ? getHSTotalRounds() : CONFIG.priceElicitationPrices.length) && !dataSentRef.current) {
         dataSentRef.current = true;
 
-        // High-stakes outcomes: migraines reuses sampled X/Y from each round; dieter simulates fresh
+        // High-stakes outcomes: migraines keeps the X shown in each round, but Y is decided by
+        // the DGP given the final choice — causal chain (causal=1) draws Y | choice; collider
+        // (causal=0) reuses the Y drawn jointly with X. Dieter simulates fresh.
         const highStakeOutcomes = priceElicitationChoices.map(c => {
           if (isMig && (c.X === 0 || c.X === 1) && (c.Y === 0 || c.Y === 1)) {
-            return { price: c.price, choice: c.choice, X: c.X, Y: c.Y };
+            const Y = Number(CONFIG.causal) === 1
+              ? (Math.random() < (c.choice === 1 ? CONFIG.pY_A : CONFIG.pY_a) ? 1 : 0)
+              : c.Y;
+            return { price: c.price, choice: c.choice, X: c.X, Y };
           }
           const result = simulateRound(c.choice);
           return { price: c.price, choice: c.choice, X: result.X, Y: result.Y };
