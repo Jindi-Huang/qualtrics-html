@@ -2363,11 +2363,12 @@
           if (phase === 'decision' && currentX !== null && decisionEnabled) {
             return (
               <>
-                Your Decision: Will you drink {CONFIG.playerName0}?
-                <br />
-                {currentX === 1
-                  ? `You get ${CONFIG.currency}${CONFIG.aCost} for consuming the drink`
-                  : `You pay ${CONFIG.currency}${CONFIG.aCost} for consuming the drink`}
+                <span className="block text-sm">Your Decision: Will you drink {CONFIG.playerName0}?</span>
+                <span className="block text-sm">
+                  {currentX === 1
+                    ? `(You get ${CONFIG.currency}${CONFIG.aCost} for consuming the drink)`
+                    : `(You pay ${CONFIG.currency}${CONFIG.aCost} for consuming the drink)`}
+                </span>
               </>
             );
           }
@@ -2447,6 +2448,9 @@
         ? (currentRound === 1 && phase === 'decision' && decisionEnabled)
         : (currentRound === 1 && phase === 'decision');
 
+      // No-decision round (exo_X gate): hide the drink price on the disabled buttons
+      const inNoDecisionRound = isMig && getExoX() !== null && currentX !== null && currentX !== getExoX();
+
       return (
         <div className="min-h-screen bg-white px-4 pt-0 pb-4">
           <div className="max-w-6xl mx-auto">
@@ -2486,7 +2490,7 @@
                     disabled={phase !== 'decision' || !decisionEnabled || currentA !== null}
                     isFirstRound={currentRound === 1 && decisionEnabled}
                     selectedChoice={currentA}
-                    X={currentX}
+                    X={inNoDecisionRound ? null : currentX}
                   />
                 ) : null}
               />
