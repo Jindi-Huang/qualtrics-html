@@ -41,7 +41,15 @@
         gameId = event.data.gameId;
 
         if (event.data.gameConfig) {
-          const qConfig = event.data.gameConfig;
+          // Drop empty-string / NaN values (Qualtrics sends "" for unset embedded data):
+          // they must fall back to defaults, not clobber them
+          const qConfig = {};
+          for (const k in event.data.gameConfig) {
+            const v = event.data.gameConfig[k];
+            if (v === '') continue;
+            if (typeof v === 'number' && isNaN(v)) continue;
+            qConfig[k] = v;
+          }
           if (qConfig.supergame) CONFIG.supergame = qConfig.supergame;
           if (qConfig.experiment !== undefined) CONFIG.experiment = qConfig.experiment;
           if (qConfig.currency) CONFIG.currency = qConfig.currency;
@@ -116,7 +124,7 @@
     // supergame: 'dieter' → mirrors dieterInstructionsV3.html
     //            'migraines' → mirrors counfoundedChoiceInstructionsV2.html
     const CONFIG = {
-      supergame: 'dieter',
+      supergame: 'migraines',
       experiment: 'EndogDieterBinary',  // 'EndogDieterRO' triggers Y-before-X reveal order; 'EndogDieterBinary' adds the BioClip trial page
       currency: '$',
       basePay: 2.00,
@@ -144,7 +152,8 @@
       playerIcon0_3: '🍶',
       // Migraines per-drink "negative effect" labels (rendered as "might make you more X")
       playerName2Neg_1: 'tired',
-      playerName2Neg_2: 'foggy'
+      playerName2Neg_2: 'foggy',
+      playerName2Neg_3: 'stressed'
     };
 
     // Allow URL override for standalone testing: ?supergame=migraines or ?supergame=dieter, ?experiment=EndogDieterRO
@@ -163,7 +172,8 @@
       if (CONFIG.supergame === 'migraines') {
         return [
           { drink: CONFIG.playerName0_1, chemical: CONFIG.playerName1_1, color: CONFIG.color_1, icon: CONFIG.playerIcon0_1, effect: `might make you more ${CONFIG.playerName2Neg_1}` },
-          { drink: CONFIG.playerName0_2, chemical: CONFIG.playerName1_2, color: CONFIG.color_2, icon: CONFIG.playerIcon0_2, effect: `might make you more ${CONFIG.playerName2Neg_2}` }
+          { drink: CONFIG.playerName0_2, chemical: CONFIG.playerName1_2, color: CONFIG.color_2, icon: CONFIG.playerIcon0_2, effect: `might make you more ${CONFIG.playerName2Neg_2}` },
+          { drink: CONFIG.playerName0_3, chemical: CONFIG.playerName1_3, color: CONFIG.color_3, icon: CONFIG.playerIcon0_3, effect: `might make you more ${CONFIG.playerName2Neg_3}` }
         ].slice(0, n);
       }
       return [

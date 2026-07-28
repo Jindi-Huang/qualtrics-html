@@ -2358,7 +2358,17 @@
             );
           }
           if (phase === 'decision' && currentX !== null && !decisionEnabled) return `Morning: ${currentX === 1 ? 'Craving' : 'NO craving'}`;
-          if (phase === 'decision' && currentX !== null && decisionEnabled) return `Your Decision: Will you drink ${CONFIG.playerName0}?`;
+          if (phase === 'decision' && currentX !== null && decisionEnabled) {
+            return (
+              <>
+                Your Decision: Will you drink {CONFIG.playerName0}?
+                <br />
+                {currentX === 1
+                  ? `You get ${CONFIG.currency}${CONFIG.aCost} for consuming the drink`
+                  : `You pay ${CONFIG.currency}${CONFIG.aCost} for consuming the drink`}
+              </>
+            );
+          }
         } else {
           if (phase === 'decision') return `Morning: Will you drink ${CONFIG.playerName0}?`;
           if (phase === 'chemical') {
