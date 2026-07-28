@@ -1191,7 +1191,7 @@
               iframeRef.current.contentWindow.postMessage({
                 type: 'INIT',
                 gameConfig: {
-                  playerName0, playerName1, playerIcon0, themeColor,
+                  playerName0, playerName1, playerIcon0, nRounds, themeColor,
                   aOnLeftDAG: CONFIG.aOnLeftDAG,
                   ...(isMig ? { supergame: 'migraines' } : {})
                 }
@@ -1267,6 +1267,7 @@
               type: 'INIT',
               gameConfig: {
                 playerName0, playerName1, playerName2Pos, playerName2Neg,
+                playerIcon0: CONFIG.playerIcon0,
                 aCost, currency, themeColor,
                 skipIntro: true,
                 forceSkipPieCharts: true,
@@ -1309,6 +1310,7 @@
                 type: 'INIT',
                 gameConfig: {
                   playerName0, playerName1, playerName2Pos, playerName2Neg,
+                  playerIcon0: CONFIG.playerIcon0,
                   aCost, currency, themeColor,
                   skipIntro: true,
                   forceSkipPieCharts: true,
