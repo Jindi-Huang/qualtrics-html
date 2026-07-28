@@ -1435,7 +1435,7 @@
 
       // Range-of-payment bullet
       const rangeBullet = isMig
-        ? `Consuming the drink yields an additional payment that ranges from ${CONFIG.currency}0 to ${CONFIG.currency}${CONFIG.priceElicitationPrices[CONFIG.priceElicitationPrices.length - 1]}.`
+        ? `Consuming the drink also yields an additional payment (which can be positive or negative) that varies across choices. Together with the baseline payment above, your total payment for consuming the drink ranges from ${CONFIG.currency}0 to ${CONFIG.currency}${CONFIG.priceElicitationPrices[CONFIG.priceElicitationPrices.length - 1]}.`
         : `The price of the drink will vary from ${CONFIG.currency}0 to ${CONFIG.currency}${CONFIG.priceElicitationPrices[CONFIG.priceElicitationPrices.length - 1]} across these choices`;
 
       // "What doesn't change" first bullet
@@ -1457,11 +1457,17 @@
                   <ul className="ml-6 mt-1 space-y-1 list-disc">
                     <li>You will be given <strong>{CONFIG.currency}{CONFIG.priceElicitationEndowment}</strong> as endowment.</li>
                     <li>The bonus for feeling {CONFIG.playerName2Pos} increases from {CONFIG.currency}{CONFIG.yBonus} to <strong>{CONFIG.currency}{CONFIG.priceElicitationBonus}</strong>.</li>
-                    {isMig && getExoX() !== 0 && (
-                      <li>If you have a craving, you get <strong>{CONFIG.currency}{CONFIG.migrainesBaseline}</strong> instead of {CONFIG.currency}{CONFIG.aCost} for consuming the drink.</li>
+                    {isMig && getExoX() === 1 && (
+                      <li>You get <strong>{CONFIG.currency}{CONFIG.migrainesBaseline}</strong> instead of {CONFIG.currency}{CONFIG.aCost} for consuming the drink.</li>
                     )}
-                    {isMig && getExoX() !== 1 && (
-                      <li>If you don't have a craving, you pay <strong>{CONFIG.currency}{CONFIG.migrainesBaseline}</strong> instead of {CONFIG.currency}{CONFIG.aCost} for consuming the drink.</li>
+                    {isMig && getExoX() === 0 && (
+                      <li>You pay <strong>{CONFIG.currency}{CONFIG.migrainesBaseline}</strong> instead of {CONFIG.currency}{CONFIG.aCost} for consuming the drink.</li>
+                    )}
+                    {isMig && getExoX() === null && (
+                      <>
+                        <li>If you have a craving, you get <strong>{CONFIG.currency}{CONFIG.migrainesBaseline}</strong> instead of {CONFIG.currency}{CONFIG.aCost} for consuming the drink.</li>
+                        <li>If you don't have a craving, you pay <strong>{CONFIG.currency}{CONFIG.migrainesBaseline}</strong> instead of {CONFIG.currency}{CONFIG.aCost} for consuming the drink.</li>
+                      </>
                     )}
                     <li>{rangeBullet}</li>
                   </ul>
