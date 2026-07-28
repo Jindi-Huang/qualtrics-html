@@ -2380,7 +2380,7 @@
               </>
             );
           }
-          if (phase === 'decision' && currentX !== null && !decisionEnabled) return `Morning: ${currentX === 1 ? 'Craving' : 'NO craving'}`;
+          if (phase === 'decision' && currentX !== null && !decisionEnabled) return `Morning: ${currentX === 1 ? `You have a craving for ${CONFIG.playerName0}` : `You have NO craving for ${CONFIG.playerName0}`}`;
           if (phase === 'decision' && currentX !== null && decisionEnabled) {
             return (
               <>
