@@ -1010,15 +1010,12 @@
 
       if (isMig) {
         // ---- Migraines (confoundedChoiceBeliefV2) wording ----
-        // AY conditioning clause: with exo_X set, the craving state is a plain fact
-        // ("Suppose you are craving"); otherwise it is induced by CraveOn/CraveOff.
-        const exoXSet = CONFIG.exo_X === 0 || CONFIG.exo_X === 1;
-        const craveClause = (exo) => exoXSet
-          ? `Suppose you are <strong>${exo === 1 ? 'craving' : 'not craving'}</strong>, so ${exo === 1 ? `you get ${currency}${aCost}` : `it costs you ${currency}${aCost}`} if you drink ${playerName0}.`
-          : `Suppose you are required to take ${exo === 1 ? 'CraveOn' : 'CraveOff'} which makes you <strong>${exo === 1 ? 'crave' : 'not crave'}</strong>, so ${exo === 1 ? `you get ${currency}${aCost}` : `it costs you ${currency}${aCost}`} if you drink ${playerName0}.`;
-        const craveClauseIntro = (exo) => exoXSet
-          ? `In this scenario, you are <strong>${exo === 1 ? 'craving' : 'not craving'}</strong>, so ${exo === 1 ? `you get ${currency}${aCost}` : `it costs you ${currency}${aCost}`} if you drink ${playerName0}...`
-          : `In this scenario, you are required to take ${exo === 1 ? 'CraveOn' : 'CraveOff'} which makes you <strong>${exo === 1 ? 'crave' : 'not crave'}</strong>, so ${exo === 1 ? `you get ${currency}${aCost}` : `it costs you ${currency}${aCost}`} if you drink ${playerName0}...`;
+        // AY conditioning clause: the craving state is induced by CraveOn/CraveOff
+        // (used for all conditions, including the exo_X-gated order 'AY' ones)
+        const craveClause = (exo) =>
+          `Suppose you are required to take ${exo === 1 ? 'CraveOn' : 'CraveOff'} which makes you <strong>${exo === 1 ? 'crave' : 'not crave'}</strong>, so ${exo === 1 ? `you get ${currency}${aCost}` : `it costs you ${currency}${aCost}`} if you drink ${playerName0}.`;
+        const craveClauseIntro = (exo) =>
+          `In this scenario, you are required to take ${exo === 1 ? 'CraveOn' : 'CraveOff'} which makes you <strong>${exo === 1 ? 'crave' : 'not crave'}</strong>, so ${exo === 1 ? `you get ${currency}${aCost}` : `it costs you ${currency}${aCost}`} if you drink ${playerName0}...`;
         return {
           AX: {
             walkthroughStep0: exoButton === null
@@ -1369,9 +1366,9 @@
 
                   {/* Migraines counterpart of the dieter explainer above: introduce CraveOn/CraveOff
                       inline whenever the question wording references them (AY conditional scenarios
-                      without the exo_X gate, and XY scenarios) */}
+                      and XY scenarios) */}
                   {skipIntro && isMig &&
-                    ((causalElicit === 'AY' && exoButton !== null && !(CONFIG.exo_X === 0 || CONFIG.exo_X === 1)) || causalElicit === 'XY') && (
+                    ((causalElicit === 'AY' && exoButton !== null) || causalElicit === 'XY') && (
                     <div className="text-gray-700 space-y-3 mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                       <p>This question asks what will happen if your cravings are switched on or off by one of these two medicines:</p>
                       <ul className="list-disc list-inside space-y-1 ml-4">

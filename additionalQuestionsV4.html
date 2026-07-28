@@ -46,7 +46,15 @@
         gameId = event.data.gameId;
 
         if (event.data.gameConfig) {
-          const qConfig = event.data.gameConfig;
+          // Drop empty-string / NaN values (Qualtrics sends "" for unset embedded data):
+          // they must fall back to defaults, not clobber them
+          const qConfig = {};
+          for (const k in event.data.gameConfig) {
+            const v = event.data.gameConfig[k];
+            if (v === '') continue;
+            if (typeof v === 'number' && isNaN(v)) continue;
+            qConfig[k] = v;
+          }
           if (qConfig.playerName0) CONFIG.playerName0 = qConfig.playerName0;
           if (qConfig.playerName1) CONFIG.playerName1 = qConfig.playerName1;
           if (qConfig.playerName2Pos) CONFIG.playerName2Pos = qConfig.playerName2Pos;
@@ -64,6 +72,10 @@
           if (qConfig.order) CONFIG.order = qConfig.order;
           if (qConfig.themeColor) CONFIG.themeColor = qConfig.themeColor;
           if (qConfig.supergame) CONFIG.supergame = qConfig.supergame;
+          if (qConfig.exo_X !== undefined) {
+            const exoXParsed = parseInt(qConfig.exo_X);
+            CONFIG.exo_X = (exoXParsed === 0 || exoXParsed === 1) ? exoXParsed : null;
+          }
           if (qConfig.aCost !== undefined) CONFIG.aCost = qConfig.aCost;
           if (qConfig.currency) CONFIG.currency = qConfig.currency;
           console.log('Applied config:', CONFIG);
@@ -126,9 +138,10 @@
       gameVersionsDescriptionOrderDieter2: 'B',
       gameVersionsDescriptionOrderMigraines1: 'A',
       gameVersionsDescriptionOrderMigraines2: 'B',
-      order: 'AYX',  // 'AXY' / 'AYX' show all questions, 'AY' hides X-related questions
+      order: 'AY',   // 'AXY' / 'AYX' show all questions, 'AY' hides X-related questions (dieter) / gates Q1-Q2 via exo_X (migraines)
       themeColor: 'purple',  // Theme color: 'blue', 'purple', 'teal', 'yellow'
-      supergame: 'dieter',    // 'dieter' (current behavior) or 'migraines'
+      supergame: 'migraines', // 'dieter' or 'migraines'
+      exo_X: 1,               // migraines + order 'AY' only: 0/1 → only the matching conditional drink question (Q1/Q2) is asked
       aCost: 0.05,           // Per-round drinking cost (used in migraines Q1 framing)
       currency: '$'          // Currency symbol
     };
@@ -266,7 +279,8 @@
         q2: null,
         q3: null,
         q4: null,
-        q5: null
+        q5: null,
+        q6: null
       });
       const [page, setPage] = useState(1);
       const [error, setError] = useState('');
@@ -310,7 +324,7 @@
       const handleSubmit = () => {
         setSubmitted(true);
         // Convert to numerical indices (0-9)
-        const pctIndex = (val) => PERCENTAGE_OPTIONS.indexOf(val);
+        const pctIndex = (val) => val === null || val === undefined ? null : PERCENTAGE_OPTIONS.indexOf(val);
 
         const isMig = CONFIG.supergame === 'migraines';
         sendDataToQualtrics('QUESTIONS_COMPLETE', {
@@ -323,6 +337,8 @@
           dieterSameNo: isMig ? null : pctIndex(answers.q4),
           migrainesPY: isMig ? pctIndex(answers.q4) : null,
           dieterSameYes: isMig ? null : pctIndex(answers.q5),
+          migrainesPY_A: isMig ? pctIndex(answers.q5) : null,
+          migrainesPY_a: isMig ? pctIndex(answers.q6) : null,
           dieterVersion: null,
           migrainesVersion: null,
           ownWords: null,
@@ -343,25 +359,41 @@
       const isMig = CONFIG.supergame === 'migraines';
       const aCostStr = `${CONFIG.currency}${Number(CONFIG.aCost).toFixed(2)}`;
 
+      // Migraines + order 'AY': the exo_X gate means only one craving state ever involved a
+      // decision, so only the matching conditional drink question (Q1/Q2) is asked.
+      const exoX = (isMig && isAYOrder && (CONFIG.exo_X === 0 || CONFIG.exo_X === 1)) ? CONFIG.exo_X : null;
+      const showQ1 = !(isMig && exoX === 0);
+      const showQ2 = isMig ? exoX !== 1 : !isAYOrder;
+
       const page1Questions = [
-        {
+        ...(showQ1 ? [{
           key: 'q1',
           content: isMig ? (
-            <>
-              Whenever you were <strong>craving the drink</strong> (so you get {aCostStr} for consuming it), how often did you drink <strong>{CONFIG.playerName0}</strong> <DrinkIcon className={`inline-block w-4 h-4 align-middle mx-1 ${getThemeClassesLocal().iconColor}`} drinkName={CONFIG.playerName0} /> <span style={{color: '#64748b', fontStyle: 'italic'}}>(what percentage of the weeks)</span>?
-            </>
+            // Gated (order 'AY' + exo_X 1): every decision week is a craving week, so the
+            // craving-conditional clause is redundant
+            exoX === 1 ? (
+              <>
+                How often did you drink <strong>{CONFIG.playerName0}</strong> <DrinkIcon className={`inline-block w-4 h-4 align-middle mx-1 ${getThemeClassesLocal().iconColor}`} drinkName={CONFIG.playerName0} /> <span style={{color: '#64748b', fontStyle: 'italic'}}>(what percentage of the weeks)</span>?
+              </>
+            ) : (
+              <>
+                Whenever you were <strong>craving the drink</strong> (so you get {aCostStr} for consuming it), how often did you drink <strong>{CONFIG.playerName0}</strong> <DrinkIcon className={`inline-block w-4 h-4 align-middle mx-1 ${getThemeClassesLocal().iconColor}`} drinkName={CONFIG.playerName0} /> <span style={{color: '#64748b', fontStyle: 'italic'}}>(what percentage of the weeks)</span>?
+              </>
+            )
           ) : (
             <>
               How often did <strong>you drink {CONFIG.playerName0}</strong> <DrinkIcon className={`inline-block w-4 h-4 align-middle mx-1 ${getThemeClassesLocal().iconColor}`} drinkName={CONFIG.playerName0} /> <span style={{color: '#64748b', fontStyle: 'italic'}}>(what percentage of the weeks)</span>?
             </>
           )
-        },
-        ...(isAYOrder ? [] : [{
+        }] : []),
+        ...(showQ2 ? [{
           key: 'q2',
           text: isMig
-            ? `Whenever you were <b>not craving the drink</b> (so you pay ${aCostStr} for consuming it), how often did you drink <strong>${CONFIG.playerName0}</strong> <span style="color: #64748b; font-style: italic;">(what percentage of the weeks)</span>?`
+            ? (exoX === 0
+                ? `How often did you drink <strong>${CONFIG.playerName0}</strong> <span style="color: #64748b; font-style: italic;">(what percentage of the weeks)</span>?`
+                : `Whenever you were <b>not craving the drink</b> (so you pay ${aCostStr} for consuming it), how often did you drink <strong>${CONFIG.playerName0}</strong> <span style="color: #64748b; font-style: italic;">(what percentage of the weeks)</span>?`)
             : `How often was your <strong>${CONFIG.playerName1}</strong> level normal <span style="color: #64748b; font-style: italic;">(what percentage of the weeks)</span>?`
-        }]),
+        }] : []),
         {
           key: 'q3',
           text: isMig
@@ -404,6 +436,14 @@
             : `<strong>Whenever you did drink ${CONFIG.playerName0}</strong>, how often did you have a normal ${CONFIG.playerName1} level and feel ${CONFIG.playerName2Pos} at the same time?`
       };
 
+      // Migraines page-2: recalled mood conditional on the drink decision
+      const q5m = {
+        text: `<strong>Whenever you did drink ${CONFIG.playerName0}</strong>, how often did you feel ${CONFIG.playerName2Pos} <span style="color: #64748b; font-style: italic;">(what percentage of those weeks)</span>?`
+      };
+      const q6m = {
+        text: `<strong>Whenever you did NOT drink ${CONFIG.playerName0}</strong>, how often did you feel ${CONFIG.playerName2Pos} <span style="color: #64748b; font-style: italic;">(what percentage of those weeks)</span>?`
+      };
+
       return (
         <div className="min-h-screen bg-white pt-0 pb-10 px-4">
           <div className="max-w-5xl mx-auto">
@@ -442,23 +482,14 @@
 
                   <button
                     onClick={() => {
-                      const required = isMig ? ['q1', 'q2', 'q3', 'q4'] : isAYOrder ? ['q1', 'q3'] : ['q1', 'q2', 'q3'];
-                      if (isMig) {
-                        const unanswered = required.filter(k => answers[k] === null);
-                        if (unanswered.length > 0) {
-                          const nums = unanswered.map(k => k.replace('q', 'Q'));
-                          setError(`Please answer all questions. Missing: ${nums.join(', ')}`);
-                          return;
-                        }
-                        setError('');
-                        handleSubmit();
-                      } else {
-                        handleNextPage(required, 2);
-                      }
+                      const required = isMig
+                        ? [...(showQ1 ? ['q1'] : []), ...(showQ2 ? ['q2'] : []), 'q3', 'q4']
+                        : isAYOrder ? ['q1', 'q3'] : ['q1', 'q2', 'q3'];
+                      handleNextPage(required, 2);
                     }}
                     className={`w-full py-3 px-6 ${getThemeClassesLocal().buttonBg} ${getThemeClassesLocal().buttonHover} text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg`}
                   >
-                    {isMig ? 'Submit' : 'Next'}
+                    Next
                   </button>
                 </div>
               </>
@@ -470,20 +501,36 @@
                   You made decisions about {CONFIG.playerName0} for {CONFIG.nRounds} weeks; please only consider the last {CONFIG.nRoundsAnalysis} weeks when answering these questions.
                 </p>
                 <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
-                <RadioQuestion
-                  questionNumber={isAYOrder ? 3 : 4}
-                  questionText={q4.text}
-                  selectedValue={answers.q4}
-                  onChange={(val) => handleChange('q4', val)}
-                />
-
-                {!isMig && (
-                  <RadioQuestion
-                    questionNumber={isAYOrder ? 4 : 5}
-                    questionText={q5.text}
-                    selectedValue={answers.q5}
-                    onChange={(val) => handleChange('q5', val)}
-                  />
+                {isMig ? (
+                  <>
+                    <RadioQuestion
+                      questionNumber={page1Questions.length + 1}
+                      questionText={q5m.text}
+                      selectedValue={answers.q5}
+                      onChange={(val) => handleChange('q5', val)}
+                    />
+                    <RadioQuestion
+                      questionNumber={page1Questions.length + 2}
+                      questionText={q6m.text}
+                      selectedValue={answers.q6}
+                      onChange={(val) => handleChange('q6', val)}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <RadioQuestion
+                      questionNumber={isAYOrder ? 3 : 4}
+                      questionText={q4.text}
+                      selectedValue={answers.q4}
+                      onChange={(val) => handleChange('q4', val)}
+                    />
+                    <RadioQuestion
+                      questionNumber={isAYOrder ? 4 : 5}
+                      questionText={q5.text}
+                      selectedValue={answers.q5}
+                      onChange={(val) => handleChange('q5', val)}
+                    />
+                  </>
                 )}
 
                 {error && (
@@ -492,7 +539,7 @@
 
                 <button
                   onClick={() => {
-                    const required = isMig ? ['q4'] : ['q4', 'q5'];
+                    const required = isMig ? ['q5', 'q6'] : ['q4', 'q5'];
                     const unanswered = required.filter(k => answers[k] === null);
                     if (unanswered.length > 0) {
                       const nums = unanswered.map(k => k.replace('q', 'Q'));

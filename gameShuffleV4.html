@@ -297,7 +297,15 @@
         gameId = event.data.gameId;
 
         if (event.data.gameConfig) {
-          const qConfig = event.data.gameConfig;
+          // Drop empty-string / NaN values (Qualtrics sends "" for unset embedded data):
+          // they must fall back to defaults, not clobber them
+          const qConfig = {};
+          for (const k in event.data.gameConfig) {
+            const v = event.data.gameConfig[k];
+            if (v === '') continue;
+            if (typeof v === 'number' && isNaN(v)) continue;
+            qConfig[k] = v;
+          }
           if (qConfig.playerName0) CONFIG.playerName0 = qConfig.playerName0;
           if (qConfig.playerName1) CONFIG.playerName1 = qConfig.playerName1;
           if (qConfig.playerIcon0) CONFIG.playerIcon0 = qConfig.playerIcon0;
@@ -314,6 +322,10 @@
           if (qConfig.nRounds !== undefined) CONFIG.nRounds = qConfig.nRounds;
           if (qConfig.themeColor) CONFIG.themeColor = qConfig.themeColor;
           if (qConfig.supergame) CONFIG.supergame = qConfig.supergame;
+          if (qConfig.exo_X !== undefined) {
+            const exoXParsed = parseInt(qConfig.exo_X);
+            CONFIG.exo_X = (exoXParsed === 0 || exoXParsed === 1) ? exoXParsed : null;
+          }
           console.log('Applied config:', CONFIG);
         }
 
@@ -370,7 +382,8 @@
       currency: '$',              // Currency symbol
       order: 'AY',                // Order: 'AXY' or 'AY'
       themeColor: 'purple',       // Theme color: 'blue', 'purple', 'teal', 'yellow'
-      supergame: 'dieter'         // 'dieter' (legacy) or 'migraines' (drop chemical from copy)
+      supergame: 'migraines',     // 'dieter' (legacy) or 'migraines' (drop chemical from copy)
+      exo_X: 1                    // migraines + order 'AY' only: 0/1 → decisions only in that craving state (changes bonus bullets)
     };
 
     // Note: getThemeColorsVanilla() and getDrinkIconSVG() are loaded from shared-icons.js
@@ -422,9 +435,19 @@
           ? `<li>If you feel good, you receive an additional ${CONFIG.currency}${Number(CONFIG.yBonus).toFixed(2)} bonus. If you feel bad, you don't.</li>`
           : `<li>If you feel good at the end of the day, you receive an additional ${CONFIG.currency}${Number(CONFIG.yBonus).toFixed(2)} bonus. If you feel bad, you don't.</li>`;
         if (CONFIG.supergame === 'migraines') {
-          bonusHTML +=
-            `<li>If you have a craving, you get ${CONFIG.currency}${Number(CONFIG.aCost).toFixed(2)} for consuming the drink.</li>` +
-            `<li>If you don't have a craving, you pay ${CONFIG.currency}${Number(CONFIG.aCost).toFixed(2)} for consuming the drink.</li>`;
+          // exo_X gate is only active with order 'AY' (mirrors mainV3's getExoX)
+          const exoX = (CONFIG.order === 'AY' && (CONFIG.exo_X === 0 || CONFIG.exo_X === 1)) ? CONFIG.exo_X : null;
+          if (exoX === 1) {
+            bonusHTML +=
+              `<li>You will only make decisions when you have a craving. In that case, you get ${CONFIG.currency}${Number(CONFIG.aCost).toFixed(2)} for consuming the drink.</li>`;
+          } else if (exoX === 0) {
+            bonusHTML +=
+              `<li>You will only make decisions when you don't have a craving. In that case, you pay ${CONFIG.currency}${Number(CONFIG.aCost).toFixed(2)} for consuming the drink.</li>`;
+          } else {
+            bonusHTML +=
+              `<li>If you have a craving, you get ${CONFIG.currency}${Number(CONFIG.aCost).toFixed(2)} for consuming the drink.</li>` +
+              `<li>If you don't have a craving, you pay ${CONFIG.currency}${Number(CONFIG.aCost).toFixed(2)} for consuming the drink.</li>`;
+          }
         } else {
           bonusHTML +=
             `<li>If you consume the drink, you pay ${CONFIG.currency}${Number(CONFIG.aCost).toFixed(2)} for it.</li>`;

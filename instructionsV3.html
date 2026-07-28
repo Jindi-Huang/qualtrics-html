@@ -736,6 +736,32 @@
         </section>
       );
 
+      // Migraines-only: some participants only decide in one craving state (exo_X gate)
+      const decisionAccessSection = (n) => (
+        <section>
+          <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
+            <PageBadge n={n} />
+            Decisions Vary by Participant
+          </h2>
+          <div className="bg-gray-50 rounded-xl p-4">
+            <p className="text-gray-700 mb-4">
+              Not all participants make decisions in all weeks: some make decisions every week, some only in weeks when they have a craving for the drink, and some only in weeks when they do not.
+            </p>
+            <p className="text-gray-700 mb-4">
+              In weeks when you do not make a decision, the screen will show:
+            </p>
+            <div className="flex justify-center mb-4">
+              <span className="inline-block px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-600 border border-gray-300">
+                You will not make decisions this week.
+              </span>
+            </div>
+            <p className="text-gray-700">
+              If this is the case, you will not make any decision, and you will not see how you feel on that day.
+            </p>
+          </div>
+        </section>
+      );
+
       // Dieter-only: What You Know vs. Don't Know
       const whatYouKnowSection = (n) => (
         <section>
@@ -981,7 +1007,7 @@
         return arr;
       })();
       const pages = isMig
-        ? [setupSection, eachWeekSection, paymentSection(3), twoPossibilitiesSection(4), noteSection(5), surveyStructureSection(6), comprehensionSection]
+        ? [setupSection, eachWeekSection, decisionAccessSection(3), paymentSection(4), twoPossibilitiesSection(5), noteSection(6), surveyStructureSection(7), comprehensionSection]
         : dieterPages;
 
       const instructionCount = pages.length - 1; // last entry is comprehension
