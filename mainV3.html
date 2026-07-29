@@ -2023,14 +2023,14 @@
             setHistory(prev => [...prev, [null, result.X, result.Y]]);
             phaseStartTimeRef.current = Date.now();
             setWaitingForSpace('nextRound');
-          }, 1000);
+          }, 1500);
           return () => clearTimeout(timer);
         }
         const timer = setTimeout(() => {
           setDecisionEnabled(true);
           roundStartTimeRef.current = Date.now();
           phaseStartTimeRef.current = Date.now();
-        }, 1000);
+        }, 1500);
         return () => clearTimeout(timer);
       }, [phase, currentX, decisionEnabled, waitingForSpace, pendingResult, currentRound, isMig]);
 
