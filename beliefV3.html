@@ -1376,7 +1376,10 @@
                         <li><strong>CraveOn</strong> makes you crave <strong>for sure</strong>.</li>
                         <li><strong>CraveOff</strong> makes you not crave <strong>for sure</strong>.</li>
                       </ul>
-                      <p>These medicines have <i>no direct effects</i> on how you feel. However, <i>if</i> how you feel is a response of your body to your cravings, you may feel different if you take CraveOn or CraveOff.</p>
+                      <p>
+                        These medicines have <i>no direct effects</i> on how you feel.
+                        {causalElicit === 'XY' && <> However, <i>if</i> how you feel is a response of your body to your cravings, you may feel different if you take CraveOn or CraveOff.</>}
+                      </p>
                     </div>
                   )}
 
@@ -1519,7 +1522,7 @@
       // Step 1 (X-intervention intro) differs by supergame
       const step1Block = isMig ? (
         <div className="text-gray-700 space-y-4 mb-6 fade-in">
-          <p>Some scenarios ask what will happen if your cravings are switched on or off by one of these two medicines:</p>
+          <p>The question asks what will happen if your cravings are switched on or off by one of these two medicines:</p>
           <ul className="list-disc list-inside space-y-2 ml-4 mb-4">
             <li><strong>CraveOn</strong> makes you crave <strong>for sure</strong>.</li>
             <li><strong>CraveOff</strong> makes you not crave <strong>for sure</strong>.</li>
@@ -1528,12 +1531,24 @@
         </div>
       ) : (
         <div className="text-gray-700 space-y-4 mb-6 fade-in">
-          <p>Some scenarios ask what will happen if your {CONFIG.playerName1} level are set by one of two treatments:</p>
+          <p>The question asks what will happen if your {CONFIG.playerName1} level are set by one of two treatments:</p>
           <ul className="list-disc list-inside space-y-2 ml-4 mb-4">
             <li><strong>{CONFIG.playerName1}-normal-injection</strong> normalizes your {CONFIG.playerName1} level <strong>for sure</strong>.</li>
             <li><strong>{CONFIG.playerName1}-abnormal-injection</strong> makes your {CONFIG.playerName1} levels abnormal <strong>for sure</strong>.</li>
           </ul>
           <p>These treatments have <i>no direct effects</i> on how you feel. However, <i>if</i> how you feel is a response of your body to your {CONFIG.playerName1} level, you may feel different if you receive {CONFIG.playerName1}-normal-injection or {CONFIG.playerName1}-abnormal-injection.</p>
+        </div>
+      );
+
+      // Migraines + order 'AY': same medicine block without the response-mechanism sentence
+      const step1BlockMigAY = (
+        <div className="text-gray-700 space-y-4 mb-6 fade-in">
+          <p>The question asks what will happen if your cravings are switched on or off by one of these two medicines:</p>
+          <ul className="list-disc list-inside space-y-2 ml-4 mb-4">
+            <li><strong>CraveOn</strong> makes you crave <strong>for sure</strong>.</li>
+            <li><strong>CraveOff</strong> makes you not crave <strong>for sure</strong>.</li>
+          </ul>
+          <p>These medicines have <i>no direct effects</i> on how you feel.</p>
         </div>
       );
 
@@ -1588,7 +1603,7 @@
                   Migraines + order 'AY' keeps the CraveOn/CraveOff block, since the AY questions
                   condition on the craving state. */}
               {CONFIG.order !== 'AY' && introStep >= 1 && (CONFIG.order === 'AYX' ? step2Block : step1Block)}
-              {isMig && CONFIG.order === 'AY' && introStep >= 1 && step1Block}
+              {isMig && CONFIG.order === 'AY' && introStep >= 1 && step1BlockMigAY}
               {(CONFIG.order !== 'AY' || isMig) && introStep === 1 && <NextStepButton onClick={handleNextStep} />}
 
               {/* Step 2 — second intervention intro (Y-intervention by default, X-intervention for AYX) */}
