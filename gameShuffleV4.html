@@ -267,6 +267,8 @@
     </div>
   </div>
 
+  <div id="loadingMsg" style="color: #64748b; font-size: 1.2rem; text-align: center; padding-top: 48px;">Loading...</div>
+
   <h2 id="studyCounter" style="color: #1e293b; margin-bottom: 24px; font-size: 1.8rem; text-align: center;"></h2>
   <h1 id="title"></h1>
   <ul id="bonusInfo" style="color: #475569; font-size: 1.2rem; text-align: left; margin: 0 auto 20px auto; max-width: 900px; line-height: 1.6;"></ul>
@@ -643,25 +645,37 @@
       }, { once: true });
     }
 
-    // Start after initialization or timeout
-    const timeout = setTimeout(() => {
-      if (!isInitialized) {
-        console.log('Timeout: starting with default config');
-        if (CONFIG.gameCounter >= 2) {
-          showTransitionScreen(startReveal);
-        } else {
-          startReveal();
-        }
+    // Start after initialization or timeout. Guard against the race where the 3s timeout
+    // starts the flow with default config and a late INIT then arrives: restarting would
+    // stack duplicate click handlers, so a late INIT only re-applies theme and copy in place.
+    let flowStarted = false;
+    function startFlow() {
+      if (flowStarted) {
+        console.log('Late INIT after fallback start: re-applying theme and copy');
+        applyButtonTheme();
+        updateTitle();
+        return;
       }
-    }, 3000);
-
-    onInitialized(() => {
-      clearTimeout(timeout);
+      flowStarted = true;
+      const loadingMsg = document.getElementById('loadingMsg');
+      if (loadingMsg) loadingMsg.style.display = 'none';
       if (CONFIG.gameCounter >= 2) {
         showTransitionScreen(startReveal);
       } else {
         startReveal();
       }
+    }
+
+    const timeout = setTimeout(() => {
+      if (!isInitialized) {
+        console.log('Timeout: starting with default config');
+        startFlow();
+      }
+    }, 3000);
+
+    onInitialized(() => {
+      clearTimeout(timeout);
+      startFlow();
     });
   </script>
 </body>

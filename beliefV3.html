@@ -1584,16 +1584,21 @@
               </div>
               {introStep === 0 && <NextStepButton onClick={handleNextStep} />}
 
-              {/* Step 1 — first intervention intro (X-intervention by default, Y-intervention for AYX) */}
+              {/* Step 1 — first intervention intro (X-intervention by default, Y-intervention for AYX).
+                  Migraines + order 'AY' keeps the CraveOn/CraveOff block, since the AY questions
+                  condition on the craving state. */}
               {CONFIG.order !== 'AY' && introStep >= 1 && (CONFIG.order === 'AYX' ? step2Block : step1Block)}
-              {CONFIG.order !== 'AY' && introStep === 1 && <NextStepButton onClick={handleNextStep} />}
+              {isMig && CONFIG.order === 'AY' && introStep >= 1 && step1Block}
+              {(CONFIG.order !== 'AY' || isMig) && introStep === 1 && <NextStepButton onClick={handleNextStep} />}
 
               {/* Step 2 — second intervention intro (Y-intervention by default, X-intervention for AYX) */}
               {CONFIG.order !== 'AY' && introStep >= 2 && (CONFIG.order === 'AYX' ? step1Block : step2Block)}
               {CONFIG.order !== 'AY' && introStep === 2 && <NextStepButton onClick={handleNextStep} />}
 
               {/* Final step — payment info */}
-              {((CONFIG.order === 'AY' && introStep >= 1) || (CONFIG.order !== 'AY' && introStep >= 3)) && (
+              {((CONFIG.order === 'AY' && !isMig && introStep >= 1) ||
+                (CONFIG.order === 'AY' && isMig && introStep >= 2) ||
+                (CONFIG.order !== 'AY' && introStep >= 3)) && (
                 <div className="fade-in">
                   <div className="text-gray-700 space-y-4 mb-6">
                     <p>
