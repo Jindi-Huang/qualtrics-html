@@ -756,7 +756,7 @@
               </span>
             </div>
             <p className="text-gray-700">
-              If this is the case, you will not make any decision, and you will not see how you feel on that day.
+              If this is the case, you will not make any decision or see how you feel on that day, and the round will not count towards your payment.
             </p>
           </div>
         </section>
@@ -1007,7 +1007,7 @@
         return arr;
       })();
       const pages = isMig
-        ? [setupSection, eachWeekSection, decisionAccessSection(3), paymentSection(4), twoPossibilitiesSection(5), noteSection(6), surveyStructureSection(7), comprehensionSection]
+        ? [setupSection, eachWeekSection, paymentSection(3), decisionAccessSection(4), twoPossibilitiesSection(5), noteSection(6), surveyStructureSection(7), comprehensionSection]
         : dieterPages;
 
       const instructionCount = pages.length - 1; // last entry is comprehension

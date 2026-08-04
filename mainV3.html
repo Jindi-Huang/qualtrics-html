@@ -732,8 +732,8 @@
           {isMig && (currentX === 0 || currentX === 1) && (
             <div className="mt-3 space-y-1 text-lg text-gray-600 text-left">
               <div className="flex items-center gap-2 whitespace-nowrap">
-                <span>Additional payment for consuming the drink:</span>
-                <span className="font-bold">{formatSignedCurrency(additional)}</span>
+                <span>Additional <strong>{additional < 0 ? 'fee' : 'bonus'}</strong> for consuming the drink:</span>
+                <span className="font-bold">{CONFIG.currency}{Math.abs(additional)}</span>
               </div>
               <div className="flex items-center gap-2 whitespace-nowrap">
                 <span>Total payment for consuming the drink:</span>
@@ -862,8 +862,10 @@
             {!hideRateBox && (
               <div className={`bg-white border-2 rounded-xl px-4 py-3 z-10 transition-all duration-300 shadow-sm ${rateBoxBorder}`} style={{ width: '130px' }}>
                 <div className="text-xs text-gray-500 text-center mb-1">{leftLabel}</div>
-                <div className="text-3xl font-bold text-center text-gray-900">
-                  {rateValue === null ? <span className="text-gray-400">—</span> : `${rateValue}%`}
+                <div className="text-center text-gray-900">
+                  {isMig
+                    ? <span className="text-base font-bold text-gray-400">Data Hidden</span>
+                    : (rateValue === null ? <span className="text-3xl font-bold text-gray-400">—</span> : <span className="text-3xl font-bold">{`${rateValue}%`}</span>)}
                 </div>
                 <div className="text-xs text-gray-500 text-center">{isAYXOrder ? 'normal' : CONFIG.playerName2Pos}</div>
               </div>
@@ -895,10 +897,10 @@
                   <div className="w-4 h-4 rounded-full bg-red-500" />
                   <span className="text-red-600 font-medium">When drink</span>
                 </div>
-                <div className="text-4xl font-bold text-gray-900 mb-1">{A1Y1Rate !== null ? `${A1Y1Rate}%` : '—'}</div>
-                <div className="text-sm text-gray-500">{`${CONFIG.playerName2Pos} (${stats.A1.Y1}/${stats.A1.total})`}</div>
+                <div className="text-xl font-bold text-gray-400 mb-1 mt-2">Data Hidden</div>
+                <div className="text-sm text-gray-500">{CONFIG.playerName2Pos}</div>
                 <div className="mt-3 h-3 bg-gray-200 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-red-500 to-rose-400 transition-all duration-500" style={{ width: A1Y1Rate ? `${A1Y1Rate}%` : '0%' }} />
+                  <div className="h-full bg-gradient-to-r from-red-500 to-rose-400 transition-all duration-500" style={{ width: '0%' }} />
                 </div>
               </div>
               <div className={`rounded-xl p-4 transition-all duration-300 ${currentA === 0 ? 'bg-green-50 ring-2 ring-green-400' : 'bg-gray-50'}`}>
@@ -906,10 +908,10 @@
                   <div className="w-4 h-4 rounded-full bg-green-500" />
                   <span className="text-green-600 font-medium whitespace-nowrap">When skip</span>
                 </div>
-                <div className="text-4xl font-bold text-gray-900 mb-1">{A0Y1Rate !== null ? `${A0Y1Rate}%` : '—'}</div>
-                <div className="text-sm text-gray-500">{`${CONFIG.playerName2Pos} (${stats.A0.Y1}/${stats.A0.total})`}</div>
+                <div className="text-xl font-bold text-gray-400 mb-1 mt-2">Data Hidden</div>
+                <div className="text-sm text-gray-500">{CONFIG.playerName2Pos}</div>
                 <div className="mt-3 h-3 bg-gray-200 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all duration-500" style={{ width: A0Y1Rate ? `${A0Y1Rate}%` : '0%' }} />
+                  <div className="h-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all duration-500" style={{ width: '0%' }} />
                 </div>
               </div>
             </div>
@@ -1435,7 +1437,7 @@
 
       // Range-of-payment bullet
       const rangeBullet = isMig
-        ? `Consuming the drink also yields an additional payment (which can be positive or negative) that varies across choices. Together with the baseline payment above, your total payment for consuming the drink ranges from ${CONFIG.currency}0 to ${CONFIG.currency}${CONFIG.priceElicitationPrices[CONFIG.priceElicitationPrices.length - 1]}.`
+        ? `Consuming the drink also comes with an additional bonus or fee that varies across choices. Together with the baseline payment above, your total payment for consuming the drink ranges from ${CONFIG.currency}0 to ${CONFIG.currency}${CONFIG.priceElicitationPrices[CONFIG.priceElicitationPrices.length - 1]}.`
         : `The price of the drink will vary from ${CONFIG.currency}0 to ${CONFIG.currency}${CONFIG.priceElicitationPrices[CONFIG.priceElicitationPrices.length - 1]} across these choices`;
 
       // "What doesn't change" first bullet
@@ -1583,8 +1585,8 @@
                     {/* Additional and Total payment lines, aligned left under button */}
                     <div className="mt-3 space-y-1 text-lg text-gray-600 text-left">
                       <div className="flex items-center gap-2 whitespace-nowrap">
-                        <span>Additional payment for consuming the drink:</span>
-                        <span className="font-bold">{formatSignedCurrency(paymentChange)}</span>
+                        <span>Additional <strong>{paymentChange < 0 ? 'fee' : 'bonus'}</strong> for consuming the drink:</span>
+                        <span className="font-bold">{CONFIG.currency}{Math.abs(paymentChange)}</span>
                       </div>
                       <div className="flex items-center gap-2 whitespace-nowrap">
                         <span>Total payment for consuming the drink:</span>
@@ -2023,7 +2025,7 @@
             setHistory(prev => [...prev, [null, result.X, result.Y]]);
             phaseStartTimeRef.current = Date.now();
             setWaitingForSpace('nextRound');
-          }, 1500);
+          }, 0);
           return () => clearTimeout(timer);
         }
         const timer = setTimeout(() => {
@@ -2368,9 +2370,11 @@
       // Pill text varies by supergame and phase
       const renderPillText = () => {
         if (isMig) {
+          // No-decision round (X ≠ exo_X): the craving state is never revealed
+          const isNoDecision = getExoX() !== null && currentX !== null && currentX !== getExoX();
           if (phase === 'decision' && currentX === null) return '...';
-          // No-decision round (X ≠ exo_X): only reachable here, since normal rounds set
-          // waitingForSpace in the 'outcome' phase
+          // No-decision round: only reachable here, since normal rounds set waitingForSpace
+          // in the 'outcome' phase
           if (phase === 'decision' && currentX !== null && waitingForSpace === 'nextRound') {
             return (
               <>
@@ -2380,6 +2384,9 @@
               </>
             );
           }
+          // No-decision round: show the message directly (no "..." dwell). "Press Space" is
+          // added by the waitingForSpace branch above once the round is recorded (0 ms later).
+          if (phase === 'decision' && isNoDecision) return 'You will not make decisions this week.';
           if (phase === 'decision' && currentX !== null && !decisionEnabled) return `Morning: ${currentX === 1 ? `You have a craving for ${CONFIG.playerName0}` : `You have NO craving for ${CONFIG.playerName0}`}`;
           if (phase === 'decision' && currentX !== null && decisionEnabled) {
             return (
@@ -2469,9 +2476,6 @@
         ? (currentRound === 1 && phase === 'decision' && decisionEnabled)
         : (currentRound === 1 && phase === 'decision');
 
-      // No-decision round (exo_X gate): hide the drink price on the disabled buttons
-      const inNoDecisionRound = isMig && getExoX() !== null && currentX !== null && currentX !== getExoX();
-
       return (
         <div className="min-h-screen bg-white px-4 pt-0 pb-4">
           <div className="max-w-6xl mx-auto">
@@ -2512,7 +2516,6 @@
                     isFirstRound={currentRound === 1 && decisionEnabled}
                     selectedChoice={currentA}
                     X={currentX}
-                    hidePrice={inNoDecisionRound}
                   />
                 ) : null}
               />
