@@ -279,8 +279,7 @@
         q2: null,
         q3: null,
         q4: null,
-        q5: null,
-        q6: null
+        q5: null
       });
       const [page, setPage] = useState(1);
       const [error, setError] = useState('');
@@ -337,8 +336,6 @@
           dieterSameNo: isMig ? null : pctIndex(answers.q4),
           migrainesPY: isMig ? pctIndex(answers.q4) : null,
           dieterSameYes: isMig ? null : pctIndex(answers.q5),
-          migrainesPY_A: isMig ? pctIndex(answers.q5) : null,
-          migrainesPY_a: isMig ? pctIndex(answers.q6) : null,
           dieterVersion: null,
           migrainesVersion: null,
           ownWords: null,
@@ -436,14 +433,6 @@
             : `<strong>Whenever you did drink ${CONFIG.playerName0}</strong>, how often did you have a normal ${CONFIG.playerName1} level and feel ${CONFIG.playerName2Pos} at the same time?`
       };
 
-      // Migraines page-2: recalled mood conditional on the drink decision
-      const q5m = {
-        text: `<strong>Whenever you did drink ${CONFIG.playerName0}</strong>, how often did you feel ${CONFIG.playerName2Pos} <span style="color: #64748b; font-style: italic;">(what percentage of those weeks)</span>?`
-      };
-      const q6m = {
-        text: `<strong>Whenever you did NOT drink ${CONFIG.playerName0}</strong>, how often did you feel ${CONFIG.playerName2Pos} <span style="color: #64748b; font-style: italic;">(what percentage of those weeks)</span>?`
-      };
-
       return (
         <div className="min-h-screen bg-white pt-0 pb-10 px-4">
           <div className="max-w-5xl mx-auto">
@@ -485,11 +474,22 @@
                       const required = isMig
                         ? [...(showQ1 ? ['q1'] : []), ...(showQ2 ? ['q2'] : []), 'q3', 'q4']
                         : isAYOrder ? ['q1', 'q3'] : ['q1', 'q2', 'q3'];
-                      handleNextPage(required, 2);
+                      if (isMig) {
+                        const unanswered = required.filter(k => answers[k] === null);
+                        if (unanswered.length > 0) {
+                          const nums = unanswered.map(k => k.replace('q', 'Q'));
+                          setError(`Please answer all questions. Missing: ${nums.join(', ')}`);
+                          return;
+                        }
+                        setError('');
+                        handleSubmit();
+                      } else {
+                        handleNextPage(required, 2);
+                      }
                     }}
                     className={`w-full py-3 px-6 ${getThemeClassesLocal().buttonBg} ${getThemeClassesLocal().buttonHover} text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg`}
                   >
-                    Next
+                    {isMig ? 'Submit' : 'Next'}
                   </button>
                 </div>
               </>
@@ -501,37 +501,18 @@
                   You made decisions about {CONFIG.playerName0} for {CONFIG.nRounds} weeks; please only consider the last {CONFIG.nRoundsAnalysis} weeks when answering these questions.
                 </p>
                 <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
-                {isMig ? (
-                  <>
-                    <RadioQuestion
-                      questionNumber={page1Questions.length + 1}
-                      questionText={q5m.text}
-                      selectedValue={answers.q5}
-                      onChange={(val) => handleChange('q5', val)}
-                    />
-                    <RadioQuestion
-                      questionNumber={page1Questions.length + 2}
-                      questionText={q6m.text}
-                      selectedValue={answers.q6}
-                      onChange={(val) => handleChange('q6', val)}
-                    />
-                  </>
-                ) : (
-                  <>
-                    <RadioQuestion
-                      questionNumber={isAYOrder ? 3 : 4}
-                      questionText={q4.text}
-                      selectedValue={answers.q4}
-                      onChange={(val) => handleChange('q4', val)}
-                    />
-                    <RadioQuestion
-                      questionNumber={isAYOrder ? 4 : 5}
-                      questionText={q5.text}
-                      selectedValue={answers.q5}
-                      onChange={(val) => handleChange('q5', val)}
-                    />
-                  </>
-                )}
+                <RadioQuestion
+                  questionNumber={isAYOrder ? 3 : 4}
+                  questionText={q4.text}
+                  selectedValue={answers.q4}
+                  onChange={(val) => handleChange('q4', val)}
+                />
+                <RadioQuestion
+                  questionNumber={isAYOrder ? 4 : 5}
+                  questionText={q5.text}
+                  selectedValue={answers.q5}
+                  onChange={(val) => handleChange('q5', val)}
+                />
 
                 {error && (
                   <p className="text-red-600 font-medium mb-4">{error}</p>
@@ -539,7 +520,7 @@
 
                 <button
                   onClick={() => {
-                    const required = isMig ? ['q5', 'q6'] : ['q4', 'q5'];
+                    const required = ['q4', 'q5'];
                     const unanswered = required.filter(k => answers[k] === null);
                     if (unanswered.length > 0) {
                       const nums = unanswered.map(k => k.replace('q', 'Q'));
