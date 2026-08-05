@@ -1098,11 +1098,13 @@
           },
           XA: {
             walkthroughStep0: exoButton === null
-              ? null
+              ? `In this scenario, you make choices about whether to consume the drink as before...`
               : `In this scenario, you are required to take ${exoButton === 1 ? playerName2PosExo : playerName2NegExo} which makes you feel <strong>${exoButton === 1 ? playerName2Pos : playerName2Neg}</strong>...`,
-            walkthroughStep1: `Report how <strong> your craving</strong>...`,
+            walkthroughStep1: exoButton === null
+              ? `Report how <strong>your craving</strong> (due to taking CraveOn rather than CraveOff)...`
+              : `Report how <strong> your craving</strong>...`,
             walkthroughStep2: `...affects <strong>your choice to drink ${playerName0}</strong>.`,
-            walkthroughHighlight: { step0: 'Y', step1: 'X', step2: ['X', 'A'] },
+            walkthroughHighlight: { step0: exoButton === null ? 'A' : 'Y', step1: 'X', step2: ['X', 'A'] },
             causePanel: 'X', outcomePanel: 'A',
             pie1Question: exoButton === null
               ? `What is the chance that you <strong>drink ${playerName0}</strong> if you are <strong>not craving</strong>?`
@@ -1111,7 +1113,7 @@
               ? `What is the chance that you <strong>drink ${playerName0}</strong> if you are <strong>craving</strong>?`
               : `Suppose you are required to take ${exoButton === 1 ? playerName2PosExo : playerName2NegExo} which makes you feel <strong>${exoButton === 1 ? playerName2Pos : playerName2Neg}</strong>.<br>What is the chance that you <strong>drink ${playerName0}</strong> if you are <strong>craving</strong>?`,
             verbalQuestion: exoButton === null
-              ? `How does <strong>craving</strong> (rather than not craving) change the chance that you <strong>drink ${playerName0}</strong>?`
+              ? `Suppose that you make choices about whether to consume the drink as before.<br>How does being <strong>craving</strong> instead of <strong>not craving</strong> (due to taking CraveOn rather than CraveOff) change the chance that you <strong>drink ${playerName0}</strong>?`
               : `Suppose you are required to take ${exoButton === 1 ? playerName2PosExo : playerName2NegExo} which makes you feel <strong>${exoButton === 1 ? playerName2Pos : playerName2Neg}</strong>.<br>How does <strong>craving</strong> (rather than not craving) change the chance that you <strong>drink ${playerName0}</strong>?`,
             pie1Color: themeHex, pie2Color: themeHex
           }
@@ -1231,7 +1233,7 @@
 
       useEffect(() => {
         if (stage === 0 && walkthroughStep === 0) {
-          if ((causalElicit === 'AX' || causalElicit === 'AY' || causalElicit === 'XA') && exoButton === null) {
+          if ((causalElicit === 'AX' || causalElicit === 'AY') && exoButton === null) {
             setWalkthroughStep(1);
           }
         }
