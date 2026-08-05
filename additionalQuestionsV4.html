@@ -385,10 +385,19 @@
         }] : []),
         ...(showQ2 ? [{
           key: 'q2',
+          content: isMig ? (
+            exoX === 0 ? (
+              <>
+                How often did you drink <strong>{CONFIG.playerName0}</strong> <DrinkIcon className={`inline-block w-4 h-4 align-middle mx-1 ${getThemeClassesLocal().iconColor}`} drinkName={CONFIG.playerName0} /> <span style={{color: '#64748b', fontStyle: 'italic'}}>(what percentage of the weeks)</span>?
+              </>
+            ) : (
+              <>
+                Whenever you were <strong>not craving the drink</strong> (so you pay {aCostStr} for consuming it), how often did you drink <strong>{CONFIG.playerName0}</strong> <DrinkIcon className={`inline-block w-4 h-4 align-middle mx-1 ${getThemeClassesLocal().iconColor}`} drinkName={CONFIG.playerName0} /> <span style={{color: '#64748b', fontStyle: 'italic'}}>(what percentage of the weeks)</span>?
+              </>
+            )
+          ) : undefined,
           text: isMig
-            ? (exoX === 0
-                ? `How often did you drink <strong>${CONFIG.playerName0}</strong> <span style="color: #64748b; font-style: italic;">(what percentage of the weeks)</span>?`
-                : `Whenever you were <b>not craving the drink</b> (so you pay ${aCostStr} for consuming it), how often did you drink <strong>${CONFIG.playerName0}</strong> <span style="color: #64748b; font-style: italic;">(what percentage of the weeks)</span>?`)
+            ? undefined
             : `How often was your <strong>${CONFIG.playerName1}</strong> level normal <span style="color: #64748b; font-style: italic;">(what percentage of the weeks)</span>?`
         }] : []),
         {
