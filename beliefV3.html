@@ -299,6 +299,23 @@
       const beliefPaymentIncentive = CONFIG.beliefPaymentIncentive;
       const rationalInference = CONFIG.rationalInference;
 
+      const validBenchmarks = (correct) => {
+        const values = Array.isArray(correct) ? correct : [correct];
+        return values.filter(v => v !== null && v !== undefined && typeof v === 'number' && isFinite(v));
+      };
+
+      const nearestVerbalDifference = (correct, userChoice) => {
+        const options = validBenchmarks(correct).map(v => getOptionIndex(v));
+        if (options.length === 0) return null;
+        return Math.min(...options.map(correctOptionIndex => Math.abs(correctOptionIndex - userChoice)));
+      };
+
+      const nearestSliderDifference = (correct, userValue) => {
+        const options = validBenchmarks(correct).map(v => Math.round(v / 10) * 10);
+        if (options.length === 0) return null;
+        return Math.min(...options.map(nearestCategory => Math.abs(nearestCategory - userValue) / 10));
+      };
+
       const correctAnswers = [];
       const correctAnswersSlider1 = [];
       const correctAnswersSlider2 = [];
@@ -319,28 +336,43 @@
       const beliefPayment = correctAnswers.map((correct, index) => {
         const userChoice = responses[index].verbalValue;
         if (userChoice === null || userChoice === undefined) return null;
-        if (correct === null || correct === undefined) return beliefPaymentMax;
-        const correctOptionIndex = getOptionIndex(correct);
-        const absoluteDifference = Math.abs(correctOptionIndex - userChoice);
+        const absoluteDifference = nearestVerbalDifference(correct, userChoice);
+        if (absoluteDifference === null) return beliefPaymentMax;
         return beliefPaymentMax - (absoluteDifference * beliefPaymentIncentive);
       });
 
       const beliefPaymentSlider1 = correctAnswersSlider1.map((correct, index) => {
         const userValue = responses[index].pie1Value;
         if (userValue === null || userValue === undefined) return null;
-        if (correct === null || correct === undefined) return beliefPaymentMax;
-        const nearestCategory = Math.round(correct / 10) * 10;
-        const absoluteDifference = Math.abs(nearestCategory - userValue) / 10;
+        const absoluteDifference = nearestSliderDifference(correct, userValue);
+        if (absoluteDifference === null) return beliefPaymentMax;
         return beliefPaymentMax - (absoluteDifference * beliefPaymentIncentive);
       });
 
       const beliefPaymentSlider2 = correctAnswersSlider2.map((correct, index) => {
         const userValue = responses[index].pie2Value;
         if (userValue === null || userValue === undefined) return null;
-        if (correct === null || correct === undefined) return beliefPaymentMax;
-        const nearestCategory = Math.round(correct / 10) * 10;
-        const absoluteDifference = Math.abs(nearestCategory - userValue) / 10;
+        const absoluteDifference = nearestSliderDifference(correct, userValue);
+        if (absoluteDifference === null) return beliefPaymentMax;
         return beliefPaymentMax - (absoluteDifference * beliefPaymentIncentive);
+      });
+
+      console.log('[Belief payment] scoring payload', {
+        supergame: CONFIG.supergame,
+        usesNearestBenchmarkWhenArray: true,
+        scenarioIds: responses.map(r => r.id),
+        responses: responses.map(r => ({
+          id: r.id,
+          verbalValue: r.verbalValue,
+          pie1Value: r.pie1Value,
+          pie2Value: r.pie2Value
+        })),
+        correctAnswers,
+        correctAnswersSlider1,
+        correctAnswersSlider2,
+        beliefPayment,
+        beliefPaymentSlider1,
+        beliefPaymentSlider2
       });
 
       return {

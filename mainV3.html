@@ -1226,19 +1226,79 @@
       const pY_X = div(c(1,1,1) + c(0,1,1), c(1,1,0) + c(1,1,1) + c(0,1,0) + c(0,1,1));  // P(Y=1 | X=1)
       const pY_x = div(c(1,0,1) + c(0,0,1), c(1,0,0) + c(1,0,1) + c(0,0,0) + c(0,0,1));  // P(Y=1 | X=0)
       const pY  = h.length ? h.filter(r => r[2] === 1).length / h.length : null;          // P(Y=1)
+      const pX  = h.length ? h.filter(r => r[1] === 1).length / h.length : null;          // P(X=1)
+      const pA_X = div(c(1,1,0) + c(1,1,1), c(1,1,0) + c(1,1,1) + c(0,1,0) + c(0,1,1));  // P(A=1 | X=1)
+      const pA_x = div(c(1,0,0) + c(1,0,1), c(1,0,0) + c(1,0,1) + c(0,0,0) + c(0,0,1));  // P(A=1 | X=0)
+      const pX_Y = div(c(1,1,1) + c(0,1,1), c(1,0,1) + c(1,1,1) + c(0,0,1) + c(0,1,1));  // P(X=1 | Y=1)
+      const pX_y = div(c(1,1,0) + c(0,1,0), c(1,0,0) + c(1,1,0) + c(0,0,0) + c(0,1,0));  // P(X=1 | Y=0)
 
       // X-conditional P(Y | A, X) for the migraines AY0 (X=0, not craving) / AY1 (X=1, craving) scenarios
       const pY_Ax = div(c(1,0,1), c(1,0,0) + c(1,0,1));  // P(Y=1 | A=1, X=0)
       const pY_ax = div(c(0,0,1), c(0,0,0) + c(0,0,1));  // P(Y=1 | A=0, X=0)
       const pY_AX = div(c(1,1,1), c(1,1,0) + c(1,1,1));  // P(Y=1 | A=1, X=1)
       const pY_aX = div(c(0,1,1), c(0,1,0) + c(0,1,1));  // P(Y=1 | A=0, X=1)
+      const makeBenchmark = (pNo, pYes) => ({ pNo: pct(pNo), pYes: pct(pYes), causal: effect(pYes, pNo) });
+      const applyBenchmark = (target, id, benchmark) => {
+        target["pNo_" + id] = benchmark.pNo;
+        target["pYes_" + id] = benchmark.pYes;
+        target["causal_" + id] = benchmark.causal;
+      };
+      const applyBenchmarkPair = (target, id, benchmark1, benchmark2) => {
+        target["pNo_" + id] = [benchmark1.pNo, benchmark2.pNo];
+        target["pYes_" + id] = [benchmark1.pYes, benchmark2.pYes];
+        target["causal_" + id] = [benchmark1.causal, benchmark2.causal];
+      };
 
       const RI = {
         "pNo_AY": pct(pY_a), "pYes_AY": pct(pY_A), "causal_AY": effect(pY_A, pY_a),
         "pNo_AY0": pct(pY_ax), "pYes_AY0": pct(pY_Ax), "causal_AY0": effect(pY_Ax, pY_ax),
         "pNo_AY1": pct(pY_aX), "pYes_AY1": pct(pY_AX), "causal_AY1": effect(pY_AX, pY_aX)
       };
-      if (Number(causal) === 1) {           // chain A->X->Y: real X->Y effect
+      if (CONFIG.supergame === 'migraines') {
+        const yToXToA = {
+          AY: makeBenchmark(pY, pY),
+          AY0: makeBenchmark(pY, pY),
+          AY1: makeBenchmark(pY, pY),
+          XY: makeBenchmark(pY, pY),
+          XY0: makeBenchmark(pY, pY),
+          XY1: makeBenchmark(pY, pY),
+          YX: makeBenchmark(pX_y, pX_Y),
+          YX0: makeBenchmark(pX_y, pX_Y),
+          YX1: makeBenchmark(pX_y, pX_Y),
+          XA: makeBenchmark(pA_x, pA_X)
+        };
+        const xForkY = {
+          AY: makeBenchmark(pY, pY),
+          AY0: makeBenchmark(pY_x, pY_x),
+          AY1: makeBenchmark(pY_X, pY_X),
+          XY: makeBenchmark(pY_x, pY_X),
+          XY0: makeBenchmark(pY_x, pY_X),
+          XY1: makeBenchmark(pY_x, pY_X),
+          YX: makeBenchmark(pX, pX),
+          YX0: makeBenchmark(pX, pX),
+          YX1: makeBenchmark(pX, pX),
+          XA: makeBenchmark(pA_x, pA_X)
+        };
+        const xToAToY = {
+          AY: makeBenchmark(pY_a, pY_A),
+          AY0: makeBenchmark(pY_a, pY_A),
+          AY1: makeBenchmark(pY_a, pY_A),
+          XY: makeBenchmark(pY_x, pY_X),
+          XY0: makeBenchmark(pY_a, pY_a),
+          XY1: makeBenchmark(pY_A, pY_A),
+          YX: makeBenchmark(pX, pX),
+          YX0: makeBenchmark(pX, pX),
+          YX1: makeBenchmark(pX, pX),
+          XA: makeBenchmark(pA_x, pA_X)
+        };
+        ["AY", "AY0", "AY1", "XY", "XY0", "XY1", "YX", "YX0", "YX1", "XA"].forEach(id => {
+          if (Number(causal) === 0) {
+            applyBenchmarkPair(RI, id, yToXToA[id], xForkY[id]);
+          } else {
+            applyBenchmark(RI, id, xToAToY[id]);
+          }
+        });
+      } else if (Number(causal) === 1) {    // chain A->X->Y: real X->Y effect
         RI["pNo_XY"]  = pct(pY_x);
         RI["pYes_XY"] = pct(pY_X);
         RI["causal_XY"] = effect(pY_X, pY_x);
@@ -1246,6 +1306,25 @@
         RI["pNo_XY"]  = pct(pY);
         RI["pYes_XY"] = pct(pY);
         RI["causal_XY"] = 0;
+      }
+      if (CONFIG.supergame === 'migraines') {
+        console.log('[Round10 RI] migraines benchmark payload', {
+          causal: Number(causal),
+          benchmarkMode: Number(causal) === 0 ? 'two-benchmark: Y->X->A and A<-X->Y' : 'single-causal: X->A->Y',
+          rawFirst10Rows: history.slice(0, 10).length,
+          observedFirst10Rows: h.length,
+          sample: {
+            causal_AY0: RI.causal_AY0,
+            pNo_AY0: RI.pNo_AY0,
+            pYes_AY0: RI.pYes_AY0,
+            causal_AY1: RI.causal_AY1,
+            pNo_AY1: RI.pNo_AY1,
+            pYes_AY1: RI.pYes_AY1,
+            causal_XY: RI.causal_XY,
+            causal_YX: RI.causal_YX,
+            causal_XA: RI.causal_XA
+          }
+        });
       }
       return RI;
     }

@@ -75,6 +75,7 @@ Qualtrics.SurveyEngine.addOnReady(function()
 	var pX_Y = (count_AXY + count_aXY) / (count_AxY + count_AXY + count_axY + count_aXY);
 	var pX_y = (count_AXy + count_aXy) / (count_Axy + count_AXy + count_axy + count_aXy);
 
+	var pX = observedHistory.filter(row => row[1] === 1).length / observedHistory.length;  // P(X=1), observed rounds
 	var pY = observedHistory.filter(row => row[2] === 1).length / observedHistory.length;  // P(Y=1), observed rounds
 	
 	// Conditional probabilities: P(Y | A, X)
@@ -173,20 +174,18 @@ Qualtrics.SurveyEngine.addOnReady(function()
 		var pYes_AY0 = pY_Ax;
 		var pNo_AY1 = pY_aX;
 		var pYes_AY1 = pY_AX;
-		// Y -> X (feeling -> craving) benchmark. The YX question is interventional
-		// ("required to take Energenix/Somnexil which makes you feel ..."), so:
+		var pNo_XY0 = pY_ax;
+		var pYes_XY0 = pY_aX;
+		var pNo_XY1 = pY_Ax;
+		var pYes_XY1 = pY_AX;
+		var pNo_XY = pY_x;
+		var pYes_XY = pY_X;
 		if (causal == 0) {
-			// causal 0: feeling drives the craving signal (Y -> X). Craving's only parent is
-			// feeling, so the observational conditional equals the interventional effect.
 			var pNo_YX0 = pX_y;
 			var pYes_YX0 = pX_Y;
 			var pNo_YX = pX_y;
 			var pYes_YX = pX_Y;
 		} else {
-			// causal 1: craving is exogenous, so intervening on feeling cannot change craving
-			// -> the Y -> X effect is 0. (The observational pX_Y - pX_y is nonzero only because of
-			// the spurious X -> A -> Y path, and must NOT be credited here.) Pie values are inert:
-			// YX is verbal-only in migraines, so only the zero difference is scored.
 			var pNo_YX0 = pX_a;
 			var pYes_YX0 = pX_a;
 			var pNo_YX = pX_a;
@@ -252,6 +251,101 @@ Qualtrics.SurveyEngine.addOnReady(function()
 		"pYes_XA": pYes_XA * 100,
 
 	};
+
+	function probPct(v) {
+		return (typeof v === 'number' && isFinite(v)) ? v * 100 : null;
+	}
+
+	function effectPct(pYes, pNo) {
+		return (typeof pYes === 'number' && isFinite(pYes) &&
+				typeof pNo === 'number' && isFinite(pNo)) ? (pYes - pNo) * 100 : null;
+	}
+
+	function makeBenchmark(pNo, pYes) {
+		return {
+			pNo: probPct(pNo),
+			pYes: probPct(pYes),
+			causal: effectPct(pYes, pNo)
+		};
+	}
+
+	function applyBenchmark(results, id, benchmark) {
+		results["pNo_" + id] = benchmark.pNo;
+		results["pYes_" + id] = benchmark.pYes;
+		results["causal_" + id] = benchmark.causal;
+	}
+
+	function applyBenchmarkPair(results, id, benchmark1, benchmark2) {
+		results["pNo_" + id] = [benchmark1.pNo, benchmark2.pNo];
+		results["pYes_" + id] = [benchmark1.pYes, benchmark2.pYes];
+		results["causal_" + id] = [benchmark1.causal, benchmark2.causal];
+	}
+
+	if (supergame == "migraines") {
+		var yToXToA = {
+			AY: makeBenchmark(pY, pY),
+			AY0: makeBenchmark(pY, pY),
+			AY1: makeBenchmark(pY, pY),
+			XY: makeBenchmark(pY, pY),
+			XY0: makeBenchmark(pY, pY),
+			XY1: makeBenchmark(pY, pY),
+			YX: makeBenchmark(pX_y, pX_Y),
+			YX0: makeBenchmark(pX_y, pX_Y),
+			YX1: makeBenchmark(pX_y, pX_Y),
+			XA: makeBenchmark(pA_x, pA_X)
+		};
+		var xForkY = {
+			AY: makeBenchmark(pY, pY),
+			AY0: makeBenchmark(pY_x, pY_x),
+			AY1: makeBenchmark(pY_X, pY_X),
+			XY: makeBenchmark(pY_x, pY_X),
+			XY0: makeBenchmark(pY_x, pY_X),
+			XY1: makeBenchmark(pY_x, pY_X),
+			YX: makeBenchmark(pX, pX),
+			YX0: makeBenchmark(pX, pX),
+			YX1: makeBenchmark(pX, pX),
+			XA: makeBenchmark(pA_x, pA_X)
+		};
+		var xToAToY = {
+			AY: makeBenchmark(pY_a, pY_A),
+			AY0: makeBenchmark(pY_a, pY_A),
+			AY1: makeBenchmark(pY_a, pY_A),
+			XY: makeBenchmark(pY_x, pY_X),
+			XY0: makeBenchmark(pY_a, pY_a),
+			XY1: makeBenchmark(pY_A, pY_A),
+			YX: makeBenchmark(pX, pX),
+			YX0: makeBenchmark(pX, pX),
+			YX1: makeBenchmark(pX, pX),
+			XA: makeBenchmark(pA_x, pA_X)
+		};
+		var migraineBenchmarkIds = ["AY", "AY0", "AY1", "XY", "XY0", "XY1", "YX", "YX0", "YX1", "XA"];
+		for (var i = 0; i < migraineBenchmarkIds.length; i++) {
+			var key = migraineBenchmarkIds[i];
+			if (causal == 0) {
+				applyBenchmarkPair(results, key, yToXToA[key], xForkY[key]);
+			} else {
+				applyBenchmark(results, key, xToAToY[key]);
+			}
+		}
+		console.log("[RI] migraines benchmark payload", {
+			id: id,
+			causal: causal,
+			benchmarkMode: causal == 0 ? "two-benchmark: Y->X->A and A<-X->Y" : "single-causal: X->A->Y",
+			rawRows: history.length,
+			observedRows: observedHistory.length,
+			sample: {
+				causal_AY0: results.causal_AY0,
+				pNo_AY0: results.pNo_AY0,
+				pYes_AY0: results.pYes_AY0,
+				causal_AY1: results.causal_AY1,
+				pNo_AY1: results.pNo_AY1,
+				pYes_AY1: results.pYes_AY1,
+				causal_XY: results.causal_XY,
+				causal_YX: results.causal_YX,
+				causal_XA: results.causal_XA
+			}
+		});
+	}
 	
 	Qualtrics.SurveyEngine.setEmbeddedData('rationalInference_' + id, JSON.stringify(results));
 	console.log(results);
