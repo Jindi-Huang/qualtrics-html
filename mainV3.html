@@ -1906,6 +1906,7 @@
               advancePendingRef.current = false;
               const currentTimestamps = roundTimestampsRef.current[roundTimestampsRef.current.length - 1];
               if (currentTimestamps) currentTimestamps.outcomeViewTime = (Date.now() - phaseStartTimeRef.current) / 1000;
+              roundTimesRef.current[currentRound - 1] = (Date.now() - roundStartTimeRef.current) / 1000;
 
               setCurrentA(null);
               setCurrentX(null);
@@ -1946,7 +1947,6 @@
       // ---- handleChoice: dieter samples here; migraines uses pre-sampled pendingResult ----
       const handleChoice = useCallback((A) => {
         const decisionTime = (Date.now() - roundStartTimeRef.current) / 1000;
-        roundTimesRef.current.push(decisionTime);
         roundTimestampsRef.current.push({
           round: currentRound,
           decisionTime,
@@ -2028,15 +2028,14 @@
         if (isNoDecisionRound) {
           if (noDecisionRecordedForRoundRef.current === currentRound) return;
           noDecisionRecordedForRoundRef.current = currentRound;
-          const result = pendingResult || { X: currentX, Y: null };
-          roundTimesRef.current.push(null);
+          const result = pendingResult || { X: currentX };
           roundTimestampsRef.current.push({
             round: currentRound,
             decisionTime: null,
             chemicalViewTime: null,
             outcomeViewTime: null
           });
-          setHistory(prev => [...prev, [null, result.X, result.Y]]);
+          setHistory(prev => [...prev, [null, result.X, null]]);
           phaseStartTimeRef.current = Date.now();
           setWaitingForSpace('nextRound');
           return;
@@ -2248,11 +2247,10 @@
         });
 
         // Per-round payment: migraines (drink pays when craving), dieter (drink always costs).
-        // No-decision rounds (A === null, X ≠ exo_X) are dropped entirely, so `payment` contains
-        // only payment-eligible rounds and Qualtrics can draw from it uniformly with no
-        // special-casing. Per-round detail for all weeks remains available in `history`.
+        // No-decision rounds (A === null, X ≠ exo_X) are kept as null so payment stays aligned
+        // 1:1 with history and roundTimes.
         const payment = isMig
-          ? history.filter(([A]) => A !== null).map(([A, X, Y]) => (X === 1 ? CONFIG.aCost : -CONFIG.aCost) * A + CONFIG.yBonus * Y)
+          ? history.map(([A, X, Y]) => A === null ? null : (X === 1 ? CONFIG.aCost : -CONFIG.aCost) * A + CONFIG.yBonus * Y)
           : history.map(([A, X, Y]) => -CONFIG.aCost * A + CONFIG.yBonus * Y);
 
         // High-stakes monotonicity log → arrays aligned 1:1 with priceElicitationChoices / highStakeOutcomes.
