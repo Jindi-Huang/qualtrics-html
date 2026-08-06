@@ -196,7 +196,7 @@
       // Game economics
       yBonus: null,               // null → supergame default (dieter:2, migraines:10)
       aCost: 1.50,
-      totalRounds: null,          // null → default 10 for both supergames
+      totalRounds: null,          // null → default 80 for both supergames
       nSupergames: 2,
       currency: '$',
       id: 1,
@@ -251,7 +251,7 @@
     function applySupergameDefaults() {
       const isMig = CONFIG.supergame === 'migraines';
       if (CONFIG.yBonus === null || CONFIG.yBonus === undefined) CONFIG.yBonus = isMig ? 10.00 : 10.00;
-      if (CONFIG.totalRounds === null || CONFIG.totalRounds === undefined) CONFIG.totalRounds = 10;
+      if (CONFIG.totalRounds === null || CONFIG.totalRounds === undefined) CONFIG.totalRounds = 80;
       if (CONFIG.playerName0 === null || CONFIG.playerName0 === undefined) CONFIG.playerName0 = isMig ? 'Driftwell' : 'Zerqalase-norm';
       if (CONFIG.playerName1 === null || CONFIG.playerName1 === undefined) CONFIG.playerName1 = isMig ? 'Driftwell' : 'Zerqalase';
       if (CONFIG.order === null || CONFIG.order === undefined) CONFIG.order = isMig ? 'AY' : 'AYX';
