@@ -2056,6 +2056,11 @@
 
       const stats = calculateStats(history);
 
+      const scrollToTop = useCallback(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (window.parent !== window) window.parent.postMessage({ type: 'SCROLL_TO_TOP' }, '*');
+      }, []);
+
       // ---- handleChoice: dieter samples here; migraines uses pre-sampled pendingResult ----
       const handleChoice = useCallback((A) => {
         const decisionTime = (Date.now() - roundStartTimeRef.current) / 1000;
@@ -2202,7 +2207,8 @@
         setPriceElicitationRound(0);
         setShowPriceDivider(true);
         setPhase('priceElicitation');
-      }, []);
+        scrollToTop();
+      }, [scrollToTop]);
 
       const commitPriceChoice = useCallback((choice) => {
         const hsRound = isMig ? getOrderedHSRounds()[priceElicitationRound - 1] : null;
@@ -2257,6 +2263,7 @@
         setPriceElicitationChoices(newChoices);
         setPriceElicitationWaitingForSpace(false);
         setPendingPriceChoice(null);
+        scrollToTop();
 
         const totalHSRounds = isMig ? getHSTotalRounds() : CONFIG.priceElicitationPrices.length;
         if (isEditing && priceElicitationReturnRound !== null) {
@@ -2269,7 +2276,7 @@
         } else {
           setShowPriceDivider(true);
         }
-      }, [isMig, priceElicitationRound, priceElicitationChoices, pendingResult, currentX, currentY, priceElicitationReturnRound]);
+      }, [isMig, priceElicitationRound, priceElicitationChoices, pendingResult, currentX, currentY, priceElicitationReturnRound, scrollToTop]);
 
       const handlePriceElicitationChoice = useCallback((choice) => {
         const currentPrice = isMig
@@ -2285,13 +2292,15 @@
         setPriceElicitationReturnRound(priceElicitationRound);
         setPriceElicitationRound(roundNumber);
         setShowPriceDivider(false);
-      }, [priceElicitationRound]);
+        scrollToTop();
+      }, [priceElicitationRound, scrollToTop]);
 
       const handlePriceDividerContinue = useCallback(() => {
         setShowPriceDivider(false);
         if (priceElicitationRound === 0) setPriceElicitationRound(1);
         else setPriceElicitationRound(prev => prev + 1);
-      }, [priceElicitationRound]);
+        scrollToTop();
+      }, [priceElicitationRound, scrollToTop]);
 
       const handleDAGComplete = useCallback((initialDAG, finalDAG, confidence, DAGAlertCount, initialDAGTime, finalDAGTime, confidenceTime, showDetailsViewed) => {
         setDagData({ initial: initialDAG, final: finalDAG, confidence, alertCount: DAGAlertCount, initialDAGTime, finalDAGTime, confidenceTime, showDetailsViewed });
