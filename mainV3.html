@@ -2247,10 +2247,9 @@
         });
 
         // Per-round payment: migraines (drink pays when craving), dieter (drink always costs).
-        // No-decision rounds (A === null, X ≠ exo_X) are kept as null so payment stays aligned
-        // 1:1 with history and roundTimes.
+        // No-decision rounds (A === null, X ≠ exo_X) are excluded from the payment pool.
         const payment = isMig
-          ? history.map(([A, X, Y]) => A === null ? null : (X === 1 ? CONFIG.aCost : -CONFIG.aCost) * A + CONFIG.yBonus * Y)
+          ? history.filter(([A]) => A !== null).map(([A, X, Y]) => (X === 1 ? CONFIG.aCost : -CONFIG.aCost) * A + CONFIG.yBonus * Y)
           : history.map(([A, X, Y]) => -CONFIG.aCost * A + CONFIG.yBonus * Y);
 
         // High-stakes monotonicity log → arrays aligned 1:1 with priceElicitationChoices / highStakeOutcomes.
