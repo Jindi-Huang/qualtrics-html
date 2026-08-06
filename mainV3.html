@@ -109,6 +109,15 @@
           if (qConfig.aOnLeftDAG !== undefined) CONFIG.aOnLeftDAG = parseInt(qConfig.aOnLeftDAG);
           if (qConfig.increasingOrder !== undefined) CONFIG.increasingOrder = parseInt(qConfig.increasingOrder);
           if (qConfig.noChangeFirst !== undefined) CONFIG.noChangeFirst = parseInt(qConfig.noChangeFirst);
+          // Block-randomized migraines scenario order (mainCausalMigraines1..N), collected in order
+          // so the round-10 belief shows its AY questions in the same order as the end-of-game one.
+          if (qConfig.mainCausalMigraines1) {
+            const migList = [];
+            for (let i = 1; qConfig['mainCausalMigraines' + i]; i++) {
+              migList.push(qConfig['mainCausalMigraines' + i]);
+            }
+            if (migList.length > 0) CONFIG.mainCausalMigraines = migList;
+          }
 
           applySupergameDefaults();
           console.log('Applied config:', CONFIG);
@@ -245,7 +254,19 @@
       aOnLeftDAG: 1,          // 1 → A on left in DAG; 0 → A on right
       // Belief elicitation layout (forwarded to the belief iframe)
       increasingOrder: 1,     // 1 → Increases column on left; 0 → Decreases on left
-      noChangeFirst: 1        // 1 → "No change" on top, options 1-9%→90-100%; 0 → "No change" on bottom, options 90-100%→1-9%
+      noChangeFirst: 1,       // 1 → "No change" on top, options 1-9%→90-100%; 0 → "No change" on bottom, options 90-100%→1-9%
+      // End-of-game migraines scenario order (mainCausalMigraines1..N from Qualtrics). Used only to
+      // order the round-10 belief's AY questions the same way as the end-of-game elicitation.
+      // Default mirrors beliefV3's groupsMigraines (flattened) so standalone runs stay consistent.
+      mainCausalMigraines: [
+        { causalElicit: "AY", exoButton: 0, id: "AY0" },
+        { causalElicit: "AY", exoButton: 1, id: "AY1" },
+        { causalElicit: "XY", exoButton: 0, id: "XY0" },
+        { causalElicit: "XY", exoButton: 1, id: "XY1" },
+        { causalElicit: "XY", exoButton: null, id: "XY" },
+        { causalElicit: "YX", exoButton: null, id: "YX" },
+        { causalElicit: "XA", exoButton: null, id: "XA" }
+      ]
     };
 
     function applySupergameDefaults() {
@@ -284,6 +305,28 @@
       if (CONFIG.supergame !== 'migraines') return null;
       if (CONFIG.order !== 'AY') return null;
       return (CONFIG.exo_X === 0 || CONFIG.exo_X === 1) ? CONFIG.exo_X : null;
+    }
+
+    // Round-10 belief scenarios for migraines: the AY questions, taken in the SAME order as the
+    // end-of-game elicitation (CONFIG.mainCausalMigraines). Gated (order 'AY') → the single AY that
+    // matches the craving state; XAY → both AY0/AY1 in the end-of-game order. Falls back to a fixed
+    // order when the list isn't supplied.
+    function getRound10MigrainesCausals() {
+      const exoX = getExoX();
+      let ay = Array.isArray(CONFIG.mainCausalMigraines)
+        ? CONFIG.mainCausalMigraines.filter(s => s && s.causalElicit === 'AY')
+        : [];
+      if (ay.length === 0) {
+        ay = [
+          { causalElicit: "AY", exoButton: 0, id: "AY0" },
+          { causalElicit: "AY", exoButton: 1, id: "AY1" }
+        ];
+      }
+      if (exoX !== null) {
+        const match = ay.filter(s => s.exoButton === exoX);
+        return match.length > 0 ? match : [{ causalElicit: "AY", exoButton: exoX, id: "AY" + exoX }];
+      }
+      return ay;
     }
 
     // Migraines high-stakes: for each price, present BOTH craving (X=1) and no-craving (X=0).
@@ -1351,12 +1394,7 @@
         window.addEventListener('message', handleMessage);
 
         const mainCausals = isMig
-          ? (getExoX() !== null
-              ? [{ causalElicit: "AY", exoButton: getExoX(), id: "AY" + getExoX() }]
-              : [
-                  { causalElicit: "AY", exoButton: 0, id: "AY0" },
-                  { causalElicit: "AY", exoButton: 1, id: "AY1" }
-                ])
+          ? getRound10MigrainesCausals()
           : (order === 'AY' ? [{ causalElicit: "AY", exoButton: null, id: "AY" }] : [{ causalElicit: "XY", exoButton: null, id: "XY" }]);
 
         const sendInit = () => {
@@ -1397,12 +1435,7 @@
           onLoad={() => {
             if (iframeRef.current && iframeRef.current.contentWindow) {
               const mainCausals = isMig
-                ? (getExoX() !== null
-                    ? [{ causalElicit: "AY", exoButton: getExoX(), id: "AY" + getExoX() }]
-                    : [
-                        { causalElicit: "AY", exoButton: 0, id: "AY0" },
-                        { causalElicit: "AY", exoButton: 1, id: "AY1" }
-                      ])
+                ? getRound10MigrainesCausals()
                 : (order === 'AY' ? [{ causalElicit: "AY", exoButton: null, id: "AY" }] : [{ causalElicit: "XY", exoButton: null, id: "XY" }]);
               iframeRef.current.contentWindow.postMessage({
                 type: 'INIT',
