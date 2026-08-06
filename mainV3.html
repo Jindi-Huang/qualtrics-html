@@ -1215,7 +1215,7 @@
     // AY0/AY1 keys (migraines, scenario ids "AY0"/"AY1"), so the belief iframe's lookup
     // rationalInference["causal_"+id] resolves for whichever scenario id is shown.
     function computeRound10RI(history, causal) {
-      const h = history.slice(0, 10);
+      const h = history.slice(0, 10).filter(r => r[0] !== null && r[2] !== null);
       const c = (a, x, y) => h.filter(r => r[0] === a && r[1] === x && r[2] === y).length;
       const div = (num, den) => den === 0 ? null : num / den;   // empty cell -> null (full payment, like calcRI's JSON null)
       const pct = v => v === null ? null : v * 100;

@@ -13,10 +13,15 @@ Qualtrics.SurveyEngine.addOnReady(function()
 	const supergame = Qualtrics.SurveyEngine.getEmbeddedData('supergame');
 	const experiment = Qualtrics.SurveyEngine.getEmbeddedData('experiment');
 
+	// No-decision rounds are stored in history as [null, X, null]. Keep them in the
+	// raw history log, but exclude them from RI/stat calculations that require A/Y.
+	var observedHistory = history.filter(row => row[0] !== null && row[2] !== null);
+	var observedHistory10 = history.slice(0, 10).filter(row => row[0] !== null && row[2] !== null);
 	
 	// Descriptive stats below use only the LAST 30 rounds (or all rounds if fewer than 30).
 	// (The causal/conditional benchmarks further down still use all rounds.)
-	var historyHalf = history.length >= 30 ? history.slice(-30) : history;
+	var historyHalfRaw = history.length >= 30 ? history.slice(-30) : history;
+	var historyHalf = historyHalfRaw.filter(row => row[0] !== null && row[2] !== null);
 
 	// Filter by A value (second half)
 	var a0Cases = historyHalf.filter(row => row[0] === 0);
@@ -45,14 +50,14 @@ Qualtrics.SurveyEngine.addOnReady(function()
 
 	
 	// Count all 8 combinations of AXY (lowercase = 0, uppercase = 1)
-	var count_axy = history.filter(row => row[0] === 0 && row[1] === 0 && row[2] === 0).length;
-	var count_axY = history.filter(row => row[0] === 0 && row[1] === 0 && row[2] === 1).length;
-	var count_aXy = history.filter(row => row[0] === 0 && row[1] === 1 && row[2] === 0).length;
-	var count_aXY = history.filter(row => row[0] === 0 && row[1] === 1 && row[2] === 1).length;
-	var count_Axy = history.filter(row => row[0] === 1 && row[1] === 0 && row[2] === 0).length;
-	var count_AxY = history.filter(row => row[0] === 1 && row[1] === 0 && row[2] === 1).length;
-	var count_AXy = history.filter(row => row[0] === 1 && row[1] === 1 && row[2] === 0).length;
-	var count_AXY = history.filter(row => row[0] === 1 && row[1] === 1 && row[2] === 1).length;
+	var count_axy = observedHistory.filter(row => row[0] === 0 && row[1] === 0 && row[2] === 0).length;
+	var count_axY = observedHistory.filter(row => row[0] === 0 && row[1] === 0 && row[2] === 1).length;
+	var count_aXy = observedHistory.filter(row => row[0] === 0 && row[1] === 1 && row[2] === 0).length;
+	var count_aXY = observedHistory.filter(row => row[0] === 0 && row[1] === 1 && row[2] === 1).length;
+	var count_Axy = observedHistory.filter(row => row[0] === 1 && row[1] === 0 && row[2] === 0).length;
+	var count_AxY = observedHistory.filter(row => row[0] === 1 && row[1] === 0 && row[2] === 1).length;
+	var count_AXy = observedHistory.filter(row => row[0] === 1 && row[1] === 1 && row[2] === 0).length;
+	var count_AXY = observedHistory.filter(row => row[0] === 1 && row[1] === 1 && row[2] === 1).length;
 	
 	// Calculate conditional probabilities for effects
 	var pY_A = (count_AxY + count_AXY) / (count_Axy + count_AxY + count_AXy + count_AXY);
@@ -70,7 +75,7 @@ Qualtrics.SurveyEngine.addOnReady(function()
 	var pX_Y = (count_AXY + count_aXY) / (count_AxY + count_AXY + count_axY + count_aXY);
 	var pX_y = (count_AXy + count_aXy) / (count_Axy + count_AXy + count_axy + count_aXy);
 
-	var pY = history.filter(row => row[2] === 1).length / history.length;  // P(Y=1), all rounds
+	var pY = observedHistory.filter(row => row[2] === 1).length / observedHistory.length;  // P(Y=1), observed rounds
 	
 	// Conditional probabilities: P(Y | A, X)
 	var pY_Ax = count_AxY / (count_Axy + count_AxY);  // P(Y | A, x)
@@ -85,7 +90,7 @@ Qualtrics.SurveyEngine.addOnReady(function()
 	var pX_ay = count_aXy / (count_aXy + count_axy);  // P(X | a, y)
 
 	// First 10 rounds: count all 8 combinations of AXY (lowercase = 0, uppercase = 1)
-	var history10 = history.slice(0, 10);
+	var history10 = observedHistory10;
 	var count_axy_round10 = history10.filter(row => row[0] === 0 && row[1] === 0 && row[2] === 0).length;
 	var count_axY_round10 = history10.filter(row => row[0] === 0 && row[1] === 0 && row[2] === 1).length;
 	var count_aXy_round10 = history10.filter(row => row[0] === 0 && row[1] === 1 && row[2] === 0).length;
