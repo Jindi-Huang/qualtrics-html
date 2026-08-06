@@ -1858,6 +1858,7 @@
       const phaseStartTimeRef = useRef(Date.now());
       const sampledForRoundRef = useRef(null);
       const sampledForPriceRoundRef = useRef(null);
+      const noDecisionRecordedForRoundRef = useRef(null);
       // High-stakes monotonicity log: per-question warning/changed flags (keyed by `price|X`) + full edit log.
       const highStakeLogRef = useRef({ byKey: {}, editLog: [], startTime: null });
 
@@ -2006,13 +2007,14 @@
         if (!ready) return;
         if (phase !== 'decision') return;
         if (showNewDay) return;
+        if (waitingForSpace) return;
         if (currentX !== null) return;
         if (sampledForRoundRef.current === currentRound) return;
         sampledForRoundRef.current = currentRound;
         const result = simulateRound(0);
         setPendingResult({ A: null, X: result.X, Y: result.Y });
         setCurrentX(result.X);
-      }, [ready, phase, showNewDay, currentX, currentRound, isMig]);
+      }, [ready, phase, showNewDay, waitingForSpace, currentX, currentRound, isMig]);
 
       // ---- migraines-only: enable buttons shortly after craving is revealed ----
       // If CONFIG.exo_X is set and this round's X ≠ exo_X, no decision is made: record the round
@@ -2026,20 +2028,20 @@
         const exoX = getExoX();
         const isNoDecisionRound = exoX !== null && currentX !== exoX;
         if (isNoDecisionRound) {
-          const timer = setTimeout(() => {
-            const result = pendingResult || { X: currentX, Y: null };
-            roundTimesRef.current.push(null);
-            roundTimestampsRef.current.push({
-              round: currentRound,
-              decisionTime: null,
-              chemicalViewTime: null,
-              outcomeViewTime: null
-            });
-            setHistory(prev => [...prev, [null, result.X, result.Y]]);
-            phaseStartTimeRef.current = Date.now();
-            setWaitingForSpace('nextRound');
-          }, 0);
-          return () => clearTimeout(timer);
+          if (noDecisionRecordedForRoundRef.current === currentRound) return;
+          noDecisionRecordedForRoundRef.current = currentRound;
+          const result = pendingResult || { X: currentX, Y: null };
+          roundTimesRef.current.push(null);
+          roundTimestampsRef.current.push({
+            round: currentRound,
+            decisionTime: null,
+            chemicalViewTime: null,
+            outcomeViewTime: null
+          });
+          setHistory(prev => [...prev, [null, result.X, result.Y]]);
+          phaseStartTimeRef.current = Date.now();
+          setWaitingForSpace('nextRound');
+          return;
         }
         const timer = setTimeout(() => {
           setDecisionEnabled(true);
