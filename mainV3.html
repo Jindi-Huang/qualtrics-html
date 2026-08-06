@@ -1907,6 +1907,10 @@
               const currentTimestamps = roundTimestampsRef.current[roundTimestampsRef.current.length - 1];
               if (currentTimestamps) currentTimestamps.outcomeViewTime = (Date.now() - phaseStartTimeRef.current) / 1000;
 
+              setCurrentA(null);
+              setCurrentX(null);
+              setCurrentY(null);
+              setDecisionEnabled(false);
               setWaitingForSpace(null);
               setPendingResult(null);
 
@@ -1921,12 +1925,6 @@
               } else {
                 setNextDayNumber(currentRound + 1);
                 setShowNewDay(true);
-                setTimeout(() => {
-                  setCurrentA(null);
-                  setCurrentX(null);
-                  setCurrentY(null);
-                  setDecisionEnabled(false);
-                }, 200);
                 setTimeout(() => {
                   setShowNewDay(false);
                   setCurrentRound(prev => prev + 1);
@@ -2390,7 +2388,7 @@
           if (phase === 'decision' && currentX === null) return '...';
           // No-decision round: only reachable here, since normal rounds set waitingForSpace
           // in the 'outcome' phase
-          if (phase === 'decision' && currentX !== null && waitingForSpace === 'nextRound') {
+          if (phase === 'decision' && isNoDecision && waitingForSpace === 'nextRound') {
             return (
               <>
                 You will not make decisions this week.
