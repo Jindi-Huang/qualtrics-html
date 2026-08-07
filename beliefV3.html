@@ -426,8 +426,9 @@
     // MorningIcon — used by migraines mode; speech-bubble with craving glyph inside
     function MorningIcon({ className, drinkName, X }) {
       const theme = { iconColor: getThemeClassesLocal().iconColor };
-      const isDriftwell = drinkName && drinkName.toLowerCase().includes('driftwell');
-      const isMelloway = drinkName && drinkName.toLowerCase().includes('melloway');
+      const icon = CONFIG.playerIcon0;
+      const isDriftwell = icon === '🍵';
+      const isMelloway = icon === '🍶';
       let cravingInner;
       if (X === null || X === undefined) {
         cravingInner = (
