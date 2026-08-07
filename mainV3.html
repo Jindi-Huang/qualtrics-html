@@ -129,7 +129,20 @@
     });
 
     if (window.parent !== window) {
-      window.parent.postMessage({ type: 'IFRAME_READY' }, '*');
+      // Retry handshake: re-announce IFRAME_READY every 0.5s until Qualtrics replies
+      // with INIT. A single fire-once ping can be lost if the iframe is ready before
+      // the parent's message listener is registered, which would strand us on defaults.
+      const announceReady = function() {
+        if (configReceived) return;
+        window.parent.postMessage({ type: 'IFRAME_READY' }, '*');
+      };
+      announceReady();
+      const readyRetryInterval = setInterval(function() {
+        if (configReceived) { clearInterval(readyRetryInterval); return; }
+        announceReady();
+      }, 500);
+      // Stop retrying after 10s even if INIT never arrives (matches default-config fallback).
+      setTimeout(function() { clearInterval(readyRetryInterval); }, 10000);
     }
 
     function sendDataToQualtrics(dataType, data) {
@@ -1994,7 +2007,7 @@
             roundStartTimeRef.current = Date.now();
             phaseStartTimeRef.current = Date.now();
           }
-        }, 3000);
+        }, 10000);
         onInitialized(() => {
           clearTimeout(timeout);
           setReady(true);

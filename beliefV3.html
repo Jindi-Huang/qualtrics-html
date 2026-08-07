@@ -128,7 +128,20 @@
     });
 
     if (window.parent !== window) {
-      window.parent.postMessage({ type: 'IFRAME_READY' }, '*');
+      // Retry handshake: re-announce IFRAME_READY every 0.5s until Qualtrics replies
+      // with INIT. A single fire-once ping can be lost if the iframe is ready before
+      // the parent's message listener is registered, which would strand us on defaults.
+      const announceReady = function() {
+        if (configReceived) return;
+        window.parent.postMessage({ type: 'IFRAME_READY' }, '*');
+      };
+      announceReady();
+      const readyRetryInterval = setInterval(function() {
+        if (configReceived) { clearInterval(readyRetryInterval); return; }
+        announceReady();
+      }, 500);
+      // Stop retrying after 10s even if INIT never arrives (matches default-config fallback).
+      setTimeout(function() { clearInterval(readyRetryInterval); }, 10000);
     }
 
     function sendDataToQualtrics(dataType, data) {
@@ -1556,7 +1569,7 @@
       // Step 1 (X-intervention intro) differs by supergame
       const step1Block = isMig ? (
         <div className="text-gray-700 space-y-4 mb-6 fade-in">
-          <p>The question asks what will happen if your cravings are switched on or off by one of these two medicines:</p>
+          <p>Some scenarios ask what will happen if your cravings are switched on or off by one of these two medicines:</p>
           <ul className="list-disc list-inside space-y-2 ml-4 mb-4">
             <li><strong>CraveOn</strong> makes you crave <strong>for sure</strong>.</li>
             <li><strong>CraveOff</strong> makes you not crave <strong>for sure</strong>.</li>
@@ -1565,7 +1578,7 @@
         </div>
       ) : (
         <div className="text-gray-700 space-y-4 mb-6 fade-in">
-          <p>The question asks what will happen if your {CONFIG.playerName1} level are set by one of two treatments:</p>
+          <p>Some scenarios ask what will happen if your {CONFIG.playerName1} level are set by one of two treatments:</p>
           <ul className="list-disc list-inside space-y-2 ml-4 mb-4">
             <li><strong>{CONFIG.playerName1}-normal-injection</strong> normalizes your {CONFIG.playerName1} level <strong>for sure</strong>.</li>
             <li><strong>{CONFIG.playerName1}-abnormal-injection</strong> makes your {CONFIG.playerName1} levels abnormal <strong>for sure</strong>.</li>
@@ -1699,7 +1712,7 @@
             console.log('Timeout: starting with default config');
             setReady(true);
           }
-        }, 3000);
+        }, 10000);
 
         onInitialized(() => {
           clearTimeout(timeout);
